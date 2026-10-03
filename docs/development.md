@@ -135,6 +135,12 @@ The source is [Software Mansion's skills repository](https://github.com/software
 
 ### Application code
 
+Read [coding principles](code-principles.md) before changing application code. It is the
+longer form of the rules below: a single home for every fact, one responsibility per module,
+registries instead of growing conditionals, a domain layer with no React or clock of its own,
+components that take intent callbacks rather than state setters, and evidence that a refactor
+did not change behaviour. `apps/website` is the worked example and compiles under `strict`.
+
 - Use the shared ESLint/Prettier rules; avoid app-specific style drift.
 - Prefer descriptive names, small focused modules, and explicit public contracts.
 - Avoid unexplained `any`, casts, silent fallbacks, and duplicated business logic.

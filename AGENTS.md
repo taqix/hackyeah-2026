@@ -35,5 +35,5 @@ below before changing a feature.
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)
 
-An Expo starter exists. Backend, dashboard, shared packages, and CI are planned;
+An Expo starter and wearable contracts/extraction packages exist. Backend, dashboard and CI are planned;
 do not claim planned commands or checks are already available.

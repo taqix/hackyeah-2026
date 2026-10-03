@@ -49,7 +49,9 @@ Add future applications under `apps/` and shared packages under `packages/`, eac
 ## Repository layout
 
 - `apps/mobile/` — Expo app, source code, assets, and starter reset utility.
-- `packages/` — location for future shared packages; create as needed.
+- `packages/contracts/` — versioned runtime schemas and types, including wearable data.
+- `packages/wearable-data/` — server-side extraction, FIT import, provider adapters and transactional storage.
+- `supabase/migrations/` — additive backend-only wearable storage schema.
 - `package.json` — workspace configuration and root commands.
 - `package-lock.json` — shared dependency lockfile.
 - `.agents/skills/` — project skills for compatible coding agents.
@@ -75,6 +77,8 @@ Start feature/documentation branches from `develop` and open PRs against it. Pro
 - [Product scope](docs/product.md)
 - [Six-person bootstrap plan](docs/roadmap.md)
 - [Development and implementation plan](docs/development.md)
+- [Wearable data extraction architecture](docs/data-extraction/README.md)
+- [Wearable implementation and integration guide](docs/features/wearable-extraction.md) — run `npm run demo:wearables` or `npm run test:wearables`.
 - [Deployment plan](docs/deployment.md)
 - [Feature template](docs/features/TEMPLATE.md)
 - [Device calendar access](docs/features/device-calendar.md)

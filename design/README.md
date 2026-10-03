@@ -15,7 +15,7 @@ as the source of truth for look, copy, and tokens.
   with the change card, replies, message box and problem cards. See
   [Chat revision](#chat-revision).
 - `prototype/onboarding.jsx` — questionnaire and preference screens 2–4, the
-  option table and their choice pieces (segmented choice, check tile). See
+  option table and their choice pieces (segmented choice, slider, check tile). See
   [Onboarding preferences](#onboarding-preferences).
 - `prototype/home.jsx` — Home, the Today tab: screen 5 and states 5.1–5.15,
   with the week strip, hero cards, notes and session list. See [Home](#home).
@@ -132,7 +132,7 @@ under starting comfort are design copy. The app saves only option values.
 | Step | Fields | Control |
 | --- | --- | --- |
 | 2 Starting point | `starting_comfort` | Radio cards |
-| 3.1 Time | `sessions_per_week`, `session_minutes`, `preferred_times` (optional) | Segmented choice; check tiles showing each time range |
+| 3.1 Time | `sessions_per_week` (1–7), `session_minutes` (5–60 in 5s), `preferred_times` (optional) | Sliders: the value spelled out, a tick per step and numbers under the track; check tiles showing each time range |
 | 3.2 Activities | `activity_interests`, `discovery_preference` | Tags; radio cards |
 | 3.3 Places | `available_locations`, `available_equipment`, `comfortable_swimming` (when asked) | Tags; inline yes/no |
 | 3.4 Good to know | `avoidances`, `starting_obstacle` (both optional) | Tags; radio rows; **Skip** in the top bar |
@@ -171,8 +171,8 @@ refused (the design assumes the preferred-time windows), and whether a
 stationary bike counts as bicycle access (the design says yes). Google sign-in
 was dropped: no doc includes it. Pending: the website already offers 1–7
 sessions a week and 5–60 minutes in 5-minute steps, and PREFERENCES.md is due
-to widen to match; until it does, onboarding (3.1), Edit time (9.4) and chat's
-length snapping keep the contract's 1, 2, 3 and 5, 10, 20.
+to widen to match. Onboarding (3.1) and Edit time (9.4) already use these
+ranges as sliders; chat's length snapping still keeps the contract's 5, 10, 20.
 
 ## Home
 

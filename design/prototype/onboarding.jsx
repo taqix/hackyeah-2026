@@ -24,8 +24,6 @@ const PREF_OPTIONS={
     {value:"occasionally_active",label:"Occasionally active",description:"Some movement now and then"},
     {value:"some_routine",label:"Already have some routine",description:"Moving most weeks"},
   ],
-  sessions_per_week:[1,2,3],
-  session_minutes:[5,10,20],
   preferred_times:[
     {value:"morning",label:"Morning",range:"7:00–11:00",icon:"sunrise"},
     {value:"lunch",label:"Lunchtime",range:"11:00–14:00",icon:"sun"},
@@ -69,6 +67,16 @@ const PREF_OPTIONS={
     {value:"uncertainty",label:"Not knowing what to do"},
     {value:"discomfort",label:"Feeling uncomfortable"},
   ],
+};
+
+/* Sliders for 3.1 and Edit time (profile.jsx 9.4), matching the website: 1–7 sessions,
+   5–60 min in 5s. PREFERENCES.md still lists 1, 2, 3 and 5, 10, 20 (chat keeps those)
+   and is due to widen to these. Minutes number the tens and the 5-minute minimum. */
+const PREF_SLIDERS={
+  sessions_per_week:{label:"Sessions a week",icon:"calendar-days",range:{min:1,max:7,step:1},
+    format:n=>n+(n===1?" day":" days")+" a week"},
+  session_minutes:{label:"Minutes a session",icon:"timer",range:{min:5,max:60,step:5},
+    format:m=>m+" min",marks:[5,10,20,30,40,50,60]},
 };
 
 /* Ana, the demo user every flow shows: Home (home.jsx) plans her week from these answers
@@ -137,6 +145,52 @@ function Segmented({label,options,value,onChange}){
           <span style={{font:o.unit?"600 24px/1 var(--font-numeric)":"600 var(--text-base)/1 var(--font-body)",fontVariantNumeric:"tabular-nums",letterSpacing:o.unit?"var(--tracking-tight)":undefined}}>{o.label}</span>
           {o.unit?<span style={{font:"var(--type-caption)",color:on?"var(--accent-text)":"var(--text-tertiary)"}}>{o.unit}</span>:null}
         </button>);})}
+    </div>
+  );
+}
+
+/* A number on a scale: the value spelled out above a native range input, so keyboard
+   and screen readers get the platform slider. A tick under the track marks every step;
+   `marks` (default: every step) get a longer tick and their number, which lights up
+   when it is the value. Track and thumb match the website's SliderField. */
+const SLIDER_CSS=`
+.ob-range{-webkit-appearance:none;appearance:none;width:100%;height:44px;margin:0;background:transparent;cursor:pointer;touch-action:pan-y}
+.ob-range::-webkit-slider-runnable-track{height:6px;border-radius:var(--radius-pill);background:linear-gradient(to right,var(--accent) var(--pct),var(--border-strong) var(--pct))}
+.ob-range::-moz-range-track{height:6px;border-radius:var(--radius-pill);background:var(--border-strong)}
+.ob-range::-moz-range-progress{height:6px;border-radius:var(--radius-pill);background:var(--accent)}
+.ob-range::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-11px;border-radius:var(--radius-pill);background:var(--surface-card);border:2px solid var(--accent);box-shadow:var(--shadow-card,0 1px 3px rgba(0,0,0,.2));transition:transform var(--dur-fast) var(--ease-out)}
+.ob-range::-moz-range-thumb{box-sizing:border-box;width:28px;height:28px;border-radius:var(--radius-pill);background:var(--surface-card);border:2px solid var(--accent)}
+.ob-range:active::-webkit-slider-thumb{transform:scale(1.1)}
+.ob-range:focus-visible{outline:none}
+.ob-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px var(--focus-ring)}
+.ob-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px var(--focus-ring)}`;
+if(!document.getElementById("ob-slider-css")){const el=document.createElement("style");el.id="ob-slider-css";el.textContent=SLIDER_CSS;document.head.appendChild(el);}
+const THUMB=28; /* the thumb's centre stops THUMB/2 short of each end; ticks follow it */
+function Slider({label,icon,range,value,onChange,format,marks}){
+  const steps=[];
+  for(let v=range.min;v<=range.max;v+=range.step) steps.push(v);
+  const numbered=marks||steps;
+  const at=v=>((v-range.min)/(range.max-range.min))*100+"%";
+  const rail={position:"absolute",left:THUMB/2,right:THUMB/2,pointerEvents:"none"};
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div aria-hidden="true" style={{display:"flex",alignItems:"center",gap:8,font:"600 var(--text-base)/1.3 var(--font-body)",color:"var(--accent-text)",fontVariantNumeric:"tabular-nums"}}>
+        <Icon name={icon} size={18}/>{format(value)}
+      </div>
+      {/* The input is 44 tall with the track centred on 22; ticks start 4 below the track,
+          inside the thumb's reach, so the thumb covers the one it sits on. */}
+      <div style={{position:"relative",paddingBottom:12}}>
+        <input type="range" className="ob-range" min={range.min} max={range.max} step={range.step} value={value}
+          aria-label={label} aria-valuetext={format(value)} style={{"--pct":at(value),position:"relative",zIndex:1,display:"block"}}
+          onChange={e=>onChange(Number(e.target.value))}/>
+        <div aria-hidden="true" style={{...rail,top:29}}>
+          {steps.map(v=><span key={v} style={{position:"absolute",top:0,left:at(v),width:2,height:numbered.includes(v)?6:4,marginLeft:-1,borderRadius:1,background:v<=value?"var(--accent)":"var(--border-strong)",transition:"background var(--dur-fast) var(--ease-out)"}}/>)}
+        </div>
+        <div aria-hidden="true" style={{...rail,top:40}}>
+          {numbered.map(v=>{const on=v===value;return (
+            <span key={v} style={{position:"absolute",top:0,left:at(v),transform:"translateX(-50%)",font:"var(--type-caption)",fontWeight:on?600:undefined,color:on?"var(--accent-text)":"var(--text-tertiary)",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{v}</span>);})}
+        </div>
+      </div>
     </div>
   );
 }
@@ -216,13 +270,11 @@ function Time({initial}){
         </Col>
         <Col gap={12}>
           <Question>How often would you like to make room for movement?</Question>
-          <Segmented label="Sessions a week" value={p.sessions_per_week} onChange={v=>set("sessions_per_week",v)}
-            options={PREF_OPTIONS.sessions_per_week.map(n=>({value:n,label:String(n),unit:n===1?"day a week":"days a week"}))}/>
+          <Slider {...PREF_SLIDERS.sessions_per_week} value={p.sessions_per_week} onChange={v=>set("sessions_per_week",v)}/>
         </Col>
         <Col gap={12}>
           <Question>What feels manageable for one session?</Question>
-          <Segmented label="Minutes a session" value={p.session_minutes} onChange={v=>set("session_minutes",v)}
-            options={PREF_OPTIONS.session_minutes.map(n=>({value:n,label:String(n),unit:"min"}))}/>
+          <Slider {...PREF_SLIDERS.session_minutes} value={p.session_minutes} onChange={v=>set("session_minutes",v)}/>
         </Col>
         <Col gap={12}>
           <Question optional>When would you prefer to move?</Question>
@@ -416,5 +468,5 @@ const ONBOARDING_SCREENS=[
   {id:"review-calendar-off",label:"4.1 · Review: calendar access off",C:()=><Review calendar="denied"/>,note:"Access was refused. Settings opens the phone's settings; the plan can still be built."},
 ];
 
-Object.assign(window,{ONBOARDING_SCREENS,PREF_OPTIONS,SAMPLE_PREFS,Question,Chips,Segmented,CheckTile,SwimCheck});
+Object.assign(window,{ONBOARDING_SCREENS,PREF_OPTIONS,PREF_SLIDERS,SAMPLE_PREFS,Question,Chips,Segmented,Slider,CheckTile,SwimCheck});
 })();

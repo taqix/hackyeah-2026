@@ -11,7 +11,7 @@
    PREF_OPTIONS labels, edit chrome instead of steps. Ana's sessions follow home.jsx.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
    Layout helpers (TopBar, Content, BottomBar, NavBar, Col, Row, H1, Kicker, Body, Section),
-   Sheet (workout.jsx) and the choice pieces and PREF_OPTIONS (onboarding.jsx) resolve at
+   Sheet (workout.jsx) and the choice pieces, PREF_OPTIONS and PREF_SLIDERS (onboarding.jsx) resolve at
    render time. Registers window.PROFILE_SCREENS. */
 (() => {
 const { Icon, Button, IconButton, Card, SuggestionCard } = window.DS;
@@ -202,13 +202,11 @@ function EditTime(){
         <H1>Time</H1>
         <Col gap={12}>
           <Question>How often would you like to make room for movement?</Question>
-          <Segmented label="Sessions a week" value={p.sessions_per_week} onChange={v=>set("sessions_per_week",v)}
-            options={PREF_OPTIONS.sessions_per_week.map(n=>({value:n,label:String(n),unit:n===1?"day a week":"days a week"}))}/>
+          <Slider {...PREF_SLIDERS.sessions_per_week} value={p.sessions_per_week} onChange={v=>set("sessions_per_week",v)}/>
         </Col>
         <Col gap={12}>
           <Question>What feels manageable for one session?</Question>
-          <Segmented label="Minutes a session" value={p.session_minutes} onChange={v=>set("session_minutes",v)}
-            options={PREF_OPTIONS.session_minutes.map(n=>({value:n,label:String(n),unit:"min"}))}/>
+          <Slider {...PREF_SLIDERS.session_minutes} value={p.session_minutes} onChange={v=>set("session_minutes",v)}/>
         </Col>
         <Col gap={12}>
           <Question optional>When would you prefer to move?</Question>

@@ -1,0 +1,55 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local editor settings and temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependencies and virtual environments
+node_modules/
+.venv/
+venv/
+
+# Build output
+dist/
+build/
+out/
+target/
+.next/
+.nuxt/
+.output/
+
+# Caches and test reports
+.cache/
+.parcel-cache/
+.turbo/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.tsbuildinfo
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Local scratch files
+.scratch/

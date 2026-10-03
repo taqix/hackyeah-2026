@@ -145,3 +145,36 @@ Node 22 checks passed: 43 backend tests, workspace lint/typecheck, formatting an
 missing or invalid metrics, unknown keys, duration sums, optional duration
 completeness and empty metric catalogs. Both complete documentation example
 pairs validate and match their fixtures. These follow-up changes remain local.
+
+
+## Final branch verification after plan module cleanup
+
+Plan generation now lives in `apps/backend/src/plans/`. Package exports, test
+imports, documentation links, and the prompt path were updated together. The
+unused backend `tsx` dependency and duplicate contracts build steps were removed.
+The separate exchange guide was removed at the owner's request; the JSON contract
+reference remains the integration guide.
+
+The request size limit now runs before schema/catalog validation and the empty
+creation shortcut. Optional duration metrics ignore inherited properties.
+Regression tests cover both fixes. The owner confirmed that validating against
+the captured request-start time is intentional.
+
+Verified after merging `origin/develop` at `42bc2bd`, using Node 22.23.3:
+
+- `npm ci --no-audit --no-fund`: clean installation passed.
+- `npm run build:plans`: backend and shared contracts built.
+- `npm run test:plans`: all 45 tests passed.
+- `npm run test:wearables`: all 38 tests passed.
+- `npm run typecheck` and `npm run lint`: all workspaces passed.
+- `npm run format:check`, Prettier checks for plan contracts/schemas, and
+  `git diff --check`: passed.
+- An isolated production-only workspace installation resolved 108 packages.
+  Using the Docker runtime directory layout, the compiled server returned
+  `{"status":"ok"}` from `/health`. Importing `@hackyeah/backend` loaded the
+  moved adapter, shared contracts, JSON schemas, and prompt and returned the
+  expected result with a mocked provider.
+
+Docker is not installed on this machine, so the actual image build and container
+smoke check remain unverified. No live Gemini call was made. A teammate approval
+is still required; automated bot approvals do not satisfy that requirement.

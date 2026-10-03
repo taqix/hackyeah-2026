@@ -383,11 +383,17 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["description"],
+                "required": ["description", "metrics"],
                 "properties": {
                   "description": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": ["string", "number", "boolean"]
+                    }
                   }
                 }
               },

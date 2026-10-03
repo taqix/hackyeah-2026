@@ -28,7 +28,8 @@ Import `generatePlan` (or the compatibility name `createPlan`) from
 `@hackyeah/backend`; import types and validators from `@hackyeah/contracts/plan`.
 Both adapter names accept the new request and return the new response. This is a
 breaking JSON contract change; string IDs, gym sport exercise catalogs and
-exercise IDs are rejected along with the old request/output JSON.
+exercise IDs are rejected along with the old request/output JSON. Non-gym
+parts must now include structured `metrics` as well as `description`.
 
 See runnable examples in `apps/backend/test/fixtures/initial.input.json` and
 `modify.input.json`, with corresponding `*.expected-output.json` files.
@@ -90,7 +91,12 @@ Unknown schema keywords and inconsistent bounds/enums are rejected. Integer
 metric intervals must contain at least one integer. Metric keys
 begin with a letter and contain letters, digits or underscores. A metric marked
 `represents_session_duration: true` is numeric, uses seconds, and must equal the
-returned slot duration if present. Other time metrics may use their documented
+returned slot duration if present at workout level. At part level it measures
+that part's duration: if supplied in any part, every part must supply a positive
+value and their sum must match the slot duration (one microsecond tolerance).
+Every part requires `metrics` using the catalog's keys, units, types, bounds and
+required flags; a sport with no metrics uses an empty object per part.
+Other time metrics may use their documented
 units and refer to an active portion rather than the whole session.
 
 Gym sports contain metadata only, without `metrics` or an `exercises` catalog.
@@ -103,7 +109,7 @@ are uniform per exercise.
 `{ events, message }` contains changes only:
 
 - Add: `action: add`, `sport_id`, `time_slot`, overall `description`, plus
-  non-gym `metrics` and ordered non-empty `parts: [{ description }]`, or gym
+  non-gym `metrics` and ordered non-empty `parts: [{ description, metrics }]`, or gym
   ordered non-empty `exercises: [{ name, sets, repetitions,
 description }]`.
 - Delete: only `action: delete` and `id`.
@@ -192,9 +198,9 @@ preserved. The test runner copies fixture and prompt assets into ignored
 `.test-dist/`. Backend build/dev/test/typecheck scripts build contracts first.
 
 The backend/contract builds, full workspace TypeScript checks and ESLint passed.
-All 40 backend tests passed under Node 22.23.3, including `/health`, integer metric
+All 43 backend tests passed under Node 22.23.3, including `/health`, integer metric
 range regressions, numeric database IDs, gym metadata without exercise catalogs
-and malformed provider envelopes. The shared wearable suite
+per-part metrics and malformed provider envelopes. The shared wearable suite
 also passed (38 tests). Backend/shared-plan Prettier and `git diff --check` passed.
 A production-entry smoke check served `/health` and loaded the compiled Gemini
 adapter, shared contracts and prompt with a mocked provider response on Node 22.

@@ -220,13 +220,17 @@ Validation applies the entire operation set regardless of its array order.
   time_slot.start is the workout start, not the beginning of preparation. Use
   a complete timestamp with an explicit UTC offset; never an offset-free time.
 - For is_gym:0, include metrics and an ordered non-empty parts array. Each
-  part contains only description, with actionable duration, distance,
-  repetitions, technique, or rest as appropriate. Metrics use only catalog keys,
+  part contains description and metrics. Give each part actionable instructions
+  and structured metric values for that part (for example, running warm-up,
+  walk/jog intervals and cool-down each have their own duration and distance).
+  Workout and part metrics use only catalog keys,
   required values, value_schema formats, units, and bounds. Optional metrics may
   be omitted; supply metrics:{} when no metrics are defined. A metric marked
   represents_session_duration:true equals the entire time_slot.duration in
-  seconds if present; other time metrics may describe an active portion in the
-  catalog's units. The required flag still determines whether a metric is needed.
+  seconds at workout level if present. At part level, it measures that part's
+  duration: when any part supplies it, supply a positive value in every part,
+  summing to the entire workout duration. Other time metrics may describe an
+  active portion in the catalog's units. The required flag still determines whether a metric is needed.
 - For is_gym:1, include an ordered non-empty exercises array. Each exercise has
   name, positive integer sets and repetitions, and description explaining
   technique and rest. Use uniform repetitions across its sets and omit exercise
@@ -257,7 +261,8 @@ Silently check catalog eligibility, discovery rules, avoidances, access,
 equipment, current mode, protected IDs, and requested changes. Deduplicate
 history by ID and evaluate the complete resulting schedule. Check the planning
 window, local daily limits and applicable weekly preference, future grid-aligned
-starts, slot fit with buffers, and duration arithmetic. Check required metrics,
+starts, slot fit with buffers, and duration arithmetic including summed part
+durations. Check required workout and part metrics,
 their formats and units, and the gym exercise shape without IDs. Make sure
 instructions are practical for the user's starting comfort and obstacle, and every modification
 has a useful message. Remove an operation that cannot satisfy the constraints

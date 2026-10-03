@@ -32,6 +32,7 @@ function outputWithMetric(value: number): PlanOutput {
   if (!event || event.action !== 'add' || !('metrics' in event))
     throw Error('Missing non-gym fixture workout');
   event.metrics.test_metric = value;
+  for (const part of event.parts) part.metrics.test_metric = value;
   return output;
 }
 

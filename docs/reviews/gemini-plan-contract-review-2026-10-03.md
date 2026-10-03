@@ -122,3 +122,26 @@ implements the next requested contract changes and has not been pushed.
 - Node 22 verification: all 40 backend tests passed; workspace typecheck and
   lint passed; formatting and `git diff --check` passed. Both complete
   documentation request/response pairs validate and exactly match the fixtures.
+
+## Follow-up: structured workout-part metrics
+
+Non-gym workout parts now contain `description` and `metrics`. Each part uses
+the sport catalog's metric keys, units, types, bounds and required flags. A run
+can record duration and distance for its warm-up, interval blocks and cool-down.
+The workout keeps its overall metrics; gym workouts retain their exercise format.
+
+For a metric marked `represents_session_duration`, workout-level values describe
+the full session and part-level values describe each block. If any part supplies
+this metric, every part must supply a positive value and their sum must match
+the session duration (one microsecond tolerance for floating-point arithmetic).
+
+Types, input/output and Gemini schemas, prompt, examples and fixtures were
+updated together. Description-only parts are now rejected, including in
+workout history. There are no persisted plans or mobile plan consumers on this
+branch requiring a migration.
+
+Node 22 checks passed: 43 backend tests, workspace lint/typecheck, formatting and
+`git diff --check`. New regressions cover running duration/distance per part,
+missing or invalid metrics, unknown keys, duration sums, optional duration
+completeness and empty metric catalogs. Both complete documentation example
+pairs validate and match their fixtures. These follow-up changes remain local.

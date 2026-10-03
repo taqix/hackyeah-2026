@@ -14,10 +14,18 @@
       },
       "parts": [
         {
-          "description": "Walk slowly for 2 minutes to warm up."
+          "description": "Walk slowly for 2 minutes to warm up.",
+          "metrics": {
+            "duration": 120.0,
+            "distance": 160.0
+          }
         },
         {
-          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes.",
+          "metrics": {
+            "duration": 480.0,
+            "distance": 640.0
+          }
         }
       ]
     },

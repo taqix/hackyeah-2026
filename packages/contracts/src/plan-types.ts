@@ -40,7 +40,10 @@ export interface SportMetric {
   required: boolean;
   value_schema: MetricValueSchema;
   unit?: string;
-  /** Use only for a metric measuring the entire session in seconds. */
+  /**
+   * Total session duration in seconds at workout level. In parts, this metric
+   * measures each part's duration and the values must sum to the session total.
+   */
   represents_session_duration?: boolean;
 }
 
@@ -66,7 +69,14 @@ export type Workout = {
   time_slot: TimeSlot;
   description: string;
 } & (
-  | { metrics: Record<string, string | number | boolean>; parts: { description: string }[] }
+  | {
+      metrics: Record<string, string | number | boolean>;
+      parts: {
+        description: string;
+        /** Catalog metrics measured for this part, in the catalog's units. */
+        metrics: Record<string, string | number | boolean>;
+      }[];
+    }
   | { exercises: GymExercise[] }
 );
 

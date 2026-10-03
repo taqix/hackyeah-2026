@@ -33,6 +33,9 @@ function walk(start?: string, duration = 600) {
   if (start) event.time_slot.start = start;
   event.time_slot.duration = duration;
   event.metrics.duration = duration;
+  const firstDuration = duration * 0.2;
+  event.parts[0]!.metrics.duration = firstDuration;
+  event.parts[1]!.metrics.duration = duration - firstDuration;
   return event;
 }
 
@@ -279,6 +282,7 @@ void test('supports string/boolean metric values and preserves schema-like metri
   );
   const event = walk();
   event.metrics.minimum = 'easy';
+  for (const part of event.parts) part.metrics.minimum = 'easy';
   event.metrics.outdoors = true;
   assert.deepEqual(parsePlanOutput(plan(event), parsePlanInput(request), now), plan(event));
   assert.match(JSON.stringify(buildGeminiOutputSchema(request)), /"minimum":\{"type":"string"/);
@@ -748,4 +752,88 @@ void test('database IDs are numeric positive safe integers and are never coerced
     assert.equal(identifier.type, 'integer');
     assert.ok(identifier.enum.every((id: unknown) => typeof id === 'number'));
   }
+});
+
+void test('run parts expose catalog-validated duration and distance metrics', () => {
+  const request = input();
+  const sport = request.sports[0];
+  if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
+  request.sports[0] = { ...sport, id: 3, name: 'Running', description: 'Gentle walk/run blocks' };
+  request.preferences.activity_interests = [3, 2];
+  const run = {
+    ...walk(),
+    sport_id: 3,
+    metrics: { duration: 600, distance: 700 },
+    parts: [
+      { description: 'Walk easily to warm up.', metrics: { duration: 120, distance: 100 } },
+      {
+        description: 'Alternate easy jogging and walking.',
+        metrics: { duration: 360, distance: 500 },
+      },
+      { description: 'Walk slowly to cool down.', metrics: { duration: 120, distance: 100 } },
+    ],
+  };
+  assert.deepEqual(parsePlanOutput(plan(run), parsePlanInput(request), now), plan(run));
+  const schema = JSON.parse(JSON.stringify(buildGeminiOutputSchema(request)));
+  const part = schema.properties.events.items.anyOf[0].properties.parts.items;
+  assert.deepEqual(part.required, ['description', 'metrics']);
+  assert.deepEqual(part.properties.metrics.required, ['duration']);
+  assert.equal(part.properties.metrics.properties.duration.type, 'integer');
+  assert.equal(part.properties.metrics.properties.distance.type, 'number');
+});
+
+void test('part metrics reject missing fields, unknown keys, bad values and inconsistent duration totals', () => {
+  const event = walk();
+  for (const metrics of [
+    {},
+    { distance: 100 },
+    { duration: '120' },
+    { duration: 120, distance: -1 },
+    { duration: 120, unknown: 1 },
+  ]) {
+    const changed = { ...event, parts: [{ ...event.parts[0], metrics }, event.parts[1]] };
+    assert.throws(
+      () => parsePlanOutput({ events: [changed], message: null }, input(), now),
+      /catalog/,
+    );
+  }
+  const { metrics: _metrics, ...withoutMetrics } = event.parts[0]!;
+  assert.throws(
+    () =>
+      parsePlanOutput(
+        { events: [{ ...event, parts: [withoutMetrics, event.parts[1]] }], message: null },
+        input(),
+        now,
+      ),
+    /schema/,
+  );
+  for (const duration of [0, 121]) {
+    const changed = {
+      ...event,
+      parts: [
+        { ...event.parts[0]!, metrics: { ...event.parts[0]!.metrics, duration } },
+        event.parts[1]!,
+      ],
+    };
+    assert.throws(() => parsePlanOutput(plan(changed), input(), now), /catalog|part durations/);
+  }
+});
+
+void test('optional part durations are complete when present; an empty metric catalog permits empty part metrics', () => {
+  const request = input();
+  const sport = request.sports[0];
+  if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
+  sport.metrics[0]!.required = false;
+  const event = walk();
+  delete event.parts[0]!.metrics.duration;
+  assert.throws(() => parsePlanOutput(plan(event), request, now), /Every workout part/);
+  delete event.parts[1]!.metrics.duration;
+  assert.deepEqual(parsePlanOutput(plan(event), request, now), plan(event));
+  sport.metrics = [];
+  const noMetrics = {
+    ...event,
+    metrics: {},
+    parts: event.parts.map((part) => ({ ...part, metrics: {} })),
+  };
+  assert.deepEqual(parsePlanOutput(plan(noMetrics), request, now), plan(noMetrics));
 });

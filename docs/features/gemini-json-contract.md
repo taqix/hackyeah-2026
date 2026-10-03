@@ -188,8 +188,11 @@ nested objects, arrays, and null metric values are not accepted.
 
 If `represents_session_duration` is true, the schema must be numeric, and `unit`
 must be `seconds` when supplied. If that metric appears in an added workout,
-its value must equal `time_slot.duration` exactly. The flag does not itself make
-the metric required; `required` determines that. Other time metrics can measure
+its workout-level value must equal `time_slot.duration` exactly. In each part,
+the same metric measures that part's duration in seconds. If any part supplies it,
+all parts must supply a positive value and the sum must equal the workout duration
+(with a tolerance of one microsecond for floating-point arithmetic).
+The flag does not itself make the metric required; `required` determines that. Other time metrics can measure
 an active portion using their documented units.
 
 ### Gym sport
@@ -235,7 +238,12 @@ catalog. `metrics` contains only the catalog's keys with valid scalar values;
 all required metrics must appear. Optional metrics may be omitted. When the
 catalog has no metrics, supply `{}`.
 
-`parts` is an ordered non-empty list of objects with only `description`.
+`parts` is an ordered non-empty list of objects with `description` and `metrics`.
+Each part's metrics use the same catalog keys, units, types, bounds and required
+flags as the workout metrics, but describe that part only. Unknown keys and
+missing required values are rejected. Supply `metrics: {}` for each part when
+the sport has no metric definitions. For example, a running part can carry
+`{"duration": 120, "distance": 100}` for a two-minute, estimated 100-metre warm-up.
 Every description must be non-blank and should provide actionable duration,
 distance, repetitions, technique, and rest as appropriate. The user should be
 able to finish the entire workout from these instructions.
@@ -302,7 +310,8 @@ now)` expects an already validated, backend-owned input and enforces:
   deletions. Duration/frequency limits are not hard validation limits in this
   mode, but availability, protected workouts, exclusions, and scheduling rules
   still apply.
-- Catalog metric formats/bounds and whole-session duration consistency. Gym
+- Catalog metric formats/bounds and required keys for workout and part metrics,
+  plus whole-session duration consistency and summed part durations. Gym
   exercise names/instructions must be non-blank, with positive integer sets and
   repetitions and no exercise IDs.
 
@@ -436,10 +445,18 @@ Response:
       },
       "parts": [
         {
-          "description": "Walk slowly for 2 minutes to warm up."
+          "description": "Walk slowly for 2 minutes to warm up.",
+          "metrics": {
+            "duration": 120.0,
+            "distance": 160.0
+          }
         },
         {
-          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes.",
+          "metrics": {
+            "duration": 480.0,
+            "distance": 640.0
+          }
         }
       ]
     },
@@ -565,10 +582,18 @@ Request:
       },
       "parts": [
         {
-          "description": "Walk slowly for 2 minutes to warm up."
+          "description": "Walk slowly for 2 minutes to warm up.",
+          "metrics": {
+            "duration": 120.0,
+            "distance": 160.0
+          }
         },
         {
-          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes.",
+          "metrics": {
+            "duration": 480.0,
+            "distance": 640.0
+          }
         }
       ],
       "id": 101,
@@ -638,7 +663,11 @@ Response:
       },
       "parts": [
         {
-          "description": "Walk slowly for 3 minutes, comfortably for 9 minutes, then slowly for 3 minutes."
+          "description": "Walk slowly for 3 minutes, comfortably for 9 minutes, then slowly for 3 minutes.",
+          "metrics": {
+            "duration": 900,
+            "distance": 1200.0
+          }
         }
       ]
     }

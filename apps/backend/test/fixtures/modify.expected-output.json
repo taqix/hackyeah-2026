@@ -18,7 +18,11 @@
       },
       "parts": [
         {
-          "description": "Walk slowly for 3 minutes, comfortably for 9 minutes, then slowly for 3 minutes."
+          "description": "Walk slowly for 3 minutes, comfortably for 9 minutes, then slowly for 3 minutes.",
+          "metrics": {
+            "duration": 900,
+            "distance": 1200.0
+          }
         }
       ]
     }

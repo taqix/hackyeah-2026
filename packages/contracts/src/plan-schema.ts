@@ -22,24 +22,32 @@ export function buildPlanOutputSchema(input: PlanInput): JsonSchema {
   if (!nonGym || !gym || !deletion) throw new Error('Missing planning schema branches.');
   const additions: JsonSchema[] = input.sports.map((sport): JsonSchema => {
     if (sport.is_gym === 0) {
+      const metrics: JsonSchema = {
+        type: 'object',
+        additionalProperties: false,
+        properties: Object.fromEntries(
+          sport.metrics.map((metric) => [
+            metric.key,
+            {
+              ...metric.value_schema,
+              description: `${metric.description}${metric.unit ? ` (${metric.unit})` : ''}`,
+            },
+          ]),
+        ),
+        required: sport.metrics.filter((metric) => metric.required).map((metric) => metric.key),
+      };
+      const partList = nonGym.properties.parts;
+      const part = partList?.items as ObjectSchema | undefined;
+      if (!partList || !part) throw new Error('Missing workout part schema.');
       return {
         ...nonGym,
         properties: {
           ...nonGym.properties,
           sport_id: { type: 'integer', enum: [sport.id] },
-          metrics: {
-            type: 'object',
-            additionalProperties: false,
-            properties: Object.fromEntries(
-              sport.metrics.map((metric) => [
-                metric.key,
-                {
-                  ...metric.value_schema,
-                  description: `${metric.description}${metric.unit ? ` (${metric.unit})` : ''}`,
-                },
-              ]),
-            ),
-            required: sport.metrics.filter((metric) => metric.required).map((metric) => metric.key),
+          metrics,
+          parts: {
+            ...partList,
+            items: { ...part, properties: { ...part.properties, metrics } },
           },
         },
       };

@@ -266,6 +266,19 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
           event.metrics[metric.key] !== event.time_slot.duration
         )
           reject('Whole-session duration metric must equal the time slot duration in seconds.');
+        if (metric.represents_session_duration) {
+          const durations = event.parts.map((part) => part.metrics[metric.key]);
+          if (durations.some((duration) => duration !== undefined)) {
+            if (durations.some((duration) => typeof duration !== 'number' || duration <= 0))
+              reject(
+                'Every workout part must supply a positive duration when part durations are used.',
+              );
+            const total = durations.reduce<number>((sum, duration) => sum + Number(duration), 0);
+            // Allow sub-microsecond floating-point error in fractional-second values.
+            if (!Number.isFinite(total) || Math.abs(total - event.time_slot.duration) > 1e-6)
+              reject('Workout part durations must sum to the time slot duration in seconds.');
+          }
+        }
       }
     }
     validateWorkoutText(event);

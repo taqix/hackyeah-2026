@@ -2,7 +2,7 @@ import type { Href } from 'expo-router';
 
 import type { PreferenceSection } from '@/api/types';
 
-/** Search params of the chat routes, `(tabs)/chat` and `coach`. */
+/** Search params of the chat route, `coach`. */
 export type ChatRouteParams = {
   /** Text placed in the message box, not sent. */
   prefill?: string;

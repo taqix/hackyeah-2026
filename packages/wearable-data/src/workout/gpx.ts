@@ -77,7 +77,10 @@ export function parseGpx(bytes: Uint8Array, result: Extraction, config: Config):
     document.local !== 'gpx' ||
     document.attributes.version !== '1.1'
   )
-    throw new ExtractionError('unsupported_gpx', 'Only namespace-correct GPX 1.1 is supported.');
+    throw new ExtractionError(
+      'unsupported_gpx',
+      'This GPX format is unsupported. Export the activity as FIT or GPX 1.1 and try again.',
+    );
   result.metadata = { creator: document.attributes.creator ?? null };
   function point(node: XmlNode, index: number, entity: string): Sample {
     const p = sample(

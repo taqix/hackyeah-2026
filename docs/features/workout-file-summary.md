@@ -19,7 +19,8 @@ and elevation gain. Its output is suitable for filling a workout summary form.
   per-session/track summaries, provenance, coverage and warnings.
 - Deferred: persistence, authenticated upload endpoint, app file picker/form,
   GPX 1.0, non-activity FIT files, external elevation correction, and whole-file
-  totals across overlapping sessions/tracks.
+  totals across overlapping sessions/tracks. Calories are also deferred: they are
+  a plausible future FIT source metric, not a permanent product exclusion.
 - Raw coordinates, device identifiers and detailed samples are used only inside
   a short-lived parser worker. The returned result contains summaries and counts
   of ignored routes/waypoints. Unknown sensor extensions produce warnings.
@@ -66,12 +67,42 @@ counts, and metrics. Each metric has `value`, `unit`, `origin`, `method`,
 Metrics include distance, elapsed/timer/moving time, elevation gain, average
 speed/pace, and available FIT source heart-rate/power averages. Derived distance,
 moving time and gain are also returned separately from preferred source values.
-Calories are outside the product scope.
+Calories are deferred pending a product decision on how they should be presented.
+
+### Form integration rules
+
+The extraction library returns the complete file shape; the form integration owns
+the user's selection. These rules prevent callers from inventing conflicting
+interpretations of the metric contract:
+
+- A result with one activity preselects that activity for the form. A result with
+  two or more activities must show a session/track picker. It must not silently
+  choose one or combine them. A selected activity becomes one draft workout.
+  Combined multi-sport totals are deferred until the product supports a deliberate
+  multi-activity workout flow.
+- A form's duration uses the first non-null preferred metric in this order:
+  `movingTime`, `timerTime`, then `elapsedTime`. The form shows only that value.
+  It labels the value "Estimated" when it is derived or incomplete, and exposes
+  coverage in a details view when present.
+- The default form shows only preferred `distance` and `elevationGain`. It never
+  shows `derivedDistance`, `derivedMovingTime`, or `derivedElevationGain` beside
+  their preferred counterpart. A future details view may show the derived value,
+  origin, method, coverage and parameters to explain a discrepancy.
+- The full metric envelope is intentional public contract, not display clutter:
+  consumers use `value` for formatting, `complete` for the estimate label, and
+  `origin`/`method`/`coverage` only in details or support diagnostics. Consumers
+  must preserve this envelope rather than flattening it in persisted data.
+
+These rules give the app one presentation path while retaining source and derived
+measurements for review. The upload/form implementation must use them and add
+picker and display-resolver tests before it ships.
 
 Timestamps with explicit offsets normalize to UTC. Local timestamps retain their
 original offset-free value and emit warnings; they cannot drive duration or speed
 calculations. No timezone is inferred from the machine, user or coordinates.
 Unknown sport names are retained; pace is returned only for running/walking/hiking.
+An absent or unrecognised sport uses the general **0.3 m/s** movement threshold,
+which is an explicit conservative fallback pending calibration with real exports.
 
 ### Moving time and distance
 
@@ -94,6 +125,14 @@ geodesic or cumulative-distance intervals. Untimed GPX geometry may produce a
 partial distance estimate; no speed/gap validation is claimed for those intervals.
 Average speed divides complete distance by complete timer time, falling back to
 elapsed time, and declares that basis. It never uses a partial moving-time estimate.
+
+### Unsupported-file recovery
+
+`unsupported_gpx` means the input is not namespace-correct GPX 1.1, including
+GPX 1.0. Its sanitized message tells the caller to export the activity as FIT or
+GPX 1.1 and retry. The upload UI must present that recovery path, rather than a
+generic parse failure. Adding GPX 1.0 support remains a separately scoped parser
+change.
 
 ### Elevation gain
 
@@ -155,7 +194,7 @@ required before merging, following the repository's review convention.
 - [Existing wearable integration](wearable-extraction.md)
 
 Verified locally on 2026-10-04 with Node 24.19.0: locked dependency installation,
-wearable/contracts builds, all **61 wearable tests** (including **23 new workout
+wearable/contracts builds, all **63 wearable tests** (including **25 new workout
 summary cases**), root workspace typechecks, root workspace lint and wearable/
 feature-document formatting pass. No HTTP, storage or mobile UI integration was
 changed, so no new device smoke test was required.

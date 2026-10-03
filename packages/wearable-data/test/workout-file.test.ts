@@ -197,13 +197,19 @@ describe('storage-independent workout file summaries', () => {
     ['', 'empty_file'],
     ['<gpx>', 'invalid_xml'],
     ['<!DOCTYPE gpx [<!ENTITY x "boom">]><gpx>&x;</gpx>', 'invalid_xml'],
-    ['<gpx version="1.0"/>', 'unsupported_gpx'],
+    [
+      '<gpx version="1.0"/>',
+      'unsupported_gpx',
+      'This GPX format is unsupported. Export the activity as FIT or GPX 1.1 and try again.',
+    ],
     [
       '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">&undefined;</gpx>',
       'invalid_xml',
     ],
-  ])('rejects unsupported or malformed XML %s', async (text, code) => {
-    await expect(extractWorkoutSummary(encode(text))).rejects.toMatchObject({ code });
+  ])('rejects unsupported or malformed XML %s', async (text, code, message?) => {
+    const extraction = extractWorkoutSummary(encode(text));
+    if (message) await expect(extraction).rejects.toMatchObject({ code, message });
+    else await expect(extraction).rejects.toMatchObject({ code });
   });
   it('enforces size, count, depth and config limits', async () => {
     const bytes = gpx([

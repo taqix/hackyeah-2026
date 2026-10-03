@@ -1,16 +1,5 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { CalendarScreen } from '@/features/calendar/calendar-screen';
 
 export default function CalendarRoute() {
-  return (
-    <PlaceholderScreen
-      title="Calendar"
-      screenId="10"
-      tab
-      links={[
-        { label: 'Open a session', href: routes.session('demo-session') },
-        { label: 'Plan history', href: '/plan-history' },
-      ]}
-    />
-  );
+  return <CalendarScreen />;
 }

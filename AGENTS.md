@@ -34,6 +34,7 @@ below before changing a feature.
 - [Deployment and rollback](docs/deployment.md)
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)
+- [Design reference: screens, tokens, preview](design/README.md) — read before building UI
 
 An Expo starter exists. Backend, dashboard, shared packages, and CI are planned;
 do not claim planned commands or checks are already available.

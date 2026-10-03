@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "design",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4800", "--directory", "design"],
+      "port": 4800
+    },
+    {
+      "name": "design-any-port",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "exec python3 -m http.server \"$PORT\" --directory design"],
+      "port": 4801,
+      "autoPort": true
+    }
+  ]
+}

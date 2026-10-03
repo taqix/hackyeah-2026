@@ -12,6 +12,16 @@
     "ios": "npm run ios --workspace=@hackyeah/mobile",
     "web": "npm run web --workspace=@hackyeah/mobile",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "build:wearables": "npm run build --workspace=@hackyeah/contracts && npm run build --workspace=@hackyeah/wearable-data",
+    "test:wearables": "npm run build:wearables && npm run test --workspace=@hackyeah/wearable-data",
+    "pretypecheck": "npm run build:wearables",
+    "format:wearables": "prettier --check \"packages/**/*.{ts,json,cjs}\" \"docs/features/wearable-extraction.md\"",
+    "demo:wearables": "npm run build:wearables && node packages/wearable-data/examples/import-fit.ts"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "eslint-config-expo": "57.0.2",
+    "prettier": "3.8.2"
   }
 }

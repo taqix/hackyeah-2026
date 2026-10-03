@@ -6,7 +6,7 @@
 
 **Scope:** Garmin, COROS, Apple Watch through Apple Health
 
-**Status:** architecture specification; no credentials, account connections, or working integrations have been created.
+**Status:** architecture specification with a reusable library implementation in `packages/contracts` and `packages/wearable-data`. See the [implementation and integration guide](../features/wearable-extraction.md) for implemented behavior and remaining release gates. No credentials or live account connections have been created.
 
 ## 1. Document map and interpretation
 

@@ -8,8 +8,9 @@ Root commands include `npm start`, `npm run android`, `npm run ios`,
 `npm run web`, `npm run typecheck`, and `npm run lint`. The current web command
 starts Expo's web target, not the planned standalone React dashboard.
 
-Backend, standalone web, shared packages, database migrations, and CI workflows
-remain unimplemented. Existing scripts are confirmed from package manifests;
+Backend, standalone web and CI workflows remain unimplemented. Shared wearable
+contracts, the extraction library and an additive storage migration are available;
+see the [integration guide](features/wearable-extraction.md). Existing scripts are confirmed from package manifests;
 they have not been executed as part of this documentation change. Commands in
 the target-script table below are planned interfaces.
 

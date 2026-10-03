@@ -1,0 +1,23 @@
+{
+  "name": "@hackyeah/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./wearables": {
+      "types": "./dist/wearables.d.ts",
+      "default": "./dist/wearables.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

@@ -74,8 +74,7 @@ export function Input({
       <View>
         {focused ? (
           <View
-            pointerEvents="none"
-            style={[styles.ring, { borderRadius: radius.control + 4, borderColor: colors.focusRing }]}
+            style={[styles.ring, { pointerEvents: 'none', borderRadius: radius.control + 4, borderColor: colors.focusRing }]}
           />
         ) : null}
         <View

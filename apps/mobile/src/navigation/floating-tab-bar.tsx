@@ -82,9 +82,9 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View
-      pointerEvents="box-none"
       style={[
         styles.container,
+        { pointerEvents: 'box-none' },
         {
           bottom: tabBarBottomOffset(insets.bottom),
           paddingLeft: theme.layout.gutter + insets.left,

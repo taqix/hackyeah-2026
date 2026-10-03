@@ -130,12 +130,12 @@ export function Slider({ label, icon, range, value, onChange, format = String, m
           }}
           style={{ height: SLIDER_HEIGHT }}>
           <Track />
-          <Animated.View pointerEvents="none" style={[trackStyles.fill, { left: 0, backgroundColor: colors.accent }, fillStyle]} />
+          <Animated.View style={[trackStyles.fill, { pointerEvents: 'none', left: 0, backgroundColor: colors.accent }, fillStyle]} />
           <Ticks range={range} marks={marks} width={width} lit={(v) => v <= value} on={(v) => v === value} />
           <Animated.View
-            pointerEvents="none"
             style={[
               trackStyles.thumb,
+              { pointerEvents: 'none' },
               shadows[1],
               { backgroundColor: colors.surfaceCard, borderColor: colors.accent, opacity: width > 0 ? 1 : 0 },
               thumbStyle,

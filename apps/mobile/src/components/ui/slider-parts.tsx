@@ -61,7 +61,7 @@ export function SliderValue({ icon, children }: { icon?: IconName; children: Rea
 /** The grey track line. */
 export function Track() {
   const { colors } = useTheme();
-  return <View pointerEvents="none" style={[styles.track, { backgroundColor: colors.borderStrong }]} />;
+  return <View style={[styles.track, { pointerEvents: 'none', backgroundColor: colors.borderStrong }]} />;
 }
 
 export const trackStyles = StyleSheet.create({
@@ -97,7 +97,7 @@ export function Ticks({ range, marks, width, lit, on }: TicksProps) {
   const count = steps.length;
   const x = (v: number) => centreOf(indexOf(range, v), width, count);
   return (
-    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
+    <View accessible={false} importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {steps.map((v) => (
         <View
           key={`t${v}`}

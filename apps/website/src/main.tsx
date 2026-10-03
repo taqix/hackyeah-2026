@@ -3,4 +3,7 @@ import "./design-system/styles.css";
 import "./site.css";
 import { App } from "./App";
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+const root = document.getElementById("root");
+if (!root) throw new Error("Missing #root; index.html should provide it");
+
+ReactDOM.createRoot(root).render(<App />);

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '@/api';
 import { queryKeys } from '@/api/query-keys';
@@ -56,6 +56,8 @@ export function useSessionsInRange(from: LocalDate | null | undefined, to: Local
     queryKey: queryKeys.sessions(from ?? '', to ?? ''),
     queryFn: () => api.plan.listSessions({ from: from as LocalDate, to: to as LocalDate }),
     enabled: !!from && !!to,
+    // Paging months keeps the last month's marks until the next one arrives.
+    placeholderData: keepPreviousData,
   });
 }
 

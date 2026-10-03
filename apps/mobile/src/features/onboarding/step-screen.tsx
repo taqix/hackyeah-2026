@@ -1,4 +1,4 @@
-import { type Href, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 
 import type { PreferenceSection } from '@/api/types';
@@ -21,7 +21,7 @@ export type OnboardingStepScreenProps = {
   children: ReactNode;
   /** Continue stays disabled until the step's answers are complete. */
   canContinue: boolean;
-  /** Defaults to pushing the next step. */
+  /** Defaults to the next step, or back to Review when the step was opened from there (?from=review). */
   onContinue?: () => void;
   /** Replaces the "N of 5" kicker, e.g. Skip on Good to know (3.4). */
   right?: ReactNode;
@@ -30,7 +30,12 @@ export type OnboardingStepScreenProps = {
 /** Onboarding chrome (prototype StepTop + Next): back, "N of 5", the questions, Continue. */
 export function OnboardingStepScreen({ section, children, canContinue, onContinue, right }: OnboardingStepScreenProps) {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const step = ONBOARDING_ORDER.indexOf(section) + 1;
+  const advance = () => {
+    if (from === 'review' && router.canGoBack()) router.back();
+    else router.push(nextOnboardingRoute(section));
+  };
   return (
     <Screen>
       <TopBar
@@ -44,7 +49,7 @@ export function OnboardingStepScreen({ section, children, canContinue, onContinu
           fullWidth
           iconRight="arrow-right"
           disabled={!canContinue}
-          onPress={onContinue ?? (() => router.push(nextOnboardingRoute(section)))}>
+          onPress={onContinue ?? advance}>
           Continue
         </Button>
       </BottomBar>

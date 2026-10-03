@@ -149,7 +149,7 @@ export function CoachReply({
 }) {
   const foot =
     message.foot === 'nothing_saved' ? (
-      <Fine icon="circle">Nothing saved yet</Fine>
+      <Fine icon="circle-dashed">Nothing saved yet</Fine>
     ) : (
       <Fine icon="lock">Plan unchanged</Fine>
     );

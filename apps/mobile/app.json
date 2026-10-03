@@ -8,9 +8,17 @@
     "scheme": "hackyeah2026",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.hackyeah2026.mobile",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.hackyeah2026.mobile",
+      "permissions": [
+        "android.permission.health.READ_STEPS"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACTIVITY_RECOGNITION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,6 +33,21 @@
     },
     "plugins": [
       "expo-router",
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Pozwól aplikacji odczytywać dzisiejszą liczbę kroków zapisaną przez telefon."
+        }
+      ],
       [
         "expo-splash-screen",
         {

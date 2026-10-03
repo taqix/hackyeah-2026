@@ -459,8 +459,13 @@ export interface SummaryEvidence {
   session_id: string | null;
 }
 
+/** Proposal: the 9.2 section a statement sits under. */
+export type SummaryGroup = 'enjoy' | 'helps' | 'leave_out';
+
 export interface SummaryStatement {
   id: string;
+  /** Proposal: 9.2 groups statements under What you enjoy, What helps, What we leave out. */
+  group: SummaryGroup;
   /** Second person, no "I", no scores, streaks, percentages or praise. */
   text: string;
   source_kind: SummarySourceKind;
@@ -477,6 +482,8 @@ export interface AssistantSummary {
   generated_at: IsoDateTime | null;
   /** With little data it says so (9.1). */
   little_data: boolean;
+  /** Proposal: the card's title on the You tab, "Mornings, on foot." */
+  title: string;
   /** The one-line body on the You tab. */
   headline: string;
   statements: SummaryStatement[];

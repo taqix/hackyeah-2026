@@ -87,7 +87,7 @@ export function feedbackCounts(overview: FeedbackOverview): string {
 
 /** Short sport name for a meta line: "Run", "Strength". */
 export function shortSportName(sportId: string, sports: SportDefinition[] | undefined): string {
-  return activityLabel(sportId, sports).split(' (')[0];
+  return activityLabel(sportId, sports).split(/ \(| \//)[0];
 }
 
 /** "Run · last done Monday", "Mobility · a new idea on 15 Oct", "Walk · tried 20 Oct". */
@@ -95,7 +95,7 @@ export function opinionMeta(opinion: ActivityOpinion, sports: SportDefinition[] 
   const sport = shortSportName(opinion.sport_id, sports);
   const when = whenText(opinion.last_date, today);
   const on = when === 'today' || when === 'yesterday' ? when : `on ${when}`;
-  if (opinion.new_idea) return `${sport} · a new idea ${on}`;
   if (opinion.opinion === 'no') return `${sport} · tried ${when}`;
+  if (opinion.new_idea) return `${sport} · a new idea ${on}`;
   return `${sport} · last done ${when}`;
 }

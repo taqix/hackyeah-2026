@@ -1,0 +1,17 @@
+{
+  "name": "hackyeah-2026",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace=@hackyeah/mobile",
+    "android": "npm run android --workspace=@hackyeah/mobile",
+    "ios": "npm run ios --workspace=@hackyeah/mobile",
+    "web": "npm run web --workspace=@hackyeah/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

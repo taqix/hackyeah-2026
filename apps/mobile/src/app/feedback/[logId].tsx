@@ -1,13 +1,8 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { useLocalSearchParams } from 'expo-router';
+
+import { FeedbackScreen } from '@/features/feedback';
 
 export default function FeedbackRoute() {
-  return (
-    <PlaceholderScreen
-      title="Nice and steady."
-      screenId="7"
-      links={[
-        { label: 'Done', href: '/(tabs)', replace: true },
-      ]}
-    />
-  );
+  const { logId } = useLocalSearchParams<{ logId: string }>();
+  return <FeedbackScreen logId={logId} />;
 }

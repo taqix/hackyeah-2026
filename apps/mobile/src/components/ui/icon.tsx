@@ -1,0 +1,215 @@
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpLeft,
+  Ban,
+  BatteryFull,
+  Bell,
+  Bike,
+  Building2,
+  Calendar,
+  CalendarArrowUp,
+  CalendarCheck,
+  CalendarClock,
+  CalendarDays,
+  CalendarPlus,
+  CalendarRange,
+  CalendarX,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Circle,
+  CircleAlert,
+  CircleCheck,
+  CircleHelp,
+  CirclePlus,
+  Clock,
+  CloudOff,
+  Dumbbell,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  Feather,
+  FileText,
+  FileUp,
+  Flag,
+  Footprints,
+  Globe,
+  Goal,
+  Heart,
+  History,
+  Hourglass,
+  House,
+  Info,
+  ListChecks,
+  LoaderCircle,
+  Lock,
+  LogOut,
+  type LucideIcon,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Minus,
+  Moon,
+  Mountain,
+  Pause,
+  Pencil,
+  PersonStanding,
+  Play,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Route,
+  Search,
+  Settings,
+  ShieldCheck,
+  Shuffle,
+  Signal,
+  SkipForward,
+  SlidersHorizontal,
+  Smartphone,
+  Sprout,
+  Square,
+  Sun,
+  Timer,
+  Trash2,
+  TreePine,
+  Undo2,
+  UserRound,
+  Watch,
+  Waves,
+  Wifi,
+  WifiOff,
+  Wind,
+  X,
+} from 'lucide-react-native';
+import type { ColorValue } from 'react-native';
+
+import { useTheme } from '@/theme';
+
+/**
+ * Lucide icons by their kebab-case name, as the design uses them. Add an entry
+ * here when a screen needs a new one; never use emoji or glyphs as icons.
+ */
+const ICONS = {
+  activity: Activity,
+  'arrow-left': ArrowLeft,
+  'arrow-right': ArrowRight,
+  'arrow-up': ArrowUp,
+  'arrow-up-left': ArrowUpLeft,
+  ban: Ban,
+  'battery-full': BatteryFull,
+  bell: Bell,
+  bike: Bike,
+  'building-2': Building2,
+  calendar: Calendar,
+  'calendar-arrow-up': CalendarArrowUp,
+  'calendar-check': CalendarCheck,
+  'calendar-clock': CalendarClock,
+  'calendar-days': CalendarDays,
+  'calendar-plus': CalendarPlus,
+  'calendar-range': CalendarRange,
+  'calendar-x': CalendarX,
+  check: Check,
+  'chevron-down': ChevronDown,
+  'chevron-left': ChevronLeft,
+  'chevron-right': ChevronRight,
+  'chevron-up': ChevronUp,
+  circle: Circle,
+  'circle-alert': CircleAlert,
+  'circle-check': CircleCheck,
+  'circle-help': CircleHelp,
+  'circle-plus': CirclePlus,
+  clock: Clock,
+  'cloud-off': CloudOff,
+  dumbbell: Dumbbell,
+  ellipsis: Ellipsis,
+  eye: Eye,
+  'eye-off': EyeOff,
+  feather: Feather,
+  'file-text': FileText,
+  'file-up': FileUp,
+  flag: Flag,
+  footprints: Footprints,
+  globe: Globe,
+  goal: Goal,
+  heart: Heart,
+  history: History,
+  hourglass: Hourglass,
+  house: House,
+  info: Info,
+  'list-checks': ListChecks,
+  'loader-circle': LoaderCircle,
+  lock: Lock,
+  'log-out': LogOut,
+  mail: Mail,
+  'map-pin': MapPin,
+  'message-circle': MessageCircle,
+  minus: Minus,
+  moon: Moon,
+  mountain: Mountain,
+  pause: Pause,
+  pencil: Pencil,
+  'person-standing': PersonStanding,
+  play: Play,
+  plus: Plus,
+  'refresh-cw': RefreshCw,
+  'rotate-ccw': RotateCcw,
+  route: Route,
+  search: Search,
+  settings: Settings,
+  'shield-check': ShieldCheck,
+  shuffle: Shuffle,
+  signal: Signal,
+  'skip-forward': SkipForward,
+  'sliders-horizontal': SlidersHorizontal,
+  smartphone: Smartphone,
+  sprout: Sprout,
+  square: Square,
+  sun: Sun,
+  timer: Timer,
+  'trash-2': Trash2,
+  'tree-pine': TreePine,
+  'undo-2': Undo2,
+  'user-round': UserRound,
+  watch: Watch,
+  waves: Waves,
+  wifi: Wifi,
+  'wifi-off': WifiOff,
+  wind: Wind,
+  x: X,
+} satisfies Record<string, LucideIcon>;
+
+export type IconName = keyof typeof ICONS;
+
+export const iconNames = Object.keys(ICONS) as IconName[];
+
+export type IconProps = {
+  name: IconName;
+  /** 16 inline, 20 default, 22 tab bar. */
+  size?: number;
+  /** Defaults to the current text-primary color. */
+  color?: ColorValue;
+  /** 1.75 by default; active tab icons and checks use 2–2.25. */
+  strokeWidth?: number;
+};
+
+/** Decorative by default: put the accessible label on the pressable around it. */
+export function Icon({ name, size = 20, color, strokeWidth = 1.75 }: IconProps) {
+  const { colors } = useTheme();
+  const Component = ICONS[name];
+  return (
+    <Component
+      size={size}
+      color={(color ?? colors.textPrimary) as string}
+      strokeWidth={strokeWidth}
+      absoluteStrokeWidth={false}
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+    />
+  );
+}

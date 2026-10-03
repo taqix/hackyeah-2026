@@ -1,10 +1,12 @@
 # HackYeah 2026
 
-Project workspace for HackYeah 2026: ideas, prototypes, and the implementation developed during the hackathon.
+Project workspace for HackYeah 2026: a beginner sport app helping inactive adults choose a sport and complete encouraging activities.
 
 ## Project status
 
 npm workspaces monorepo. The mobile app in `apps/mobile` uses Expo SDK 57, React Native, TypeScript, and Expo Router. It starts with Expo's default two-tab starter and supports Android, iOS, and web.
+
+The agreed product plan adds NestJS, a React web dashboard, Supabase Auth/PostgreSQL, and AI-generated multi-day plans. Working MVP sports are gym, fitness, running, and football. Backend/dashboard and CI remain planned. pnpm is the target package manager; the current scaffold uses npm until a coordinated migration lands.
 
 ## Getting started
 
@@ -43,6 +45,8 @@ Add future applications under `apps/` and shared packages under `packages/`, eac
 - `.claude/skills/` — skill entries for Claude Code.
 - `skills-lock.json` — installed skill sources and hashes.
 - `.gitignore` — excludes dependencies, build output, caches, and local environment files.
+- `AGENTS.md` and `CLAUDE.md` — compact coding-agent instructions.
+- `docs/` — product scope, development conventions, deployment plan, and a feature template.
 
 ## Installed skills
 
@@ -50,5 +54,15 @@ Add future applications under `apps/` and shared packages under `packages/`, eac
 - **ui-ux-pro-max** — provides UI and UX design guidance and supporting resources.
 
 ## Collaboration
+
+Start feature/documentation branches from `develop` and open PRs against it. Promote reviewed releases to `main` for deployment.
+
+## Project documentation
+
+- [Grilling session summary](docs/grilling-summary.md)
+- [Product scope](docs/product.md)
+- [Development and implementation plan](docs/development.md)
+- [Deployment plan](docs/deployment.md)
+- [Feature template](docs/features/TEMPLATE.md)
 
 Keep setup instructions up to date as the application takes shape. Commit environment variable templates such as `.env.example` when needed, and keep credentials in ignored local environment files.

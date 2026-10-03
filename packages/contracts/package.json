@@ -11,6 +11,10 @@
     "./plan": {
       "types": "./dist/plan.d.ts",
       "default": "./dist/plan.js"
+    },
+    "./workout-file": {
+      "types": "./dist/workout-file.d.ts",
+      "default": "./dist/workout-file.js"
     }
   },
   "scripts": {

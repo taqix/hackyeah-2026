@@ -22,10 +22,16 @@ import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { apiConfig } from '@/api/config';
 import { queryClient } from '@/api/query-client';
+import { AuthSessionSync } from '@/features/auth/session-sync';
+import { SetupScreen } from '@/features/setup/setup-screen';
 import { fontFamily, ThemeProvider, useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
+
+/** A Supabase build without its URL or key shows the setup screen, never the mock. */
+const needsSetup = apiConfig.mode === 'supabase' && !apiConfig.configured;
 
 // Every weight is its own family on native: register exactly the names in tokens.
 const FONTS = {
@@ -53,7 +59,14 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <RootNavigator />
+            {needsSetup ? (
+              <SetupScreen missing={apiConfig.missing} />
+            ) : (
+              <>
+                <AuthSessionSync />
+                <RootNavigator />
+              </>
+            )}
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

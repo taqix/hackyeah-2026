@@ -10,15 +10,13 @@ import { Text } from '@/components/ui/text';
 import { useTheme } from '@/theme';
 
 import { TAB_BAR_HEIGHT, tabBarBottomOffset } from './bottom-clearance';
-import { useChatPlacement } from './chat-placement';
 import { useOpenChat } from './open-chat';
 
-type TabRoute = 'index' | 'calendar' | 'chat' | 'you';
+type TabRoute = 'index' | 'calendar' | 'you';
 
 const TAB_ITEMS: { route: TabRoute; label: string; icon: IconName }[] = [
   { route: 'index', label: 'Today', icon: 'sun' },
   { route: 'calendar', label: 'Calendar', icon: 'calendar' },
-  { route: 'chat', label: 'Chat', icon: 'message-circle' },
   { route: 'you', label: 'You', icon: 'user-round' },
 ];
 
@@ -46,15 +44,14 @@ function useAndroidKeyboardVisible() {
 }
 
 /**
- * Floating pill tab bar (prototype NavBar + ChatButton). The active tab widens and
- * shows its label. Variant `button` drops Chat from the bar and adds a round chat
- * button level with it.
+ * Floating pill tab bar (prototype NavBar + ChatButton): Today · Calendar · You, the
+ * active tab widened with its label, and the dark round chat button level with the bar.
+ * Chat opens full screen over the current tab (design decision, develop 1e4c8e4).
  */
 export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const theme = useTheme();
   const { colors } = theme;
   const insets = useSafeAreaInsets();
-  const [placement] = useChatPlacement();
   const keyboardVisible = useAndroidKeyboardVisible();
   const reducedMotion = useReducedMotion();
   const openChat = useOpenChat();
@@ -62,7 +59,6 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   if (keyboardVisible) return null;
 
   const focusedName = state.routes[state.index]?.name;
-  const items = placement === 'button' ? TAB_ITEMS.filter((item) => item.route !== 'chat') : TAB_ITEMS;
   const layoutTransition =
     reducedMotion || Platform.OS === 'web'
       ? undefined
@@ -116,7 +112,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.barFill }]} />
             </>
           ) : null}
-          {items.map((item) => {
+          {TAB_ITEMS.map((item) => {
             const active = item.route === focusedName;
             return (
               <Animated.View
@@ -157,20 +153,18 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           })}
         </View>
       </View>
-      {placement === 'button' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Chat"
-          onPress={() => openChat()}
-          style={({ pressed }) => [
-            styles.chatButton,
-            theme.shadows[2],
-            { backgroundColor: colors.surfaceInverse },
-            pressed && { transform: [{ scale: theme.motion.pressScale }] },
-          ]}>
-          <Icon name="message-circle" size={24} strokeWidth={2} color={colors.textInverse} />
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Chat"
+        onPress={() => openChat()}
+        style={({ pressed }) => [
+          styles.chatButton,
+          theme.shadows[2],
+          { backgroundColor: colors.surfaceInverse },
+          pressed && { transform: [{ scale: theme.motion.pressScale }] },
+        ]}>
+        <Icon name="message-circle" size={24} strokeWidth={2} color={colors.textInverse} />
+      </Pressable>
     </View>
   );
 }

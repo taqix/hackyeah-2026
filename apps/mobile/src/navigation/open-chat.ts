@@ -1,6 +1,5 @@
 import { useRouter } from 'expo-router';
 
-import { useChatPlacement } from './chat-placement';
 import type { ChatRouteParams } from './routes';
 
 export type OpenChatOptions = {
@@ -20,18 +19,13 @@ function chatParams({ prefill, aboutSessionId, intent }: OpenChatOptions): ChatR
 }
 
 /**
- * The only way to open chat. Tab placement switches to the Chat tab; button
- * placement opens chat full screen over the current screen.
+ * The only way to open chat: full screen over the current screen, from the chat
+ * button beside the tab bar or from any entry point that fills or attaches something.
  */
 export function useOpenChat() {
   const router = useRouter();
-  const [placement] = useChatPlacement();
   return (options: OpenChatOptions = {}) => {
     const params = chatParams(options);
-    if (placement === 'button') {
-      router.push({ pathname: '/coach', params });
-    } else {
-      router.navigate({ pathname: '/(tabs)/chat', params });
-    }
+    router.push({ pathname: '/coach', params });
   };
 }

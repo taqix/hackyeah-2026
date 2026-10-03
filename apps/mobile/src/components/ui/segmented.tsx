@@ -34,7 +34,7 @@ export function Segmented<T extends string | number | boolean>({ label, options,
             onPress={() => onChange(option.value)}
             accessibilityRole="radio"
             accessibilityLabel={option.unit ? `${option.label} ${option.unit}` : option.label}
-            accessibilityState={{ checked: on }}
+            aria-checked={on}
             style={{
               flex: 1,
               minWidth: 0,

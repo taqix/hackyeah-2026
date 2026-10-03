@@ -24,7 +24,7 @@ export function GoogleButton({ onPress, loading = false, disabled = false }: Goo
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
-      accessibilityState={{ disabled: inactive, busy: loading }}
+      aria-disabled={inactive} aria-busy={loading}
       style={({ pressed }) => [
         styles.base,
         {

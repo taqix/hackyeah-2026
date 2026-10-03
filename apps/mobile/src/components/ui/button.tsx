@@ -79,7 +79,7 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: inactive, busy: loading }}
+      aria-disabled={inactive} aria-busy={loading}
       style={({ pressed }) => {
         const v = look(variant, colors, pressed);
         return [

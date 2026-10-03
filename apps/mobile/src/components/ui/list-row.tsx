@@ -93,7 +93,7 @@ export function ListRow({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
+      aria-disabled={disabled}
       style={rowStyle}>
       {content}
     </PressableScale>

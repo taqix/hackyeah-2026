@@ -64,7 +64,7 @@ export function NumberStepper({
         hitSlop={SLOP}
         accessibilityRole="button"
         accessibilityLabel={`${dir < 0 ? 'Decrease' : 'Increase'} ${label.toLowerCase()}`}
-        accessibilityState={{ disabled }}
+        aria-disabled={disabled}
         style={({ pressed }) => [
           styles.button,
           { backgroundColor: pressed ? colors.borderSubtle : colors.surfaceSunken, opacity: disabled ? 0.4 : 1 },

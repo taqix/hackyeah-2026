@@ -26,7 +26,7 @@ export function Tag({ label, icon, selected = false, onPress, disabled = false, 
       hitSlop={{ top: 2, bottom: 2 }}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected, disabled }}
+      aria-selected={selected} aria-disabled={disabled}
       style={({ pressed }) => [
         {
           flexDirection: 'row',

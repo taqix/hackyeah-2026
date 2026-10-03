@@ -123,7 +123,7 @@ function PastChange({ message, onExpand }: { message: ChangeMessage; onExpand: (
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${stampLabel(message.created_at, current)}. ${change.summary}`}
       accessibilityHint="Shows what changed"
-      accessibilityState={{ expanded: false }}
+      aria-expanded={false}
       style={({ pressed }) => ({
         alignSelf: 'stretch',
         flexDirection: 'row',

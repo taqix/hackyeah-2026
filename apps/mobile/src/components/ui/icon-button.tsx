@@ -53,7 +53,7 @@ export function IconButton({
       hitSlop={slop}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      aria-disabled={disabled}
       style={({ pressed }) => {
         const v = look(variant, colors, pressed);
         return [

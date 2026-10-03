@@ -72,7 +72,7 @@ function Option({ label, disabled, onPress }: { label: string; disabled: boolean
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+      aria-disabled={disabled}
       style={({ pressed }) => ({
         height: 44,
         paddingHorizontal: 16,
@@ -110,7 +110,7 @@ function QuietOption({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={note ? `${label}. ${note}` : label}
-        accessibilityState={{ disabled }}
+        aria-disabled={disabled}
         style={{ minHeight: 44, justifyContent: 'center', opacity: disabled ? 0.4 : 1 }}>
         <Text
           style={{

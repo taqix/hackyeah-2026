@@ -124,7 +124,7 @@ function DayCell({ date, items, today, plannedThrough, selected, onSelect }: Day
       disabled={ahead}
       accessibilityRole="button"
       accessibilityLabel={dayAccessibilityLabel(date, items, { today, plannedThrough })}
-      accessibilityState={{ selected, disabled: ahead }}
+      aria-selected={selected} aria-disabled={ahead}
       style={[styles.cell, styles.day]}>
       <View
         style={[

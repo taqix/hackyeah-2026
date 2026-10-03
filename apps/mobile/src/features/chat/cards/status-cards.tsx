@@ -31,7 +31,7 @@ export function UpdatingCard() {
       accessible
       accessibilityRole="progressbar"
       accessibilityLabel={`Updating your plan. ${KEEPS}`}
-      accessibilityState={{ busy: true }}
+      aria-busy={true}
       aria-live="polite">
       <Band divider={false} style={{ paddingTop: 16, paddingBottom: 14 }}>
         <Head icon="loader-circle" tone="accent" title="Updating your plan" spin />

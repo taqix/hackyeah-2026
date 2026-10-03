@@ -47,7 +47,7 @@ export function WeekStrip({ days, today, selected, onSelect }: WeekStripProps) {
             onPress={onSelect ? () => onSelect(day.date) : undefined}
             accessibilityRole={onSelect ? 'button' : undefined}
             accessibilityLabel={stripDayLabel(day, isToday)}
-            accessibilityState={onSelect ? { selected: isSelected } : undefined}
+            aria-selected={onSelect ? isSelected : undefined}
             style={styles.day}>
             <DayLetter date={day.date} isToday={isToday} />
             <View

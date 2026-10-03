@@ -14,7 +14,7 @@ const MAX_MARKS = 4;
 /** Decorative: each day's label already says it in words. aria-hidden works on iOS, Android and web. */
 const hidden = { 'aria-hidden': true } as const;
 
-/** One session under its date: done is filled, planned is the accent, skipped is a hollow ring. */
+/** One session under its date: done is filled, planned is the accent, skipped or not logged is a dashed ring. */
 export function Mark({ state, size = 6 }: { state: MarkState; size?: number }) {
   const { colors } = useTheme();
   const look =
@@ -22,7 +22,7 @@ export function Mark({ state, size = 6 }: { state: MarkState; size?: number }) {
       ? { backgroundColor: colors.success }
       : state === 'planned'
         ? { backgroundColor: colors.accent }
-        : { borderWidth: 1.5, borderColor: colors.textTertiary };
+        : { borderWidth: 1.5, borderStyle: 'dashed' as const, borderColor: colors.textTertiary };
   return <View style={[{ width: size, height: size, borderRadius: size / 2 }, look]} />;
 }
 
@@ -39,7 +39,7 @@ export function Legend() {
     <View style={styles.legend} {...hidden}>
       {item('done', 'Done')}
       {item('planned', 'Planned')}
-      {item('skipped', 'Skipped')}
+      {item('skipped', 'Skipped or not logged')}
     </View>
   );
 }
@@ -143,7 +143,7 @@ function DayCell({ date, items, today, plannedThrough, selected, onSelect }: Day
       </View>
       <View style={styles.marks}>
         {(items ?? []).slice(0, MAX_MARKS).map((item) => (
-          <Mark key={item.key} state={markState(item)} />
+          <Mark key={item.key} state={markState(item, today)} />
         ))}
       </View>
     </PressableScale>

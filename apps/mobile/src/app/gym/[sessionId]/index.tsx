@@ -1,15 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { GymSessionScreen } from '@/features/gym';
 
+/** Guided gym 6.3–6.7. */
 export default function GymRoute() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  return (
-    <PlaceholderScreen
-      title="Guided gym"
-      screenId="6.3–6.7"
-      links={[{ label: 'Finish', href: routes.gymReview(sessionId, 'demo-log'), replace: true }]}
-    />
-  );
+  return <GymSessionScreen key={sessionId} sessionId={sessionId} />;
 }

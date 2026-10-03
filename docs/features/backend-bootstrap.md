@@ -20,7 +20,7 @@ start command and a stable health endpoint, including a local Docker option.
 
 - [x] `GET /health` responds with HTTP 200 and exactly `{"status":"ok"}`.
 - [x] `npm run dev:backend` starts the API on port 3000, with optional `PORT`
-      and `HOST` values in `apps/backend/.env`.
+  and `HOST` values in `apps/backend/.env`.
 - [x] A real HTTP test covers the health response.
 - [x] `docker compose up --build` runs the backend on local port 3000.
 - [x] The Docker image contains backend runtime dependencies, not Expo.

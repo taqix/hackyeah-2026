@@ -8,7 +8,7 @@
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src test",
-    "format:check": "prettier --config ../../packages/.prettierrc.json --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/*.mjs\"",
     "test": "node scripts/test.mjs",
     "prebuild": "npm run build --workspace=@hackyeah/contracts",
     "predev": "npm run build --workspace=@hackyeah/contracts",

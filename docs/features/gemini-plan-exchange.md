@@ -188,7 +188,7 @@ npm run test:plans
 npm run typecheck
 npm run lint
 npm run format:check
-node_modules/.bin/prettier --config packages/.prettierrc.json --check 'packages/contracts/src/plan*.ts' 'packages/contracts/src/schemas/*.json' 'apps/backend/src/*.ts' 'apps/backend/test/**/*.ts' 'apps/backend/test/fixtures/*.json' 'apps/backend/scripts/*.mjs' docs/features/gemini-plan-exchange.md
+node_modules/.bin/prettier --config packages/.prettierrc.json --check 'packages/contracts/src/plan*.ts' 'packages/contracts/src/schemas/*.json' 'apps/backend/test/fixtures/*.json' docs/features/gemini-plan-exchange.md
 git diff --check
 ```
 

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile } from "node:fs/promises";
 
 import {
   buildGeminiOutputSchema,
@@ -6,8 +6,8 @@ import {
   parsePlanOutput,
   type PlanInput,
   type PlanOutput,
-} from '@hackyeah/contracts/plan';
-import { PLAN_GENERATION_CONFIG } from './plan-config.js';
+} from "@hackyeah/contracts/plan";
+import { PLAN_GENERATION_CONFIG } from "./plan-config.js";
 
 export class PlanGenerationError extends Error {
   constructor(
@@ -15,7 +15,7 @@ export class PlanGenerationError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'PlanGenerationError';
+    this.name = "PlanGenerationError";
   }
 }
 
@@ -24,7 +24,7 @@ function fail(code: string, message: string): never {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export interface PlanOptions {
@@ -49,42 +49,55 @@ export async function generatePlan(
 ): Promise<PlanOutput> {
   const preferences = parsePlanInput(value);
   if (!Number.isFinite(new Date(now).getTime()))
-    fail('CONFIGURATION', 'now must be a valid timestamp.');
-  if (preferences.mode === 'create' && !preferences.available_slots.length)
+    fail("CONFIGURATION", "now must be a valid timestamp.");
+  if (preferences.mode === "create" && !preferences.available_slots.length)
     return { events: [], message: null };
   let serialized;
   try {
     serialized = JSON.stringify(preferences, (_key, value) => {
       if (
         value === undefined ||
-        typeof value === 'function' ||
-        typeof value === 'symbol' ||
-        (typeof value === 'number' && !Number.isFinite(value))
+        typeof value === "function" ||
+        typeof value === "symbol" ||
+        (typeof value === "number" && !Number.isFinite(value))
       )
-        throw new Error('Not JSON');
+        throw new Error("Not JSON");
       return value;
     });
   } catch {
-    fail('INVALID_INPUT', 'The planning request must contain serializable JSON values.');
+    fail(
+      "INVALID_INPUT",
+      "The planning request must contain serializable JSON values.",
+    );
   }
-  if (!serialized || serialized === 'null')
-    fail('INVALID_INPUT', 'The planning request must contain serializable JSON.');
+  if (!serialized || serialized === "null")
+    fail(
+      "INVALID_INPUT",
+      "The planning request must contain serializable JSON.",
+    );
   if (Buffer.byteLength(serialized) > PLAN_GENERATION_CONFIG.maxRequestBytes)
     fail(
-      'INPUT_TOO_LARGE',
-      'The complete planning context exceeds the request size limit. Conversation was not truncated.',
+      "INPUT_TOO_LARGE",
+      "The complete planning context exceeds the request size limit. Conversation was not truncated.",
     );
-  if (typeof apiKey !== 'string' || !apiKey.trim())
-    fail('CONFIGURATION', 'Set GEMINI_API_KEY on the server.');
-  if (typeof model !== 'string' || !/^[a-zA-Z0-9._-]+$/.test(model))
-    fail('CONFIGURATION', 'Set GEMINI_MODEL to a model ID from AI Studio (without models/).');
+  if (typeof apiKey !== "string" || !apiKey.trim())
+    fail("CONFIGURATION", "Set GEMINI_API_KEY on the server.");
+  if (typeof model !== "string" || !/^[a-zA-Z0-9._-]+$/.test(model))
+    fail(
+      "CONFIGURATION",
+      "Set GEMINI_MODEL to a model ID from AI Studio (without models/).",
+    );
   let systemPrompt;
   try {
-    systemPrompt = await readFile(PLAN_GENERATION_CONFIG.systemPromptFile, 'utf8');
+    systemPrompt = await readFile(
+      PLAN_GENERATION_CONFIG.systemPromptFile,
+      "utf8",
+    );
   } catch {
-    fail('CONFIGURATION', 'Cannot read the bundled planning system prompt.');
+    fail("CONFIGURATION", "Cannot read the bundled planning system prompt.");
   }
-  if (!systemPrompt.trim()) fail('CONFIGURATION', 'The system prompt file must not be empty.');
+  if (!systemPrompt.trim())
+    fail("CONFIGURATION", "The system prompt file must not be empty.");
 
   const requestBody = JSON.stringify({
     systemInstruction: {
@@ -96,7 +109,7 @@ export async function generatePlan(
     },
     contents: [
       {
-        role: 'user',
+        role: "user",
         parts: [
           {
             text: `Process this validated ${preferences.mode} workout planning request. The conversation contains all preceding messages; user_prompt is the newest message:\n${serialized}`,
@@ -105,7 +118,7 @@ export async function generatePlan(
       },
     ],
     generationConfig: {
-      responseMimeType: 'application/json',
+      responseMimeType: "application/json",
       responseJsonSchema: buildGeminiOutputSchema(preferences),
       maxOutputTokens: PLAN_GENERATION_CONFIG.maxOutputTokens,
       candidateCount: 1,
@@ -113,8 +126,8 @@ export async function generatePlan(
   });
   if (Buffer.byteLength(requestBody) > PLAN_GENERATION_CONFIG.maxRequestBytes)
     fail(
-      'INPUT_TOO_LARGE',
-      'The complete planning context and sport schema exceed the request size limit. Conversation was not truncated.',
+      "INPUT_TOO_LARGE",
+      "The complete planning context and sport schema exceed the request size limit. Conversation was not truncated.",
     );
 
   let response;
@@ -124,8 +137,11 @@ export async function generatePlan(
     response = await fetchImpl(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         signal,
         body: requestBody,
       },
@@ -134,50 +150,69 @@ export async function generatePlan(
   } catch (error) {
     if (
       signal.aborted ||
-      (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError'))
+      (error instanceof Error &&
+        (error.name === "TimeoutError" || error.name === "AbortError"))
     )
-      fail('TIMEOUT', 'Plan generation timed out. Try again.');
+      fail("TIMEOUT", "Plan generation timed out. Try again.");
     if (error instanceof SyntaxError)
-      fail('INVALID_RESPONSE', 'Gemini returned an invalid response.');
-    fail('NETWORK', 'Could not reach Gemini. Check the connection and try again.');
+      fail("INVALID_RESPONSE", "Gemini returned an invalid response.");
+    fail(
+      "NETWORK",
+      "Could not reach Gemini. Check the connection and try again.",
+    );
   }
   // Do not expose provider response bodies: they may contain submitted preferences.
   if (!response.ok) {
     if ([401, 403].includes(response.status))
-      fail('AUTHENTICATION', 'Gemini rejected the API key or project permissions.');
+      fail(
+        "AUTHENTICATION",
+        "Gemini rejected the API key or project permissions.",
+      );
     if (response.status === 402)
       fail(
-        'BILLING',
-        'Gemini requires billing or available credits. Check the project billing in Google AI Studio.',
+        "BILLING",
+        "Gemini requires billing or available credits. Check the project billing in Google AI Studio.",
       );
     if (response.status === 429)
-      fail('RATE_LIMIT', 'Gemini quota or rate limit reached. Try again later.');
+      fail(
+        "RATE_LIMIT",
+        "Gemini quota or rate limit reached. Try again later.",
+      );
     fail(
-      'PROVIDER',
+      "PROVIDER",
       `Gemini request failed (HTTP ${response.status}). Check the model and project configuration.`,
     );
   }
   const envelope = isRecord(payload) ? payload : undefined;
   if (isRecord(envelope?.promptFeedback) && envelope.promptFeedback.blockReason)
-    fail('BLOCKED', 'Gemini blocked this plan request.');
-  const candidate = Array.isArray(envelope?.candidates) ? envelope.candidates[0] : undefined;
-  if (!isRecord(candidate)) fail('INVALID_RESPONSE', 'Gemini did not return a plan.');
-  if (candidate.finishReason !== 'STOP')
-    fail('INCOMPLETE', 'Gemini did not complete the plan. Try again or simplify the preferences.');
-  const parts = isRecord(candidate.content) ? candidate.content.parts : undefined;
-  if (!Array.isArray(parts)) fail('INVALID_RESPONSE', 'Gemini returned no plan content.');
+    fail("BLOCKED", "Gemini blocked this plan request.");
+  const candidate = Array.isArray(envelope?.candidates)
+    ? envelope.candidates[0]
+    : undefined;
+  if (!isRecord(candidate))
+    fail("INVALID_RESPONSE", "Gemini did not return a plan.");
+  if (candidate.finishReason !== "STOP")
+    fail(
+      "INCOMPLETE",
+      "Gemini did not complete the plan. Try again or simplify the preferences.",
+    );
+  const parts = isRecord(candidate.content)
+    ? candidate.content.parts
+    : undefined;
+  if (!Array.isArray(parts))
+    fail("INVALID_RESPONSE", "Gemini returned no plan content.");
   const text = parts
     .filter(
       (part): part is Record<string, unknown> =>
-        isRecord(part) && !part.thought && typeof part.text === 'string',
+        isRecord(part) && !part.thought && typeof part.text === "string",
     )
     .map((part) => part.text)
-    .join('');
+    .join("");
   let plan;
   try {
     plan = JSON.parse(text);
   } catch {
-    fail('INVALID_RESPONSE', 'Gemini returned invalid plan JSON.');
+    fail("INVALID_RESPONSE", "Gemini returned invalid plan JSON.");
   }
   const validated = parsePlanOutput(plan, preferences, now);
   if (reviewContent) await reviewContent(validated, preferences);

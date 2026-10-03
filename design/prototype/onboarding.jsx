@@ -11,6 +11,9 @@
        No preferred time saves []. No obstacle saves null. Both "Good to know"
        questions are optional.
    Not asked: timezone (from the device) and excluded_activity_types (starts as []).
+   Review also connects the calendar: the plan needs free time slots (LLM_SCHEMA.md
+   available_slots), and calendar access must come from an explicit tap
+   (docs/features/device-calendar.md on develop).
    Loaded before screens.jsx. Layout helpers (TopBar, Content, BottomBar, Steps, Col, Row,
    H1, Body, Section, Kicker) and DS components resolve at render time. */
 (() => {
@@ -68,17 +71,19 @@ const PREF_OPTIONS={
   ],
 };
 
-/* The example user from docs/plan-creation/examples/initial.input.json. */
+/* Ana, the demo user every flow shows: Home (home.jsx) plans her week from these answers
+   and the You tab (profile.jsx) shows them. The doc fixture examples/initial.input.json is
+   a different person (two 10-minute sessions, walk and strength). */
 const SAMPLE_PREFS={
   timezone:"Europe/Warsaw",
   starting_comfort:"starting_out",
-  sessions_per_week:2,
-  session_minutes:10,
-  activity_interests:["walking","strength"],
-  available_locations:["outdoors","gym"],
+  sessions_per_week:3,
+  session_minutes:20,
+  activity_interests:["walking","running"],
+  available_locations:["outdoors","home"],
   available_equipment:[],
-  preferred_times:["lunch","evening"],
-  discovery_preference:"selected_only",
+  preferred_times:["morning"],
+  discovery_preference:"occasional",
   avoidances:["jumping"],
   starting_obstacle:"time",
   excluded_activity_types:[],
@@ -265,6 +270,8 @@ function Activities({initial}){
 function Places({initial}){
   const [p,set,toggle]=usePrefs(initial);
   const askSwim=p.activity_interests.includes("swimming")||(p.available_locations.includes("pool")&&discoveryOf(p)!=="selected_only");
+  /* Cycling needs a bicycle or a stationary bike (PREFERENCES.md). Say so; don't block. */
+  const noBike=p.activity_interests.includes("cycling")&&!p.available_equipment.some(e=>e==="bicycle"||e==="stationary_bike");
   return (
     <>
       <StepTop step={4}/>
@@ -284,6 +291,7 @@ function Places({initial}){
             {PREF_OPTIONS.available_equipment.map(o=><Tag key={o.value} selected={p.available_equipment.includes(o.value)} onClick={()=>toggle("available_equipment",o.value)}>{o.label}</Tag>)}
             <Tag selected={!p.available_equipment.length} onClick={()=>set("available_equipment",[])}>No equipment</Tag>
           </Chips>
+          {noBike?<Row gap={8} style={{alignItems:"flex-start"}}><Icon name="bike" size={16} color="var(--text-secondary)" style={{marginTop:1}}/><span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>Bike sessions need a bicycle or a stationary bike. Without one, we'll leave biking out.</span></Row>:null}
         </Col>
       </Content>
       <Next disabled={!p.available_locations.length}/>
@@ -329,7 +337,7 @@ function Extras({initial}){
    Build plan sends the values with the device timezone. */
 function ReviewRow({icon,label,value,detail,divider}){
   return (
-    <button type="button" style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"12px 0",border:0,borderTop:divider?"1px solid var(--border-subtle)":"none",background:"transparent",color:"var(--text-primary)",textAlign:"left",cursor:"pointer"}}>
+    <button type="button" style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"10px 0",border:0,borderTop:divider?"1px solid var(--border-subtle)":"none",background:"transparent",color:"var(--text-primary)",textAlign:"left",cursor:"pointer"}}>
       <span style={{width:40,height:40,borderRadius:99,background:"var(--accent-soft)",color:"var(--accent-text)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><Icon name={icon} size={18}/></span>
       <Col gap={2} style={{flex:1,minWidth:0}}>
         <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)"}}>{label}</span>
@@ -340,7 +348,28 @@ function ReviewRow({icon,label,value,detail,divider}){
     </button>
   );
 }
-function Review({initial}){
+/* Calendar access, asked with an explicit tap. The plan is built from its free time;
+   events themselves never leave the phone. `state`: off · connected · denied. */
+const CALENDAR={
+  off:{icon:"calendar",value:"Not connected",detail:"We only see when you're busy.",action:"Connect"},
+  connected:{icon:"calendar-check",value:"Connected",detail:"Busy times only, never what's in your events."},
+  denied:{icon:"calendar-x",value:"Access is off",detail:"Without it, we use your preferred times.",action:"Settings"},
+};
+function CalendarRow({state="off"}){
+  const c=CALENDAR[state];
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 0",borderTop:"1px solid var(--border-subtle)"}}>
+      <span style={{width:40,height:40,borderRadius:99,background:state==="denied"?"var(--surface-sunken)":"var(--accent-soft)",color:state==="denied"?"var(--text-secondary)":"var(--accent-text)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><Icon name={c.icon} size={18}/></span>
+      <Col gap={2} style={{flex:1,minWidth:0}}>
+        <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)"}}>Calendar</span>
+        <span style={{font:"600 var(--text-base)/1.3 var(--font-body)"}}>{c.value}</span>
+        <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)",textWrap:"pretty"}}>{c.detail}</span>
+      </Col>
+      {c.action?<Button variant="secondary" size="sm" style={{height:44}}>{c.action}</Button>:<Icon name="check" size={18} color="var(--success-text)"/>}
+    </div>
+  );
+}
+function Review({initial,calendar="off"}){
   const [p]=usePrefs(initial);
   const n=p.sessions_per_week, avoid=p.avoidances||[];
   const swim=p.comfortable_swimming===true?"comfortable swimming":p.comfortable_swimming===false?"not swimming yet":null;
@@ -363,7 +392,7 @@ function Review({initial}){
           <H1>Looks right?</H1>
           <Body>We'll build your first week from this. Tap anything to change it.</Body>
         </Col>
-        <Col gap={0}>{rows.map((r,i)=><ReviewRow key={r.label} {...r} divider={i>0}/>)}</Col>
+        <Col gap={0}>{rows.map((r,i)=><ReviewRow key={r.label} {...r} divider={i>0}/>)}<CalendarRow state={calendar}/></Col>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <Icon name="globe" size={16} color="var(--text-tertiary)"/>
           <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)"}}>Times use your phone's time zone, {p.timezone}.</span>
@@ -381,8 +410,10 @@ const ONBOARDING_SCREENS=[
   {id:"activities-none",label:"3.2 · Activities: none picked",C:()=><Activities initial={{activity_interests:[],discovery_preference:"explore"}}/>},
   {id:"places",label:"3.3 · Places",C:Places},
   {id:"places-swim",label:"3.3 · Places: swimming check",C:()=><Places initial={{activity_interests:["walking","swimming"],available_locations:["outdoors","pool"]}}/>},
+  {id:"places-bike",label:"3.3 · Places: bike, no bicycle",C:()=><Places initial={{activity_interests:["walking","cycling"]}}/>},
   {id:"extras",label:"3.4 · Good to know (optional)",C:Extras},
-  {id:"review",label:"4 · Review",C:Review},
+  {id:"review",label:"4 · Review",C:Review,note:"Connect asks for calendar access, so sessions land in free time. Events never leave the phone."},
+  {id:"review-calendar-off",label:"4.1 · Review: calendar access off",C:()=><Review calendar="denied"/>,note:"Access was refused. Settings opens the phone's settings; the plan can still be built."},
 ];
 
 Object.assign(window,{ONBOARDING_SCREENS,PREF_OPTIONS,SAMPLE_PREFS,Question,Chips,Segmented,CheckTile,SwimCheck});

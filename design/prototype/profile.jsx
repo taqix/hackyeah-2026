@@ -1,10 +1,12 @@
 /* Profile — the You tab, screens 9–9.6 (see README › Profile).
    One question: what do I prefer, and how does the app see me? Three layers, kept apart:
      answers    the person's own choices; only they change them    PREFERENCES.md fields
-     feedback   "Would you choose this again?" per session card,   repeat_choice,
+     feedback   "Would you choose this again?" per session,         proposed (no doc yet),
                 and whole activities they switched off             excluded_activity_types
      summary    our assistant's description of the two above.      Never the record:
                 Every statement names its source                   rebuilt from the layers
+   The feedback answer and the summary go beyond the current docs: the plan contract takes
+   only answers and free time slots (README › Profile › Not decided yet).
    Answers are edited with the onboarding questions themselves (9.4): same pieces, same
    PREF_OPTIONS labels, edit chrome instead of steps. Ana's sessions follow home.jsx.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
@@ -14,7 +16,7 @@
 (() => {
 const { Icon, Button, IconButton, Card, SuggestionCard } = window.DS;
 
-/* Ana on Wednesday 22 October, week 3, in the stored shape. */
+/* Ana on Wednesday 21 October 2026, week 3, in the stored shape (same as onboarding's SAMPLE_PREFS). */
 const ANA={
   timezone:"Europe/Warsaw", starting_comfort:"starting_out", sessions_per_week:3, session_minutes:20,
   activity_interests:["walking","running"], available_locations:["outdoors","home"],
@@ -149,7 +151,7 @@ function Summary(){
         </Col>
         <Col gap={2}>
           <Section>What we leave out</Section>
-          <Statement source="Your answers · your feedback on 21 Oct" icon="ban">Jumping, and the hill walk for now.</Statement>
+          <Statement source="Your answers · your feedback on 20 Oct" icon="ban">Jumping, and the hill walk for now.</Statement>
         </Col>
         <Note icon="lock">Only you change how often, how long and when. We never raise them on our own.</Note>
         <Caption>Written by our assistant from these sources. Something off? Change the answer behind it.</Caption>
@@ -172,10 +174,10 @@ function Why(){
           <IconButton icon="x" label="Close"/>
         </Row>
         <Col gap={0} style={{padding:"0 4px"}}>
-          <Evidence title="Walk-run intervals" detail="Monday 20 Oct · you said yes"/>
-          <Evidence title="Easy walk" detail="Saturday 18 Oct · you said yes" divider/>
-          <Evidence title="Walk-run intervals" detail="Monday 13 Oct · you said yes" divider/>
-          <Evidence title="Walk-run intervals" detail="Wednesday 8 Oct · you said yes" divider/>
+          <Evidence title="Walk-run intervals" detail="Monday 19 Oct · you said yes"/>
+          <Evidence title="Easy walk" detail="Saturday 17 Oct · you said yes" divider/>
+          <Evidence title="Walk-run intervals" detail="Monday 12 Oct · you said yes" divider/>
+          <Evidence title="Walk-run intervals" detail="Wednesday 7 Oct · you said yes" divider/>
         </Col>
         <Row gap={8} style={{alignItems:"flex-start",padding:"0 4px"}}>
           <Icon name="info" size={16} color="var(--text-tertiary)" style={{marginTop:1}}/>
@@ -214,7 +216,7 @@ function EditTime(){
             {PREF_OPTIONS.preferred_times.map(o=><CheckTile key={o.value} icon={o.icon} label={o.label} detail={o.range} checked={p.preferred_times.includes(o.value)} onClick={()=>toggle(o.value)}/>)}
           </div>
         </Col>
-        <Note icon="calendar-clock">We plan between 7:00 and 21:00, around what's in your calendar.</Note>
+        <Note icon="calendar-clock">We plan around what's in your calendar and try your preferred times first.</Note>
       </Content>
       <BottomBar>
         <Col gap={10} style={{flex:1}}>
@@ -236,15 +238,15 @@ function YourFeedback(){
         <Col gap={0}>
           <Section>You'd choose again</Section>
           <ItemRow icon="wind" name="Walk-run intervals" meta="Run · last done Monday"/>
-          <ItemRow icon="footprints" name="Easy walk" meta="Walk · last done 18 Oct" divider/>
+          <ItemRow icon="footprints" name="Easy walk" meta="Walk · last done 17 Oct" divider/>
         </Col>
         <Col gap={0}>
           <Section>Maybe</Section>
-          <ItemRow icon="person-standing" name="Gentle stretching" meta="Mobility · a new idea on 16 Oct" tone="muted"/>
+          <ItemRow icon="person-standing" name="Gentle stretching" meta="Mobility · a new idea on 15 Oct" tone="muted"/>
         </Col>
         <Col gap={0}>
           <Section>Not for now</Section>
-          <ItemRow icon="footprints" name="Hill walk" meta="Walk · tried 21 Oct" tone="muted" action={<Button variant="secondary" size="sm">Try again</Button>}/>
+          <ItemRow icon="footprints" name="Hill walk" meta="Walk · tried 20 Oct" tone="muted" action={<Button variant="secondary" size="sm">Try again</Button>}/>
         </Col>
         <Col gap={8}>
           <Section>Switched off</Section>
@@ -269,7 +271,7 @@ function Sees({yes,children}){
   );
 }
 function Privacy(){
-  const on=<span style={{display:"inline-flex",alignItems:"center",gap:6,font:"var(--type-caption)",color:"var(--success)"}}><span style={{width:6,height:6,borderRadius:99,background:"var(--success)"}}></span>On</span>;
+  const on=<span style={{display:"inline-flex",alignItems:"center",gap:6,font:"var(--type-caption)",color:"var(--success-text)"}}><span style={{width:6,height:6,borderRadius:99,background:"var(--success)"}}></span>On</span>;
   return (
     <>
       <TopBar left={<IconButton icon="arrow-left" label="Back"/>} title="Data and privacy" right={null}/>
@@ -282,14 +284,15 @@ function Privacy(){
         </Col>
         <Col gap={12}>
           <Section>What our assistant sees</Section>
-          <Sees yes>Your answers and feedback</Sees>
-          <Sees yes>When you're busy, never what's in your calendar</Sees>
+          <Sees yes>Your answers</Sees>
+          <Sees yes>Your free times, never what's in your calendar</Sees>
+          <Sees yes>Whether you'd choose a session again, for your summary</Sees>
           <Sees>Your name, email, steps or notes</Sees>
-          <Caption>It writes your summary and explains your plan.</Caption>
+          <Caption>It builds your plan and writes your summary.</Caption>
         </Col>
         <Col gap={0}>
           <Section>Account</Section>
-          <ItemRow icon="mail" name="ana@example.com" meta="Signed in with email"/>
+          <ItemRow icon="mail" name="ana@example.com" meta="Email and password"/>
           <ItemRow icon="globe" name="Time zone" meta="Warsaw · from your phone" divider/>
         </Col>
         <Button variant="ghost" icon="log-out" style={{alignSelf:"flex-start",marginLeft:-12}}>Sign out</Button>

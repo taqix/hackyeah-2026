@@ -14,9 +14,9 @@ const TONES = {
   neutral: ["var(--surface-sunken)", "var(--text-secondary)"],
   accent: ["var(--accent-soft-strong)", "var(--accent-text)"],
   recovery: ["var(--recovery-soft)", "var(--text-secondary)"],
-  success: ["var(--success-soft)", "var(--success)"],
-  danger: ["var(--danger-soft)", "var(--danger)"],
-  info: ["var(--info-soft)", "var(--info)"]
+  success: ["var(--success-soft)", "var(--success-text)"],
+  danger: ["var(--danger-soft)", "var(--danger-text)"],
+  info: ["var(--info-soft)", "var(--info-text)"]
 };
 function Badge({
   tone = "neutral",
@@ -407,6 +407,7 @@ function ExerciseMedia({
   ratio = "1 / 1",
   playing = true,
   label,
+  icon,
   style
 }) {
   const circle = shape === "circle";
@@ -450,7 +451,7 @@ function ExerciseMedia({
       color: "var(--text-tertiary)"
     }
   }, /*#__PURE__*/React.createElement(__ds_scope.Icon, {
-    name: circle ? "dumbbell" : "film",
+    name: icon || (circle ? "dumbbell" : "film"),
     size: circle ? Math.round(size * 0.4) : 28,
     strokeWidth: 1.5
   }), !circle ? /*#__PURE__*/React.createElement("span", {
@@ -490,6 +491,7 @@ function ExerciseRow({
   done = false,
   media,
   mediaSrc,
+  mediaIcon,
   onToggle,
   onOpen,
   divider = true,
@@ -508,6 +510,14 @@ function ExerciseRow({
     }
   }, /*#__PURE__*/React.createElement("div", {
     onClick: onOpen,
+    role: onOpen ? "button" : undefined,
+    tabIndex: onOpen ? 0 : undefined,
+    onKeyDown: onOpen ? e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onOpen();
+      }
+    } : undefined,
     style: {
       flex: 1,
       minWidth: 0,
@@ -519,6 +529,7 @@ function ExerciseRow({
   }, showMedia ? /*#__PURE__*/React.createElement(__ds_scope.ExerciseMedia, {
     src: mediaSrc,
     alt: name,
+    icon: mediaIcon,
     size: 52,
     style: {
       opacity: done ? 0.5 : 1,
@@ -842,12 +853,14 @@ function Input({
   suffix,
   type = "text",
   inputMode,
+  autoComplete,
   disabled = false,
   onChange,
   style
 }) {
   const [focus, setFocus] = React.useState(false);
   const id = React.useId();
+  const noteId = id + "-note";
   const bd = error ? "var(--danger)" : focus ? "var(--accent)" : "var(--border-strong)";
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -880,6 +893,9 @@ function Input({
     id: id,
     type: type,
     inputMode: inputMode,
+    autoComplete: autoComplete,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": error || hint ? noteId : undefined,
     value: value,
     defaultValue: defaultValue,
     placeholder: placeholder,
@@ -903,9 +919,11 @@ function Input({
       color: "var(--text-tertiary)"
     }
   }, suffix) : null), error || hint ? /*#__PURE__*/React.createElement("span", {
+    id: noteId,
+    role: error ? "alert" : undefined,
     style: {
       font: "var(--type-caption)",
-      color: error ? "var(--danger)" : "var(--text-tertiary)"
+      color: error ? "var(--danger-text)" : "var(--text-tertiary)"
     }
   }, error || hint) : null);
 }

@@ -117,7 +117,7 @@ function Bubble({me, context, foot, children}){
   return (
     <div style={{alignSelf:me ? "flex-end" : "flex-start",maxWidth:me ? 296 : 318,display:"flex",flexDirection:"column",alignItems:me ? "flex-end" : "flex-start",gap:6}}>
       {context ? <span style={{...LEGIBLE,display:"inline-flex",alignItems:"center",gap:6}}><Icon name={context.icon} size={13}/>{context.label}</span> : null}
-      <div style={{padding:"11px 16px",borderRadius:me ? "20px 20px 6px 20px" : "20px 20px 20px 6px",background:me ? "var(--accent)" : "var(--surface-bubble)",color:me ? "var(--text-on-accent)" : "var(--text-primary)",font:"var(--type-body)",textWrap:"pretty"}}>{children}</div>
+      <div style={{padding:"11px 16px",borderRadius:me ? "20px 20px 6px 20px" : "20px 20px 20px 6px",background:me ? "var(--accent)" : "var(--surface-bubble)",color:me ? "var(--text-on-accent)" : "var(--text-primary)",font:"var(--type-body)",textWrap:"pretty"}}><span style={SR_ONLY}>{me ? "You: " : "Coach: "}</span>{children}</div>
       {foot}
     </div>
   );
@@ -126,7 +126,7 @@ function Bubble({me, context, foot, children}){
 /* Small status line under a message, a card or above the message box. */
 function Fine({icon, tone, align = "start", children}){
   return (
-    <span style={{...LEGIBLE,display:"flex",alignItems:"center",justifyContent:align === "center" ? "center" : align === "end" ? "flex-end" : "flex-start",gap:6,color:tone === "danger" ? "var(--danger)" : LEGIBLE.color,textWrap:"pretty"}}>
+    <span style={{...LEGIBLE,display:"flex",alignItems:"center",justifyContent:align === "center" ? "center" : align === "end" ? "flex-end" : "flex-start",gap:6,color:tone === "danger" ? "var(--danger-text)" : LEGIBLE.color,textWrap:"pretty"}}>
       {icon ? <Icon name={icon} size={14}/> : null}{children}
     </span>
   );
@@ -151,10 +151,6 @@ function Reply({options, onPick, children}){
       {options ? <Options items={options} onPick={onPick}/> : null}
     </div>
   );
-}
-/* A preview sport, named as one (docs/product.md: previews must not look ready). */
-function PreviewSport({icon = "mountain", name}){
-  return <span style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><Icon name={icon} size={18}/><b style={{fontWeight:600}}>{name}</b><Badge tone="info">Preview</Badge></span>;
 }
 
 function Surface({label, role, live, children}){
@@ -440,13 +436,13 @@ function DemoLimit(){
 const INTRO = "Tell us what to change. Your plan updates straight away, and you can always undo.";
 const ASK = "Can we keep everything to mornings this week, and make Friday shorter?";
 const TODAY = {icon:"footprints",label:"Today · Walk-run intervals"};
-/* Week 1 (home.jsx): Mon 6 brisk walk 7:00 · 20 min, Wed 8 walk-run 7:00 · 24 min,
-   Fri 10 walk-run 18:00 · 24 min. Wednesday evening, Monday and Wednesday done.
-   Home 5.4 shows the result. */
-const FRIDAY = {day:"Fri",date:"10 Oct",title:"Walk-run intervals"};
+/* Week 1 (home.jsx): Mon 5 brisk walk 7:00 · 20 min, Wed 7 walk-run 7:00 · 20 min,
+   Fri 9 walk-run 18:00 · 20 min. Wednesday evening, Monday and Wednesday done.
+   Home 5.4 shows the result. Lengths are 5, 10 or 20 min (PREFERENCES.md). */
+const FRIDAY = {day:"Fri",date:"9 Oct",title:"Walk-run intervals"};
 const MORNINGS = {
-  summary:"All your sessions are at 7:00 now, and Friday is a little shorter.",
-  rows:[{...FRIDAY,diffs:[{icon:"clock",what:"Time",from:"18:00",to:"7:00"},{icon:"timer",what:"Length",from:"24 min",to:"18 min"}],note:"Four intervals instead of six."}],
+  summary:"All your sessions are at 7:00 now, and Friday is 10 minutes.",
+  rows:[{...FRIDAY,diffs:[{icon:"clock",what:"Time",from:"18:00",to:"7:00"},{icon:"timer",what:"Length",from:"20 min",to:"10 min"}],note:"Three runs instead of six."}],
   kept:"Monday to Wednesday stay as you did them.",
 };
 
@@ -455,12 +451,13 @@ const MORNINGS = {
 /* A scripted coach so the board can be tried: keywords pick the reply. The app gets
    replies and validated revisions from the backend instead. It is Wednesday evening:
    Monday and Wednesday are done, and Friday is the session left to change. */
-const LIVE_PLAN = {sport:"Running", next:{day:"Fri",date:"10 Oct",title:"Walk-run intervals",time:"18:00",min:24}, removed:null};
+const LIVE_PLAN = {sport:"Running", next:{day:"Fri",date:"9 Oct",title:"Walk-run intervals",time:"18:00",min:20}, removed:null};
 const LONG = {Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
-const MOVE_TO = {thursday:["Thu","9 Oct"],tomorrow:["Thu","9 Oct"],saturday:["Sat","11 Oct"],sunday:["Sun","12 Oct"]};
-const INTERVALS = {18:"Four intervals instead of six.",10:"Two intervals instead of six."};
+const MOVE_TO = {thursday:["Thu","8 Oct"],tomorrow:["Thu","8 Oct"],saturday:["Sat","10 Oct"],sunday:["Sun","11 Oct"]};
+const INTERVALS = {10:"Three runs instead of six.",5:"One run, with walks either side."};
+const LENGTHS = [5, 10, 20]; /* session_minutes options */
 const HEALTH = "Sorry to hear that. Plans can't take pain or health conditions into account yet. If it keeps hurting, check with a doctor or physio. Resting is always okay.";
-const PREVIEW_TEXT = "Its plans aren't ready yet. Running, gym, fitness and football are ready to use.";
+const OTHER_SPORT = name => name + " isn't one of the sports we plan. Running, gym, fitness and football are.";
 
 function coach(text, plan, attempt){
   const s = text.toLowerCase();
@@ -472,15 +469,15 @@ function coach(text, plan, attempt){
   if (has(/\bfail|error/) && !attempt) return {problem:true};
   if (has(/knee|hurt|pain|injur|sick|\bill\b|ache|sore|doctor|physio/)) return say(HEALTH, ["Pause this week","Keep my plan"]);
   if (has(/keep my plan|keep running|never ?mind|no thanks|leave it/)) return say("Okay. Nothing changes.");
-  const preview = s.match(/climbing|basketball|volleyball|tennis|yoga|boxing/);
-  if (preview) return say(null, ["Switch to gym","Keep running"], {preview:preview[0][0].toUpperCase() + preview[0].slice(1)});
+  const other = s.match(/climbing|basketball|volleyball|tennis|yoga|boxing/);
+  if (other) return say(OTHER_SPORT(other[0][0].toUpperCase() + other[0].slice(1)), ["Switch to gym","Keep running"]);
   if (has(/monday|wednesday|today|yesterday/)) return say("Monday and Wednesday are done, so they stay as you did them." + (n ? " Want to change " + day + "?" : ""), n ? ["Make " + day + " shorter","Move " + day] : null);
   if (has(/gym|(switch|back|go) (to )?running/)) {
     const to = has(/gym/) ? "Gym" : "Running";
     if (to === plan.sport) return say("You're on " + to.toLowerCase() + " already.");
-    const title = to === "Gym" ? "Three machines, slowly" : "Walk-run intervals";
+    const title = to === "Gym" ? "Gym basics, slowly" : "Walk-run intervals";
     return change({
-      summary:to === "Gym" ? "You're on gym now. Same days and times, with short machine sessions we walk you through." : "You're back on running. Same days and times.",
+      summary:to === "Gym" ? "You're on gym now. Same days and times, with short sessions we walk you through step by step." : "You're back on running. Same days and times.",
       sport:{icon:to === "Gym" ? "dumbbell" : "footprints", from:plan.sport, to},
       rows:n ? [{kind:"swapped",day:n.day,date:n.date,was:n.title,title}] : [],
       kept:"Monday and Wednesday stay in your history."}, {...plan, sport:to, next:n ? {...n, title} : n});
@@ -515,14 +512,18 @@ function coach(text, plan, attempt){
   if (morning || evening || shorter) {
     const mins = s.match(/(\d+)\s*min/);
     const time = morning ? "7:00" : evening ? "18:00" : n.time;
-    const min = shorter ? Math.min(n.min, mins ? +mins[1] : 18) : n.min;
+    const asked = mins ? +mins[1] : null;
+    /* Shorter means the next allowed length down; an asked-for length snaps to 5, 10 or 20. */
+    const min = shorter ? (asked ? LENGTHS.filter(l => l <= Math.max(asked, 5)).pop() : LENGTHS.filter(l => l < n.min).pop() || n.min) : n.min;
+    const snapped = asked && min !== asked ? [{title:min + " min, not " + asked,reason:"Sessions are 5, 10 or 20 minutes long."}] : [];
     const diffs = [];
     if (time !== n.time) diffs.push({icon:"clock",what:"Time",from:n.time,to:time});
     if (min !== n.min) diffs.push({icon:"timer",what:"Length",from:n.min + " min",to:min + " min"});
     if (!diffs.length) return say(day + " is already at " + n.time + " for " + n.min + " minutes, so there's nothing to update.");
-    const what = [time !== n.time && "at " + time, min !== n.min && "a little shorter"].filter(Boolean).join(" and ");
+    const what = [time !== n.time && "at " + time, min !== n.min && min + " minutes"].filter(Boolean).join(" and ");
     return change({summary:day + " is " + what + " now.",
-      rows:[{day:n.day,date:n.date,title:n.title,diffs,note:min !== n.min && n.title === "Walk-run intervals" ? INTERVALS[min] : null}]},
+      rows:[{day:n.day,date:n.date,title:n.title,diffs,note:min !== n.min && n.title === "Walk-run intervals" ? INTERVALS[min] : null}],
+      notChanged:snapped},
       {...plan, next:{...n, time, min}});
   }
   if (has(/move|another day|other day/)) return say("Which day works better?", ["Thursday","Saturday","Sunday"]);
@@ -554,7 +555,7 @@ function Start(){
       setMsgs(list => list.filter(m => m.k !== "working"));
       if (r.problem) push({k:"problem", text:t});
       else if (r.card) { push({k:"change", card:r.card, before:plan}); setPlan(r.next); }
-      else push({k:"reply", text:r.reply, options:r.options, preview:r.preview});
+      else push({k:"reply", text:r.reply, options:r.options});
       setBusy(false);
     }, 1200);
   };
@@ -573,7 +574,7 @@ function Start(){
         <Button size="sm" variant="ghost" icon="pencil" onClick={() => edit(m)}>Edit message</Button>
       </>}>Something went wrong on our side. <b style={{fontWeight:600,color:"var(--text-primary)"}}>Your plan hasn't changed.</b></Problem>
     );
-    if (m.k === "reply") return <Reply options={m.options} onPick={pick}>{m.preview ? <><PreviewSport name={m.preview}/>{PREVIEW_TEXT}</> : m.text}</Reply>;
+    if (m.k === "reply") return <Reply options={m.options} onPick={pick}>{m.text}</Reply>;
     return m.undone
       ? <ChangeCard undone summary="Your plan is back to how it was before this change."/>
       : <ChangeCard {...m.card} latest={m === last} onUndo={() => undo(m)}/>;
@@ -644,7 +645,7 @@ const Undone = () => (
     <Thread>
       <Bubble>{INTRO}</Bubble>
       <Bubble me>{ASK}</Bubble>
-      <ChangeCard undone summary="Back to how it was: Friday at 18:00, for 24 minutes."/>
+      <ChangeCard undone summary="Back to how it was: Friday at 18:00, for 20 minutes."/>
     </Thread>
     <Composer/>
   </>
@@ -660,7 +661,7 @@ const RemovedAdded = () => (
         rows={[{...FRIDAY,kind:"removed"}]}/>
       <Bubble me>Actually, could I do a short walk on Saturday instead?</Bubble>
       <ChangeCard summary="Saturday has a short walk now, so the week still has three sessions."
-        rows={[{kind:"added",day:"Sat",date:"11 Oct",title:"Short walk",diffs:[{icon:"clock",what:"Time",to:"7:00"},{icon:"timer",what:"Length",to:"10 min"}]}]}/>
+        rows={[{kind:"added",day:"Sat",date:"10 Oct",title:"Short walk",diffs:[{icon:"clock",what:"Time",to:"7:00"},{icon:"timer",what:"Length",to:"10 min"}]}]}/>
     </Thread>
     <Composer/>
   </>
@@ -673,11 +674,11 @@ const NewSport = () => (
     <Thread>
       <Bubble>{INTRO}</Bubble>
       <Bubble me>Could I switch to the gym instead?</Bubble>
-      <ChangeCard summary="You're on gym now. Same days and times, with short machine sessions we walk you through."
+      <ChangeCard summary="You're on gym now. Same days and times, with short sessions we walk you through step by step."
         sport={{icon:"dumbbell",from:"Running",to:"Gym"}}
         rows={[
           {kind:"swapped",day:"Wed",date:"Today",was:"Walk-run intervals",title:"First gym visit"},
-          {...FRIDAY,kind:"swapped",was:FRIDAY.title,title:"Three machines, slowly"},
+          {...FRIDAY,kind:"swapped",was:FRIDAY.title,title:"Gym basics, slowly"},
         ]}
         kept="Monday's walk stays in your history."/>
     </Thread>
@@ -686,7 +687,8 @@ const NewSport = () => (
 );
 
 /* 8.7 — Partly possible, opened from Friday's activity: the valid part applies,
-   the rest is explained. Sessions start between 7:00 and 21:00 (preferences draft). */
+   the rest is explained. Sessions start between 7:00 and 21:00: a proposed rule, not in the
+   current docs (README › Chat revision). */
 const Partly = () => (
   <>
     <ChatHeader/>
@@ -694,7 +696,7 @@ const Partly = () => (
       <Bubble>What would you like to change about Friday's walk-run intervals?</Bubble>
       <Bubble me context={{icon:"footprints",label:"Fri · Walk-run intervals"}}>Can I do it on Saturday at 6 instead?</Bubble>
       <ChangeCard summary="It's on Saturday now, starting at 7:00, the earliest time we plan."
-        rows={[{...FRIDAY,kind:"moved",day:"Sat",date:"11 Oct",diffs:[{icon:"calendar-days",what:"Day",from:"Fri 10",to:"Sat 11"},{icon:"clock",what:"Time",from:"18:00",to:"7:00"}]}]}
+        rows={[{...FRIDAY,kind:"moved",day:"Sat",date:"10 Oct",diffs:[{icon:"calendar-days",what:"Day",from:"Fri 9",to:"Sat 10"},{icon:"clock",what:"Time",from:"18:00",to:"7:00"}]}]}
         notChanged={[{title:"7:00, not 6:00",reason:"Sessions are planned between 7:00 and 21:00."}]}/>
     </Thread>
     <Composer/>
@@ -708,7 +710,7 @@ const NothingToChange = () => (
     <Thread>
       <DayBreak>Yesterday</DayBreak>
       <Bubble me>{ASK}</Bubble>
-      <PastChange time="20:14" summary="All sessions moved to 7:00. Friday is shorter."/>
+      <PastChange time="20:14" summary="All sessions moved to 7:00. Friday is 10 minutes."/>
       <DayBreak>Today</DayBreak>
       <Bubble me>Can Friday be in the morning?</Bubble>
       <Reply>Friday is already at 7:00 since yesterday's change, so there's nothing to update.</Reply>
@@ -730,7 +732,7 @@ const NeedsDetail = () => (
   </>
 );
 
-/* 8.10 — Done days and preview sports can't change. */
+/* 8.10 — Done days and sports we don't plan can't change. */
 const CantChange = () => (
   <>
     <ChatHeader/>
@@ -739,10 +741,7 @@ const CantChange = () => (
       <Bubble me>Can Monday be a run instead?</Bubble>
       <Reply options={["Today","Friday"]}>Monday is done, so it stays as you did it. Want to change an upcoming day?</Reply>
       <Bubble me>Could I try climbing?</Bubble>
-      <Reply options={["Switch to gym","Keep running"]}>
-        <PreviewSport name="Climbing"/>
-        Its plans aren't ready yet. Running, gym, fitness and football are ready to use.
-      </Reply>
+      <Reply options={["Switch to gym","Keep running"]}>{OTHER_SPORT("Climbing")}</Reply>
     </Thread>
     <Composer/>
   </>
@@ -812,7 +811,7 @@ const Guest = () => (
     <Thread>
       <Bubble>This is your own demo plan, so try anything. Changes here don't affect anyone else.</Bubble>
       <Bubble me>Make Friday shorter.</Bubble>
-      <ChangeCard summary="Friday is 18 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"24 min",to:"18 min"}],note:"Four intervals instead of six."}]}/>
+      <ChangeCard summary="Friday is 10 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"20 min",to:"10 min"}],note:"Three runs instead of six."}]}/>
     </Thread>
     <Composer top={<Fine icon="info" align="center">Guest demo · 2 of 3 changes left</Fine>}/>
   </>
@@ -824,7 +823,7 @@ const GuestLimit = () => (
     <ChatHeader sub="Guest demo"/>
     <Thread anchor="end">
       <Bubble me>Make Friday shorter.</Bubble>
-      <ChangeCard latest={false} time="9:20" kept={null} summary="Friday is 18 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"24 min",to:"18 min"}]}]}/>
+      <ChangeCard latest={false} time="9:20" kept={null} summary="Friday is 10 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"20 min",to:"10 min"}]}]}/>
       <Bubble me>And move it to the morning.</Bubble>
       <ChangeCard summary="Friday is a morning session now." rows={[{...FRIDAY,diffs:[{icon:"clock",what:"Time",from:"18:00",to:"7:00"}]}]}/>
     </Thread>
@@ -843,7 +842,7 @@ window.CHAT_SCREENS = [
   {id:"chat-partly",label:"8.7 · Chat: partly possible",C:Partly,note:"The day column shows where a session is now. What couldn't change is listed with a reason, never dropped silently."},
   {id:"chat-nothing",label:"8.8 · Chat: nothing to change",C:NothingToChange,note:"Earlier changes fold by day. A request that changes nothing says so."},
   {id:"chat-detail",label:"8.9 · Chat: needs a detail",C:NeedsDetail,note:"Vague asks get one question with quick answers. The plan stays as it is until one is picked."},
-  {id:"chat-cant",label:"8.10 · Chat: can't change that",C:CantChange,note:"Done days are locked. Preview sports are named as previews, with ready sports offered instead."},
+  {id:"chat-cant",label:"8.10 · Chat: can't change that",C:CantChange,note:"Done days are locked. Sports we don't plan get a plain no, with the four we do offered instead."},
   {id:"chat-health",label:"8.11 · Chat: health and pain",C:Health,note:"Illness-specific changes are deferred: no plan change and no advice beyond seeing a doctor."},
   {id:"chat-failed",label:"8.12 · Chat: didn't work",C:Failed,note:"Timeouts and invalid results leave the plan untouched. Try again resends the same message."},
   {id:"chat-stale",label:"8.13 · Chat: changed elsewhere",C:ChangedElsewhere,note:"A stale request never overwrites a newer plan. Try again runs on the latest version."},

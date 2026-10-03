@@ -48,27 +48,38 @@ function Steps({step,total=4}){
   return <Row gap={6}>{Array.from({length:total},(_,i)=><span key={i} style={{height:4,flex:1,borderRadius:99,background:i<step?"var(--accent)":"var(--border-subtle)"}}></span>)}</Row>;
 }
 
-/* 1 — Welcome / sign in */
-function Welcome(){
+/* 1 — Welcome: create an account or sign in with email and password, or look around as a
+   guest in one tap (docs/product.md › Accounts and guest demo). The guest button creates a
+   separate anonymous account with a seeded sample week (Home 5.15). */
+function Welcome({mode="create",error}){
+  const create=mode==="create";
   return (
-    <Content gap={20} pb={34}>
-      <span style={{font:"600 22px/1 var(--font-display)",letterSpacing:"var(--tracking-display)",padding:"10px 0 4px"}}>Adaptive</span>
-      <SuggestionCard tone="dawn" kicker="New here?" title="Find a sport you'll keep." body="A few questions, then a gentle first week. Everyone starts somewhere."/>
-      <Col gap={14}>
-        <Input label="Email" type="email" placeholder="you@example.com" hint="We'll sign you in, or set up a new account if it's your first time."/>
+    <Content gap={16} pb={34}>
+      <span style={{font:"600 22px/1 var(--font-display)",letterSpacing:"var(--tracking-display)",padding:"10px 0 2px"}}>Adaptive</span>
+      <SuggestionCard tone="dawn" style={{minHeight:188}} kicker={create?"New here?":"Welcome back"} title={create?"Find a way to move you'll keep.":"Good to see you again."} body={create?"A few questions, then a gentle first week. Everyone starts somewhere.":"Sign in to see your week."}/>
+      <Col gap={12}>
+        <Input label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" defaultValue={error?"ana@example.com":undefined}/>
+        <Input label="Password" type="password" autoComplete={create?"new-password":"current-password"} defaultValue={error?"walkrun01":undefined}
+          hint={create?"At least 8 characters.":undefined} error={error}
+          suffix={<button type="button" aria-label="Show password" style={{width:44,height:44,marginRight:-12,border:0,background:"transparent",color:"var(--text-secondary)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Icon name="eye" size={20}/></button>}/>
       </Col>
-      <Col gap={10}>
-        <Button size="lg" fullWidth iconRight="arrow-right">Continue</Button>
-        <Row gap={12} style={{padding:"4px 0"}}><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span><span style={{font:"var(--type-caption)",color:"var(--text-tertiary)"}}>or</span><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span></Row>
-        <Button size="lg" fullWidth variant="secondary"><GoogleMark/>Continue with Google</Button>
+      <Col gap={4}>
+        <Button size="lg" fullWidth>{create?"Create account":"Sign in"}</Button>
+        <Row gap={4} style={{justifyContent:"center",flexWrap:"wrap"}}>
+          <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>{create?"Have an account?":"New here?"}</span>
+          <Button variant="ghost" size="sm" style={{height:44,padding:"0 8px"}}>{create?"Sign in":"Create an account"}</Button>
+          {create?null:<><span aria-hidden="true" style={{color:"var(--text-tertiary)"}}>·</span><Button variant="ghost" size="sm" style={{height:44,padding:"0 8px"}}>Forgot password?</Button></>}
+        </Row>
       </Col>
-      <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)",textAlign:"center",textWrap:"pretty"}}>By continuing you agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>.</span>
+      <Row gap={12}><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span><span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>or</span><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span></Row>
+      <Col gap={8}>
+        <Button size="lg" fullWidth variant="secondary" icon="compass">Look around as a guest</Button>
+        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)",textAlign:"center",textWrap:"pretty"}}>A sample week that's yours alone. No email needed. By continuing you agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>.</span>
+      </Col>
     </Content>
   );
 }
-function GoogleMark(){
-  return <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style={{marginRight:8,flex:"none"}}><path fill="#EA4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.5-4.1 7-10.2 7-17.6z"></path><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-8-6.2A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l8-6.2z"></path><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.7l-7.6-5.9c-2.1 1.4-4.8 2.3-7.9 2.3-6.2 0-11.5-4.1-13.4-9.9l-8 6.2C6.5 42.6 14.6 48 24 48z"></path></svg>;
-}
+const SignInError = () => <Welcome mode="signin" error="That email and password don't match. Try again, or reset your password."/>;
 
 /* 2–4 — Questionnaire, preferences and review: onboarding.jsx */
 
@@ -94,15 +105,14 @@ function Activity(){
       <TopBar left={<IconButton icon="arrow-left" label="Back"/>} right={<IconButton icon="ellipsis" label="More"/>}/>
       <Content gap={16}>
         <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12}}>
-          <Col gap={6}><Kicker>Wednesday · 24 min</Kicker><H1>Walk-run intervals</H1></Col>
-          <ProgressRing value={0} size={52} label="0/3"/>
+          <Col gap={6}><Kicker>Today · 7:00 · 20 min</Kicker><H1>Walk-run intervals</H1></Col>
         </div>
         <SuggestionCard tone="dusk" kicker="Coach tip" title="Talk-pace is the pace." body="Slow enough to say a sentence. Stopping early still counts."/>
         <Col gap={0}>
           <Section>Today</Section>
-          <ExerciseRow media name="Brisk walk" detail="5 min" meta="warm-up" divider/>
-          <ExerciseRow media name="Run, then walk" detail="6 × 90 s run · 1 min walk" meta="14 min" divider/>
-          <ExerciseRow media name="Slow walk" detail="5 min" meta="cool-down"/>
+          <ExerciseRow media mediaIcon="footprints" name="Brisk walk" detail="4 min" meta="warm-up" divider/>
+          <ExerciseRow media mediaIcon="wind" name="Run, then walk" detail="6 × 1 min run · 1 min walk" meta="12 min" divider/>
+          <ExerciseRow media mediaIcon="footprints" name="Slow walk" detail="4 min" meta="cool-down"/>
         </Col>
       </Content>
       <BottomBar>
@@ -120,17 +130,17 @@ function Feedback(){
       <TopBar left={<span></span>} right={<IconButton icon="x" label="Close"/>}/>
       <Content gap={24}>
         <Row gap={16}>
-          <ProgressRing value={2/3} size={64} label="2/3"/>
-          <Col gap={4}><Kicker>Wednesday done · 24 min</Kicker><H1>Nice and steady.</H1></Col>
+          <div role="img" aria-label="2 of 3 sessions done this week"><ProgressRing value={2/3} size={64} label="2/3"/></div>
+          <Col gap={4}><Kicker>Wednesday · 20 min · 2 of 3 this week</Kicker><H1>Nice and steady.</H1></Col>
         </Row>
         <Col gap={12}>
           <Section>How did it feel?</Section>
-          <Col gap={8}>
+          <div role="radiogroup" aria-label="How did it feel?" style={{display:"flex",flexDirection:"column",gap:8}}>
             <Radio variant="card" label="Easy" description="Could have kept going"/>
             <Radio variant="card" checked label="Just right" description="Tired, but good"/>
             <Radio variant="card" label="Hard" description="Needed every walk break"/>
             <Radio variant="card" label="Too much" description="Had to stop early"/>
-          </Col>
+          </div>
         </Col>
         <Input label="Anything to note (optional)" placeholder="Shoes, weather, how your legs feel…"/>
       </Content>
@@ -142,7 +152,8 @@ function Feedback(){
 /* 8 — Chat plan revision and its states 8.1–8.16: chat.jsx */
 
 const SCREENS=[
-  {id:"welcome",label:"1 · Sign in",C:Welcome},
+  {id:"welcome",label:"1 · Welcome",C:Welcome,note:"Email and password, or a guest demo in one tap."},
+  {id:"sign-in-error",label:"1.1 · Sign in: no match",C:SignInError},
   ...ONBOARDING_SCREENS, // 2–4, questionnaire, preferences and review (onboarding.jsx)
   ...HOME_SCREENS, // 5–5.15, the Today tab in every state (home.jsx)
   {id:"activity",label:"6 · Activity",C:Activity},
@@ -150,5 +161,7 @@ const SCREENS=[
   {id:"feedback",label:"7 · Completion & feedback",C:Feedback},
   ...CHAT_SCREENS, // 8–8.16, chat plan revision in every state (chat.jsx)
   ...PROFILE_SCREENS, // 9–9.6, the You tab: answers, summary, feedback, privacy (profile.jsx)
+  ...PLAN_SCREENS, // 10–10.1, the Plan tab: the week in full and its versions (plan.jsx)
+  ...(window.LOG_SCREENS||[]), // 11–11B.6, add a workout: form (A) and chat (B) variants (log.jsx)
 ];
 Object.assign(window,{Phone,SCREENS});

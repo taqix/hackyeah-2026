@@ -49,4 +49,5 @@ Installation is not available yet.
 
 ## Project documentation
 
-- [Gemini JSON contract](docs/features/gemini-json-contract.md) — workout creation, chat changes, validation, and integration.
+- [AI plan generation](docs/features/ai-plan-generation.md) — feature flow, setup, prompts, validation, errors, testing, and provider replacement.
+- [AI JSON contract](docs/features/ai-json-contract.md) — request/response fields, sport metrics, scheduling rules, and complete examples.

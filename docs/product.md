@@ -63,8 +63,12 @@ not required for the first MVP.
 
 ## Plan generation and revisions
 
-NestJS owns AI provider integration. The provider and model are TBD; clients
-consume a stable application API rather than provider-specific responses.
+NestJS owns AI provider integration. The implemented server-side adapter currently
+uses Gemini; the long-term provider and model remain open choices. The
+[AI plan generation guide](features/ai-plan-generation.md) describes the implemented
+exchange and the remaining application integration. Clients should consume a
+stable application API rather than provider-specific responses; plan endpoints
+and persistence are not implemented yet.
 
 Return structured plans and validate them against the application contract before
 saving. The server checks supported sport, plan shape, activity identifiers,

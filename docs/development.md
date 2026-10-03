@@ -199,5 +199,8 @@ complete an activity, and observe a chat revision on a real device or emulator.
 6. Complete web dashboard, mobile journey, completion, and feedback.
 7. Wire required PR checks and verify the local judging demo.
 
-Cloud hosting is deferred. Select the AI model before integrating live generation.
+Cloud hosting is deferred. The server-side AI planning adapter is implemented;
+see [AI plan generation](features/ai-plan-generation.md) for setup, checks, and
+the remaining endpoint/storage integration. Configure and verify the chosen
+provider/model before enabling live generation.
 Track illness-specific behavior as a future feature.

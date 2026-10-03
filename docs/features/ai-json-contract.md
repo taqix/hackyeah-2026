@@ -1,7 +1,8 @@
-# Gemini JSON contract
+# AI JSON contract
 
-This is the implemented request/response reference for the universal workout
-planning exchange on `codex/gemini-plan-generation`. The backend entry point is
+This is the provider-independent request/response reference for AI workout
+planning. See [AI plan generation](ai-plan-generation.md) for the complete feature
+flow, setup, provider integration, errors, and persistence responsibilities. The backend entry point is
 `generatePlan(request, options)` from `@hackyeah/backend`; `createPlan` is an alias
 accepting the same contract. Types, `parsePlanInput`, `parsePlanOutput`, and schema
 builders are exported from `@hackyeah/contracts/plan`.

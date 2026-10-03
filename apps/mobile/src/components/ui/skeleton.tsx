@@ -18,8 +18,7 @@ export function Skeleton({ width = '100%', height = 14, radius = 8, style }: Ske
   const reduced = useReducedMotion();
   return (
     <Animated.View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
       accessibilityElementsHidden
       style={[
         { width, height, borderRadius: radius, backgroundColor: colors.surfaceSunken },

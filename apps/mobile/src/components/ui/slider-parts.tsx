@@ -47,8 +47,7 @@ export function SliderValue({ icon, children }: { icon?: IconName; children: Rea
   const { colors, fontFamily } = useTheme();
   return (
     <View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       {icon ? <Icon name={icon} size={18} color={colors.accentText} /> : null}
       <Text tabular style={{ fontFamily: fontFamily.bodySemibold, fontSize: 16, lineHeight: 21, color: colors.accentText }}>
@@ -97,7 +96,7 @@ export function Ticks({ range, marks, width, lit, on }: TicksProps) {
   const count = steps.length;
   const x = (v: number) => centreOf(indexOf(range, v), width, count);
   return (
-    <View accessible={false} importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+    <View aria-hidden style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {steps.map((v) => (
         <View
           key={`t${v}`}

@@ -8,7 +8,9 @@ below before changing a feature.
 - Use TypeScript and shared lint/format rules. Current setup uses npm workspaces;
   pnpm is the agreed target. Follow the migration plan in `docs/development.md`.
 - Share API contracts in `packages/contracts`; keep client UI separate.
-- Supabase provides Auth and PostgreSQL. NestJS owns application data and AI calls.
+- The proof of concept uses Supabase Auth, PostgreSQL/RLS, and Edge Functions
+  directly from both clients. See `docs/features/supabase-product-api.md`.
+  NestJS remains available for future backend work; it is not required by this path.
 - Validate requests and AI output; enforce authenticated user ownership.
 - Validated chat revisions replace the active plan immediately. Preserve prior
   versions and completed activities.

@@ -8,4 +8,5 @@ mkdir -p website/system
 sed 's/"website\.html"/"index.html"/' design/website.html > website/index.html
 cp -R design/system/fonts design/system/tokens website/system/
 cp design/system/styles.css design/system/components.js website/system/
+touch website/.nojekyll  # serve files as-is on GitHub Pages
 echo "website/ synced from design/"

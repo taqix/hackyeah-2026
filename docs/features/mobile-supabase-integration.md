@@ -250,6 +250,31 @@ router has exact paths only.
   JSON-identical to the previous version of the same week. That makes
   mid-week revisions possible.
 
+### Hosted project state (FitnessApp, read-only check on 4 October 2026)
+
+**Database and function**
+- Applied migrations: `20261003130000` and `20261003140000`. The wearable
+  migration is not applied. New migrations must therefore start after
+  `20261003140000`.
+- Every table is empty: 0 users, profiles, sports, plans and completions. The
+  catalog seed is required before generation can work.
+- `product-api` is deployed (version 3, `verify_jwt = true`). An unauthenticated
+  call reaches the handler and gets its 401 envelope. OPTIONS returns 204.
+- Function secrets hold only the platform defaults; there is no `GEMINI_*`.
+- The project uses the new keys: the client gets `sb_publishable_…`, and the
+  platform provides `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to
+  the function.
+- If the gateway rejects valid user JWTs (new signing keys), deploy with
+  `verify_jwt = false`. The handler verifies every token with Auth
+  independently.
+
+**Auth**
+- Email sign-in is on with autoconfirm, so signup returns a session at once.
+  Google sign-in is off (no client ID).
+- `site_url` is `http://localhost:3000` and the redirect allowlist is empty.
+- The app reads `GET /auth/v1/settings` and hides Google while the provider is
+  off.
+
 ### Open decisions and dependencies (owner)
 
 - Before anything runs live, the owner must:

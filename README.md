@@ -64,6 +64,7 @@ Start feature/documentation branches from `develop` and open PRs against it. Pro
 - [Product scope](docs/product.md)
 - [Six-person bootstrap plan](docs/roadmap.md)
 - [Development and implementation plan](docs/development.md)
+- [Wearable data extraction architecture](docs/data-extraction/README.md)
 - [Deployment plan](docs/deployment.md)
 - [Feature template](docs/features/TEMPLATE.md)
 

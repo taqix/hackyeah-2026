@@ -51,6 +51,7 @@ Add future applications under `apps/` and shared packages under `packages/`, eac
 ## Installed skills
 
 - **setup-matt-pocock-skills** — configures issue tracking and domain documentation conventions for engineering workflows.
+- **[react-native-best-practices](.agents/skills/react-native-best-practices/SKILL.md)** — required for React Native / Expo implementation, review, and debugging; see [usage conventions](docs/development.md#react-native--expo-skill).
 - **ui-ux-pro-max** — provides UI and UX design guidance and supporting resources.
 
 ## Collaboration

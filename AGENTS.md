@@ -21,6 +21,12 @@ below before changing a feature.
   authoritative and `CLAUDE.md` a forwarder. When running `setup-matt-pocock-skills`,
   write or update its `## Agent skills` block here, overriding its default file choice.
 
+## Agent skills
+
+- Before writing, reviewing, or debugging React Native / Expo code, read and follow
+  [react-native-best-practices](.agents/skills/react-native-best-practices/SKILL.md)
+  and its relevant sub-skills. See [usage conventions](docs/development.md#react-native--expo-skill).
+
 ## References
 
 - [Product scope](docs/product.md)

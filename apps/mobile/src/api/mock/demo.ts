@@ -4,7 +4,7 @@
  * stale chat result, time travel and a full reset.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { queryClient } from '@/api/query-client';
 import { queryKeys } from '@/api/query-keys';
@@ -114,8 +114,15 @@ export const demo = {
   },
 };
 
-/** The demo settings with their setters, re-rendering on change. */
+/**
+ * The demo settings with their setters, re-rendering on change. Loads the saved
+ * settings itself: Demo controls can be the first screen (a deep link or a web
+ * reload), before any request has loaded them.
+ */
 export function useDemoSettings() {
+  useEffect(() => {
+    void demo.hydrate();
+  }, []);
   const current = useSyncExternalStore(subscribe, get, get);
   return {
     ...current,

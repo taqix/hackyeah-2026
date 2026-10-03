@@ -26,6 +26,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-calendar",
+        {
+          "calendarPermission": "Pozwól aplikacji sprawdzić terminy w Twoim kalendarzu i dodawać zaplanowane aktywności.",
+          "remindersPermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

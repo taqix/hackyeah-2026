@@ -1,14 +1,9 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { useLocalSearchParams } from 'expo-router';
 
+import { GymReviewScreen } from '@/features/gym';
+
+/** What you did 6.8. */
 export default function GymReviewRoute() {
-  return (
-    <PlaceholderScreen
-      title="What you did"
-      screenId="6.8"
-      links={[
-        { label: 'Save', href: routes.feedback('demo-log') },
-      ]}
-    />
-  );
+  const { sessionId, logId } = useLocalSearchParams<{ sessionId: string; logId: string }>();
+  return <GymReviewScreen key={logId} sessionId={sessionId} logId={logId} />;
 }

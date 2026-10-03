@@ -60,13 +60,14 @@ export function WelcomeScreen() {
     (checkFormat && !valid) || isApiError(lookup.error, 'validation') ? EMAIL_FORMAT_ERROR : null;
   const lookupFailed = lookup.isError && !isApiError(lookup.error, 'validation');
 
-  const continueWithEmail = () => {
-    if (!valid) {
+  /** Return passes the field's own text: fast typing can submit before state catches up. */
+  const continueWithEmail = (typed: string = email) => {
+    if (!looksLikeEmail(typed)) {
       setCheckFormat(true);
       return;
     }
     if (lookup.isPending || google.isPending) return;
-    lookup.mutate(normalizeEmail(email), {
+    lookup.mutate(normalizeEmail(typed), {
       onSuccess: (result) => router.push(passwordRoute(result.email, result.exists ? 'sign-in' : 'sign-up')),
     });
   };
@@ -110,7 +111,7 @@ export function WelcomeScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="go"
-              onSubmitEditing={continueWithEmail}
+              onSubmitEditing={(event) => continueWithEmail(event.nativeEvent.text)}
             />
             <Button
               size="lg"
@@ -118,10 +119,10 @@ export function WelcomeScreen() {
               iconRight="arrow-right"
               disabled={!valid || google.isPending}
               loading={lookup.isPending}
-              onPress={continueWithEmail}>
+              onPress={() => continueWithEmail()}>
               Continue with email
             </Button>
-            {lookupFailed ? <RequestAlert error={lookup.error} onRetry={continueWithEmail} /> : null}
+            {lookupFailed ? <RequestAlert error={lookup.error} onRetry={() => continueWithEmail()} /> : null}
           </Col>
           <Legal lead="We'll sign you in, or set up your account if you're new. By continuing" />
           {__DEV__ ? (

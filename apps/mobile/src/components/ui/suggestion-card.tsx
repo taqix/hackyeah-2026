@@ -52,6 +52,13 @@ const QUIET_PRESSED = 'rgba(251,248,242,0.14)';
 const DISMISS_FILL = 'rgba(20,18,16,0.38)';
 const PROTECTION = ['rgba(18,16,14,0)', 'rgba(18,16,14,0.25)', 'rgba(18,16,14,0.72)'] as const;
 
+/** Light-on-dark colours for content passed as children (a progress bar on the hero). */
+export const suggestionInk = {
+  text: INK,
+  body: INK_BODY,
+  track: 'rgba(251,248,242,0.25)',
+} as const;
+
 /** Blurred colour fields: SVG radial gradients standing in for the CSS radial-gradient stack. */
 function Fields({ tone }: { tone: SuggestionTone }) {
   const { base, fields } = TONES[tone];

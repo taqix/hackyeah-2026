@@ -1,7 +1,7 @@
 /* Base palette — warm paper, warm ink, friendly blue accent */
 :root{
 --paper-0:#FFFBF5;--paper-50:#F8F2E8;--paper-100:#F1E9DC;--paper-200:#E6DCCC;--paper-300:#D3C8B7;
---ink-400:#9A8F80;--ink-500:#7A7062;--ink-600:#5C5348;--ink-700:#3F3830;--ink-800:#2A251F;--ink-900:#1D1914;
+--ink-400:#9A8F80;--ink-500:#6F6557;--ink-600:#5C5348;--ink-700:#3F3830;--ink-800:#2A251F;--ink-900:#1D1914;
 --night-0:#141210;--night-50:#1B1815;--night-100:#24201C;--night-200:#2F2A25;--night-300:#3D372F;
 --blue-50:#EEF4FB;--blue-100:#D8E6F6;--blue-200:#B3CDEE;--blue-300:#86AEE3;--blue-400:#5B8FD6;--blue-500:#3E74C4;--blue-600:#2F5CA3;--blue-700:#254A85;--blue-800:#1C3966;--blue-900:#132746;
 --peach-100:#FCE6D6;--peach-300:#F4B892;--peach-500:#E08A5A;--peach-700:#A9542B;
@@ -37,8 +37,10 @@
 --recovery-soft:#ECEEE5;
 --success:var(--moss-500);
 --success-soft:#E8EEE1;
+--success-text:#4F6943;/* 4.8:1+ on every light surface */
 --danger:var(--brick-500);
 --danger-soft:#F6E4DE;
+--danger-text:#A04634;
 --tint-blue:#E6EFFA;
 --tint-peach:var(--peach-100);
 --tint-sage:#E9EEDF;
@@ -46,6 +48,7 @@
 --warm-text:var(--peach-700);
 --info:var(--slate-500);
 --info-soft:#E4E9EE;
+--info-text:#5B5A77;
 --focus-ring:color-mix(in oklch, var(--blue-400) 45%, transparent);
 --overlay:rgba(29,25,20,.36);
 }
@@ -62,7 +65,7 @@
 --border-strong:var(--night-300);
 --text-primary:#F3EDE3;
 --text-secondary:#B9AF9F;
---text-tertiary:#8E8476;
+--text-tertiary:#9C9182;/* 5:1+ on raised surfaces and tints */
 --text-inverse:var(--ink-900);
 --text-on-accent:var(--ink-900);
 --accent:var(--blue-300);
@@ -75,8 +78,10 @@
 --recovery-soft:#22251E;
 --success:var(--moss-300);
 --success-soft:#1F261B;
+--success-text:var(--moss-300);
 --danger:var(--brick-300);
 --danger-soft:#2E1C17;
+--danger-text:var(--brick-300);
 --tint-blue:#1A2331;
 --tint-peach:#2E2119;
 --tint-sage:#1F251B;
@@ -84,6 +89,7 @@
 --warm-text:var(--peach-300);
 --info:var(--slate-300);
 --info-soft:#1C2127;
+--info-text:var(--slate-300);
 --focus-ring:color-mix(in oklch, var(--blue-300) 50%, transparent);
 --overlay:rgba(0,0,0,.55);
 }

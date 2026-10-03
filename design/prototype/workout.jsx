@@ -2,7 +2,9 @@
    Every plan step is tracked one of three ways:
      reps      sets × reps, optional weight      Goblet squat 3 × 10 · 8 kg
      time      a duration, optionally in rounds  Knee plank 3 × 20 s, Brisk walk 5 min
-     distance  time + distance, optional climb   Walk-run 24 min · 2.46 km, Swim 12 × 25 m
+     distance  time + distance, optional climb   Walk-run 20 min · 2.05 km, Swim 12 × 25 m
+   The plan contract only has free-text descriptions (or a gym series of them); these
+   tracking fields are a proposal that needs a shape in packages/contracts (README).
    Loaded before screens.jsx. The layout helpers used here (TopBar, Content, BottomBar,
    Col, Row, H1, Kicker, Body, Section) and the DS components that screens.jsx
    destructures resolve at render time. */
@@ -136,7 +138,8 @@ function MetricTile({label,value,unit}){
 }
 
 /* Rest and walking use the recovery colour; effort uses the accent. Text always names the segment too. */
-const RUN_PLAN=[{k:"walk",min:5},...Array.from({length:6},()=>[{k:"run",min:1.5},{k:"walk",min:1}]).flat(),{k:"walk",min:5}];
+/* Ana's 20-minute walk-run: 4 min walk, 6 × (1 min run + 1 min walk), 4 min walk. */
+const RUN_PLAN=[{k:"walk",min:4},...Array.from({length:6},()=>[{k:"run",min:1},{k:"walk",min:1}]).flat(),{k:"walk",min:4}];
 function IntervalStrip({done,frac}){
   return (
     <Col gap={8}>
@@ -190,16 +193,16 @@ function RunLive(){
             <span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>Interval 3 of 6</span>
           </div>
           <Col gap={8}>
-            <span role="timer" style={{font:"700 136px/0.9 var(--font-numeric)",...TABULAR,letterSpacing:"-0.045em"}}>0:52</span>
-            <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>left of this 90-second run</span>
+            <span role="timer" style={{font:"700 136px/0.9 var(--font-numeric)",...TABULAR,letterSpacing:"-0.045em"}}>0:35</span>
+            <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>left of this one-minute run</span>
           </Col>
           <div aria-hidden="true" style={{height:8,borderRadius:99,background:"var(--accent-soft-strong)"}}><div style={{width:"42%",height:"100%",borderRadius:99,background:"var(--accent)"}}></div></div>
           <Row gap={10}><Icon name="footprints" size={18} color="var(--recovery)"/><span style={{font:"var(--type-body)"}}>Then walk for 1 min</span></Row>
         </section>
         <IntervalStrip done={5} frac={0.42}/>
         <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:8}}>
-          <MetricTile label="Time" value="10:38"/>
-          <MetricTile label="Distance" value="1.12" unit="km"/>
+          <MetricTile label="Time" value="8:25"/>
+          <MetricTile label="Distance" value="0.86" unit="km"/>
         </div>
         <Caption style={{textAlign:"center"}}>Voice cues say when to switch, so your phone can stay in your pocket.</Caption>
       </Content>
@@ -218,8 +221,8 @@ function RunReview(){
         <RouteCard/>
         <Col gap={14}>
           <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:12}}>
-            <Input label="Time" defaultValue="24" suffix="min" inputMode="numeric"/>
-            <Input label="Distance" defaultValue="2.46" suffix="km" inputMode="decimal"/>
+            <Input label="Time" defaultValue="20" suffix="min" inputMode="numeric"/>
+            <Input label="Distance" defaultValue="2.05" suffix="km" inputMode="decimal"/>
           </div>
           <Input label="Climb (optional)" defaultValue="12" suffix="m" inputMode="numeric" hint="Total uphill. Watches call it elevation gain."/>
         </Col>
@@ -338,7 +341,7 @@ function TimedHold(){
 const SESSION=[
   {name:"Brisk walk",detail:"5 min",kind:"time",state:"done"},
   {name:"Goblet squat",detail:"Set 2 of 3 · 8 kg",kind:"reps",state:"current"},
-  {name:"Seated row",detail:"3 × 10 · 20 kg",kind:"reps",state:"next"},
+  {name:"Wall push-up",detail:"2 × 8",kind:"reps",state:"next"},
   {name:"Knee plank",detail:"3 × 20 s",kind:"time",state:"next"},
   {name:"Easy stretch",detail:"2 min",kind:"time",state:"next"},
 ];
@@ -407,7 +410,7 @@ function EndEarly(){
 const LOGGED=[
   {name:"Brisk walk",detail:"5 min",done:true},
   {name:"Goblet squat",detail:"3 × 10 · 8 kg",done:true},
-  {name:"Seated row",detail:"10, 10, 8 reps · 20 kg",done:true},
+  {name:"Wall push-up",detail:"8, 6 reps",done:true},
   {name:"Knee plank",detail:"20 s, 20 s, 14 s",done:true},
   {name:"Easy stretch",detail:"Not today",done:false},
 ];
@@ -417,7 +420,7 @@ function StrengthReview(){
       <TopBar left={<span></span>} right={<IconButton icon="x" label="Close"/>}/>
       <Content gap={20}>
         <Col gap={6}>
-          <Kicker>Wednesday · 19 min</Kicker>
+          <Kicker>Thursday · 19 min</Kicker>
           <H1>Done for today.</H1>
           <Body>Here's what you logged. Tap a line to fix it.</Body>
         </Col>
@@ -439,7 +442,25 @@ function StrengthReview(){
   );
 }
 
-/* 6.9 — Swim, logged afterwards: the phone stays in the locker. Lengths × pool length = distance. */
+/* Import a workout file instead of typing (docs/features/activity-file-import.md on
+   develop): the system file picker, one FIT or GPX file, parsed on the phone, nothing
+   uploaded. The file's numbers fill the form; the user still saves. Shared on window. */
+function FileImport({title="Did it with a watch?",detail="Import its FIT or GPX file instead."}){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 10px 10px 12px",borderRadius:"var(--radius-md)",border:"1px solid var(--border-subtle)"}}>
+      <span style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--info-soft)",color:"var(--info)"}}><Icon name="file-up" size={18}/></span>
+      <Col gap={2} style={{flex:1,minWidth:0}}>
+        <span style={{font:"600 15px/1.3 var(--font-body)"}}>{title}</span>
+        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>{detail}</span>
+      </Col>
+      <Button variant="secondary" size="sm" style={{height:44}}>Choose file</Button>
+    </div>
+  );
+}
+
+/* 6.9 — Swim, logged afterwards: the phone stays in the locker. Lengths × pool length = distance.
+   A FIT or GPX file from a watch app can fill the fields instead (activity-file-import on
+   develop: the system file picker, parsed on the phone, nothing uploaded). */
 const POOLS=[25,33,50];
 function SwimLog(){
   const [lengths,setLengths]=React.useState(12);
@@ -449,7 +470,7 @@ function SwimLog(){
       <TopBar left={<IconButton icon="arrow-left" label="Back"/>} right={null}/>
       <Content gap={20}>
         <Col gap={6}>
-          <Kicker>Wednesday · easy lengths · 20 min</Kicker>
+          <Kicker>Saturday · easy lengths · 20 min</Kicker>
           <H1>How many lengths?</H1>
           <Body>One length is one end of the pool to the other. A rough count is fine.</Body>
         </Col>
@@ -466,14 +487,7 @@ function SwimLog(){
           <span aria-live="polite" style={{font:"600 24px/1 var(--font-numeric)",...TABULAR}}>{lengths*pool} m</span>
         </div>
         <Input label="Time in the water" defaultValue="20" suffix="min" inputMode="numeric" hint="Rests at the wall count too."/>
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 10px 10px 12px",borderRadius:"var(--radius-md)",border:"1px solid var(--border-subtle)"}}>
-          <span style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--info-soft)",color:"var(--info)"}}><Icon name="watch" size={18}/></span>
-          <Col gap={2} style={{flex:1,minWidth:0}}>
-            <span style={{font:"600 15px/1.3 var(--font-body)"}}>Swim on your watch</span>
-            <span style={{font:"var(--type-caption)",color:"var(--text-secondary)",fontVariantNumeric:"tabular-nums"}}>7:04 · 22 min · 325 m</span>
-          </Col>
-          <Button variant="secondary" size="sm">Use</Button>
-        </div>
+        <FileImport title="Swam with a watch?"/>
       </Content>
       <BottomBar><Button size="lg" fullWidth iconRight="check">Save</Button></BottomBar>
     </>
@@ -483,11 +497,12 @@ function SwimLog(){
 const WORKOUT_SCREENS=[
   {id:"run-live",label:"6.1 · Run: live intervals",C:RunLive},
   {id:"run-review",label:"6.2 · Run: check the numbers",C:RunReview},
-  {id:"set-log",label:"6.3 · Strength: log a set",C:SetLog},
+  {id:"set-log",label:"6.3 · Strength: log a set",C:SetLog,note:"6.3–6.8 show another sample plan: a 20-minute gym session with dumbbells. Ana's plan has no strength."},
   {id:"set-rest",label:"6.4 · Strength: rest",C:SetRest},
   {id:"timed",label:"6.5 · Strength: timed hold",C:TimedHold},
   {id:"session-plan",label:"6.6 · Strength: session plan",C:SessionPlan},
   {id:"end-early",label:"6.7 · Strength: end early",C:EndEarly},
   {id:"strength-review",label:"6.8 · Strength: what you did",C:StrengthReview},
-  {id:"swim-log",label:"6.9 · Swim: log afterwards",C:SwimLog},
+  {id:"swim-log",label:"6.9 · Swim: log afterwards",C:SwimLog,note:"Another sample plan: a pool swim, logged after the session or imported from a watch file."},
 ];
+Object.assign(window,{FileImport});

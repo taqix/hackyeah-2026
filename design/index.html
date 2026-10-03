@@ -17,6 +17,9 @@ nav.flows a[aria-current]{background:var(--surface-inverse);color:var(--text-inv
 .row{display:flex;gap:70px;align-items:flex-start}
 .frame{position:relative;display:flex;flex-direction:column;gap:14px}
 .frame>.lbl{font:500 14px/1.2 var(--font-body);color:var(--text-tertiary)}
+.frame>.lbl a{color:var(--accent-text)}
+nav.flows i{width:1px;margin:6px 4px;background:var(--border-subtle)}
+.page{display:block;border:1px solid var(--border-subtle);border-radius:24px;background:var(--bg-app);box-shadow:var(--shadow-2);pointer-events:none}
 .frame>.note{max-width:390px;margin-top:-8px;font:400 13px/1.4 var(--font-body);color:var(--text-tertiary);text-wrap:pretty}
 </style>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -29,18 +32,27 @@ nav.flows a[aria-current]{background:var(--surface-inverse);color:var(--text-inv
 <script type="text/babel" src="prototype/home.jsx"></script>
 <script type="text/babel" src="prototype/chat.jsx"></script>
 <script type="text/babel" src="prototype/profile.jsx"></script>
+<script type="text/babel" src="prototype/plan.jsx"></script>
+<script type="text/babel" src="prototype/log.jsx"></script>
 <script type="text/babel" src="prototype/screens.jsx"></script>
 </head><body><div id="root"></div>
 <script type="text/babel">
-// ?flow=onboarding|home|workout|chat|profile narrows the board; ?theme=light|dark shows one theme.
+// ?flow=onboarding|home|workout|chat|profile|plan|log narrows the board; ?theme=light|dark shows one theme.
 const FLOWS={
   all:null,
-  onboarding:["welcome",...ONBOARDING_SCREENS.map(s=>s.id)],
+  onboarding:["welcome","sign-in-error",...ONBOARDING_SCREENS.map(s=>s.id)],
   home:HOME_SCREENS.map(s=>s.id),
   workout:["activity",...WORKOUT_SCREENS.map(s=>s.id),"feedback"],
   chat:CHAT_SCREENS.map(s=>s.id),
   profile:PROFILE_SCREENS.map(s=>s.id),
+  plan:PLAN_SCREENS.map(s=>s.id),
+  log:(window.LOG_SCREENS||[]).map(s=>s.id),
 };
+// Standalone pages in design/. The nav opens them; the "all" board also shows each as a live preview.
+const PAGES=[
+  {id:"website",label:"Website",src:"website.html",w:1280,h:800},
+  {id:"icons",label:"App icons",src:"icons.html",w:1088,h:800},
+];
 const params=new URLSearchParams(location.search);
 const flow=FLOWS.hasOwnProperty(params.get("flow"))?params.get("flow"):"all";
 const themes=params.get("theme")?[params.get("theme")]:["light","dark"];
@@ -134,11 +146,29 @@ function Canvas({children}){
   </>;
 }
 
+/* A standalone page as a live preview. It takes no pointer events, so the canvas keeps its gestures; the label opens the page.
+   The page keeps its own live reload. Once loaded, the frame grows once to the page's full height. */
+function Page({p,theme}){
+  const ref=React.useRef(null);
+  const onLoad=()=>{
+    const f=ref.current, doc=f.contentDocument;
+    doc.documentElement.dataset.theme=theme;
+    let last=0, n=0;
+    const t=setInterval(()=>{
+      if(f.contentDocument!==doc){clearInterval(t);return;}
+      const h=doc.documentElement.scrollHeight;
+      if((h===last&&h>p.h)||++n>24){clearInterval(t);f.style.height=h+"px";}
+      last=h;
+    },250);
+  };
+  return <iframe ref={ref} className="page" title={p.label} src={p.src+"?theme="+theme} tabIndex={-1} onLoad={onLoad} style={{width:p.w,height:p.h}}></iframe>;
+}
+
 function Board(){
   return <>
     <nav className="flows">{Object.keys(FLOWS).map(f=>(
       <a key={f} href={"?flow="+f+(params.get("theme")?"&theme="+params.get("theme"):"")} aria-current={f===flow?"page":undefined}>{f}</a>
-    ))}</nav>
+    ))}<i></i>{PAGES.map(p=><a key={p.id} href={p.src}>{p.id}</a>)}</nav>
     <Canvas>
       {themes.map(t=>(
         <div key={t} className="row">{list.map(s=>(
@@ -149,6 +179,12 @@ function Board(){
           </div>
         ))}</div>
       ))}
+      {flow==="all"?<div className="row">{PAGES.flatMap(p=>themes.map(t=>(
+        <div key={p.id+t} className="frame">
+          <span className="lbl">{p.label} · {t} · <a href={p.src}>open</a></span>
+          <Page p={p} theme={t}/>
+        </div>
+      )))}</div>:null}
     </Canvas>
   </>;
 }
@@ -157,7 +193,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<Board/>);
 <script>
 // Live reload: poll the design files and reload when any of them changes.
 (function(){
-  const files=["index.html","prototype/workout.jsx","prototype/onboarding.jsx","prototype/home.jsx","prototype/chat.jsx","prototype/profile.jsx","prototype/screens.jsx","system/components.js","system/styles.css",
+  const files=["index.html","prototype/workout.jsx","prototype/onboarding.jsx","prototype/home.jsx","prototype/chat.jsx","prototype/profile.jsx","prototype/plan.jsx","prototype/log.jsx","prototype/screens.jsx","system/components.js","system/styles.css",
     ...["fonts","colors","typography","spacing","effects","base"].map(f=>"system/tokens/"+f+".css")];
   const seen={};
   async function check(){

@@ -1,9 +1,12 @@
 /* Home — the Today tab: screen 5 and states 5.1–5.15 (see README › Home).
    One question: what do I do today, and how is my week going?
-   Data follows docs/product.md and the proposed weekly plan contract on
-   feat/llm-plan-creation: a week summary, one explanation per session, notices,
-   optional trials, unscheduled suggestions. Copy never claims automatic progress
-   and never asks anyone to make up a session.
+   Data follows docs/product.md and the plan contract on feat/llm-plan-creation
+   (docs/plan-creation): each session is an event with a start time and a description,
+   or a gym series; a plan can hold fewer sessions than asked (partial) or none (empty).
+   Week summaries, notes and "Outside your preferred times." are app copy computed from
+   the plan and the answers. Optional sessions, the Not today choices and unscheduled
+   weeks go beyond the current contract (README › Home › Not decided yet). Copy never
+   claims automatic progress and never asks anyone to make up a session.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
    Layout helpers (Content, Col, Row, H1, Kicker, Body, Section, NavBar) and Sheet
    (workout.jsx) resolve at render time. Registers window.HOME_SCREENS. */
@@ -22,46 +25,47 @@ if (!document.getElementById("home-motion")) {
 
 /* ---------- Data: Ana's first two weeks ---------- */
 
-/* Ana's answers, as on the You tab (profile.jsx): walk and run, three days a week,
-   20 minutes, mornings, occasional new suggestions. Week 1 as planned on Monday, 24-hour
-   times. Friday sits in the evening until her chat on Wednesday evening (screen 8). */
+/* Ana's answers, as on onboarding's review (4) and the You tab (9): walk and run, three
+   days a week, 20 minutes, mornings, occasional new suggestions. Week 1 (5–11 Oct 2026) as
+   planned on Monday, 24-hour times. `why` is the session's description from the plan.
+   Friday sits in the evening (no free morning) until her chat on Wednesday evening (8.3). */
 const ANSWERS = "walk and run, three days a week, 20 minutes, mornings";
 const WEEK1 = [
-  {short:"Mon",day:"Monday",date:6,state:"planned",title:"Brisk walk",time:"7:00",min:20,why:"A short walk to start, at the morning time you picked. Everyone starts somewhere."},
-  {short:"Tue",day:"Tuesday",date:7,state:"rest"},
-  {short:"Wed",day:"Wednesday",date:8,state:"planned",title:"Walk-run intervals",time:"7:00",min:24,why:"Short runs between walks, at 7:00 like Monday."},
-  {short:"Thu",day:"Thursday",date:9,state:"rest"},
-  {short:"Fri",day:"Friday",date:10,state:"planned",title:"Walk-run intervals",time:"18:00",min:24,why:"The same walk-run, in the evening this time. Outside your preferred times."},
-  {short:"Sat",day:"Saturday",date:11,state:"rest"},
-  {short:"Sun",day:"Sunday",date:12,state:"rest"},
+  {short:"Mon",day:"Monday",date:5,state:"planned",title:"Brisk walk",time:"7:00",min:20,why:"A brisk walk outdoors, at a pace where you can still talk."},
+  {short:"Tue",day:"Tuesday",date:6,state:"rest"},
+  {short:"Wed",day:"Wednesday",date:7,state:"planned",title:"Walk-run intervals",time:"7:00",min:20,why:"Six one-minute runs with easy walks between. Slow enough to talk."},
+  {short:"Thu",day:"Thursday",date:8,state:"rest"},
+  {short:"Fri",day:"Friday",date:9,state:"planned",title:"Walk-run intervals",time:"18:00",min:20,why:"Six one-minute runs with easy walks between. Outside your preferred times."},
+  {short:"Sat",day:"Saturday",date:10,state:"rest"},
+  {short:"Sun",day:"Sunday",date:11,state:"rest"},
 ];
 const edit = (week, changes) => week.map((d, i) => changes[i] ? {...d, ...changes[i]} : d);
 const WED = edit(WEEK1, {0:{state:"done",felt:"easy"}});
 const WED_DONE = edit(WED, {2:{state:"done",felt:"just right"}});
-const THU = edit(WED_DONE, {4:{time:"7:00",min:18,updated:true,why:"Shorter and in the morning, as you asked: four intervals instead of six."}});
+const THU = edit(WED_DONE, {4:{time:"7:00",min:10,updated:true,why:"Three one-minute runs with easy walks between, in the morning as you asked."}});
 const SAT = edit(THU, {4:{state:"unlogged"}});
 const SUN = edit(SAT, {4:{state:"skipped"}});
 
-/* Week 2 is even, so "occasional" allows one optional new type. */
+/* Week 2 (12–18 Oct). "Occasional" discovery may add one new activity, marked optional. */
 const WEEK2 = [
-  {short:"Mon",day:"Monday",date:13,state:"planned",title:"Walk-run intervals",time:"7:00",min:24,why:"You said you'd choose this walk-run again."},
-  {short:"Tue",day:"Tuesday",date:14,state:"rest"},
-  {short:"Wed",day:"Wednesday",date:15,state:"rest"},
-  {short:"Thu",day:"Thursday",date:16,state:"planned",title:"Gentle stretching",time:"7:00",min:20,optional:true,why:"Something new to try, if you like. You can skip it this week."},
-  {short:"Fri",day:"Friday",date:17,state:"rest"},
-  {short:"Sat",day:"Saturday",date:18,state:"planned",title:"Easy walk",time:"7:00",min:20,why:"An easy walk to round off the week."},
-  {short:"Sun",day:"Sunday",date:19,state:"rest"},
+  {short:"Mon",day:"Monday",date:12,state:"planned",title:"Walk-run intervals",time:"7:00",min:20,why:"Six one-minute runs with easy walks between, like last week."},
+  {short:"Tue",day:"Tuesday",date:13,state:"rest"},
+  {short:"Wed",day:"Wednesday",date:14,state:"rest"},
+  {short:"Thu",day:"Thursday",date:15,state:"planned",title:"Gentle stretching",time:"7:00",min:20,optional:true,why:"Something new to try: easy standing stretches at home. Skip it if you like."},
+  {short:"Fri",day:"Friday",date:16,state:"rest"},
+  {short:"Sat",day:"Saturday",date:17,state:"planned",title:"Easy walk",time:"7:00",min:20,why:"An easy walk outdoors to round off the week."},
+  {short:"Sun",day:"Sunday",date:18,state:"rest"},
 ];
 const OPEN2 = WEEK2.map(({short, day, date}) => ({short, day, date, state:"open"}));
 const OPEN3 = OPEN2.map(d => ({...d, date:d.date + 7}));
-const LIGHTER = edit(OPEN2, {0:WEEK2[0], 5:{...WEEK2[5], why:"The other free morning this week."}});
+const LIGHTER = edit(OPEN2, {0:WEEK2[0], 5:WEEK2[5]});
 const UNSCHEDULED = [
-  {title:"Walk-run intervals",min:24,why:"You said you'd choose it again."},
+  {title:"Walk-run intervals",min:20,why:"Six one-minute runs, walks between."},
   {title:"Easy walk",min:20},
   {title:"Gentle stretching",min:20,optional:true,why:"Something new, if you like."},
 ];
 const SUMMARY1 = "Three short sessions, with rest days between. There's no need to add more.";
-const SUMMARY2 = "The walk-run you'd choose again, an easy walk, and one optional stretch to try.";
+const SUMMARY2 = "A walk-run, an easy walk, and one optional stretch to try.";
 const nextSession = (days, i) => days.slice(i + 1).find(d => d.state === "planned");
 
 /* ---------- Pieces ---------- */
@@ -106,7 +110,7 @@ function WeekStrip({days, today, selected = today, onSelect, loading}){
         const ring = onSelect && i === selected && !isToday;
         const disc = s === "loading" ? {background:"var(--surface-sunken)",color:"var(--text-tertiary)"}
           : isToday ? {background:"var(--surface-inverse)",color:"var(--text-inverse)"}
-          : s === "done" ? {background:"var(--success-soft)",color:"var(--success)"}
+          : s === "done" ? {background:"var(--success-soft)",color:"var(--success-text)"}
           : s === "planned" ? {color:"var(--accent-text)"}
           : {color:"var(--text-tertiary)"};
         return (
@@ -208,8 +212,9 @@ function CheckIn({d}){
   );
 }
 
-/* Today's steps from the phone (codex/step-counter). Without access it asks quietly and
-   never shows a made-up zero. */
+/* Today's steps from the phone: useStepCounter() (docs/features/system-step-counter.md on
+   develop). Without access it asks quietly and never shows a made-up zero. The hook's
+   other states (denied: Open Settings; unavailable; error: Try again) use the same row. */
 function StepCount({count, at}){
   return (
     <div style={{display:"flex",alignItems:"center",gap:14,minHeight:64,padding:"10px 12px",borderRadius:"var(--radius-md)",background:"var(--surface-sunken)"}}>
@@ -338,20 +343,21 @@ function Note({tone = "accent", icon, title, meta, dismiss = true, action, child
     </section>
   );
 }
-/* The chat card's summary (8.3), which is the plan's change_summary, shown once on Home.
-   The changed session gets an Updated tag in the list; old → new values stay in chat. */
+/* The chat card's summary (8.3), shown once on Home. The changed session gets an Updated
+   tag in the list; old → new values stay in chat. */
 function PlanUpdated(){
   return (
     <Note icon="check" title="Plan updated" meta="last night" action={<TextLink>See the chat</TextLink>}>
-      All your sessions are at 7:00 now, and Friday is a little shorter.
+      All your sessions are at 7:00 now, and Friday is 10 minutes.
     </Note>
   );
 }
 
-/* Alternatives to today's session, from the preferences draft: simpler, five minutes,
-   move, or skip with nothing to make up. Anything else goes to chat. */
+/* Alternatives to today's session: simpler, five minutes, move, or skip with nothing to
+   make up. Anything else goes to chat. Each one is a plan change like a chat request;
+   the current contract has no such shortcuts yet (README › Home). */
 const NOT_TODAY = [
-  {icon:"feather",title:"Make it simpler",detail:"A gentler version, still 24 min."},
+  {icon:"feather",title:"Make it simpler",detail:"A gentler version, still 20 min."},
   {icon:"timer",title:"Five minutes instead",detail:"A short version. It still counts."},
   {icon:"calendar-clock",title:"Move it",detail:"To later today or another free day."},
   {icon:"moon",title:"Skip today",detail:"Nothing to make up. Friday stays as planned."},
@@ -424,7 +430,7 @@ function PlainScreen({kicker, name, children}){
 
 /* 5 — Wednesday morning of week 1. Interactive: tap a day. */
 const Today = ({initial}) => (
-  <HomeScreen kicker="Wednesday, 8 October · Week 1" days={WED} today={2} initial={initial}
+  <HomeScreen kicker="Wednesday, 7 October · Week 1" days={WED} today={2} initial={initial}
     steps={<StepCount count="3,240" at="9:38"/>}
     list={<WeekList days={WED} today={2} aside="1 of 3 done" summary={SUMMARY1}/>}/>
 );
@@ -434,34 +440,34 @@ const FridaySelected = () => <Today initial={4}/>;
 const NotToday = () => <><Today/><NotTodaySheet/></>;
 /* 5.3 — After completion and feedback (screen 7). */
 const DoneToday = () => (
-  <HomeScreen kicker="Wednesday, 8 October · Week 1" days={WED_DONE} today={2}
+  <HomeScreen kicker="Wednesday, 7 October · Week 1" days={WED_DONE} today={2}
     steps={<StepCount count="5,906" at="9:38"/>}
     list={<WeekList days={WED_DONE} today={2} aside="2 of 3 done" summary={SUMMARY1}/>}/>
 );
 /* 5.4 — Thursday: a rest day, the morning after a chat revision. */
 const Updated = () => (
-  <HomeScreen kicker="Thursday, 9 October · Week 1" note={<PlanUpdated/>} days={THU} today={3}
+  <HomeScreen kicker="Thursday, 8 October · Week 1" note={<PlanUpdated/>} days={THU} today={3}
     steps={<StepCount count="1,204" at="9:38"/>}
     list={<WeekList days={THU} today={3} aside="2 of 3 done" summary={SUMMARY1}/>}/>
 );
 /* 5.5 — Saturday: Friday passed with nothing logged. */
 const CheckInDay = () => (
-  <HomeScreen kicker="Saturday, 11 October · Week 1" days={SAT} today={5} after={<CheckIn d={SAT[4]}/>}
+  <HomeScreen kicker="Saturday, 10 October · Week 1" days={SAT} today={5} after={<CheckIn d={SAT[4]}/>}
     steps={<StepCount count="860" at="9:38"/>}
     list={<WeekList days={SAT} today={5} aside="2 of 3 done" summary={SUMMARY1}/>}/>
 );
-/* 5.6 — Sunday: the week is done, Friday skipped without fuss; week 2 has one optional trial. */
+/* 5.6 — Sunday: the week is done, Friday skipped without fuss; week 2 has one optional new activity. */
 const WeekDone = () => (
-  <HomeScreen kicker="Sunday, 12 October · Week 1" days={SUN} today={6}
+  <HomeScreen kicker="Sunday, 11 October · Week 1" days={SUN} today={6}
     todayHero={<HeroCard tone="warm" icon="sun" kicker="Week 1 · 2 sessions" title="First week, done." body="Two sessions, both at 7 in the morning. Rest today — week 2 starts tomorrow."/>}
     steps={<StepCount count="2,315" at="9:38"/>}
-    list={<WeekList title="Next week" days={WEEK2} aside="13–19 Oct" summary={SUMMARY2}/>}/>
+    list={<WeekList title="Next week" days={WEEK2} aside="12–18 Oct" summary={SUMMARY2}/>}/>
 );
 /* 5.7 — Right after onboarding's Build plan (4): the first plan is being generated. */
 const Building = () => (
   <>
     <Content pb={120} gap={20}>
-      <HomeHeader kicker="Monday, 6 October" chat={false}/>
+      <HomeHeader kicker="Monday, 5 October" chat={false}/>
       <WeekStrip days={WEEK1} today={0} loading/>
       <div role="status">
         <SuggestionCard tone="sage" kicker="Your first week" title="Building your week." body="Walk and run, three days a week, 20 minutes, mornings. This takes about a minute.">
@@ -475,7 +481,7 @@ const Building = () => (
 );
 /* 5.8 — Generation failed. No partial plan is shown; answers are kept. */
 const BuildFailed = () => (
-  <PlainScreen kicker="Monday, 6 October">
+  <PlainScreen kicker="Monday, 5 October">
     <HeroCard alert icon="calendar-x" kicker="Your first week" title="Plan didn't build." body="Something went wrong on our side. Your answers are saved, so trying again only takes a moment."
       actions={<><Button icon="rotate-ccw">Try again</Button><Button variant="ghost">Review answers</Button></>}/>
     <p style={{...CAPTION,margin:0}}>From your answers: {ANSWERS}.</p>
@@ -483,27 +489,29 @@ const BuildFailed = () => (
 );
 /* 5.9 — Monday of week 1: the first open after the plan is ready. */
 const DayOne = () => (
-  <HomeScreen kicker="Monday, 6 October · Week 1" days={WEEK1} today={0}
+  <HomeScreen kicker="Monday, 5 October · Week 1" days={WEEK1} today={0}
     note={<Note tone="warm" icon="sun" title="Your first week">{SUMMARY1}</Note>}
     steps={<StepCount/>}
     list={<WeekList days={WEEK1} today={0} aside="3 sessions"/>}/>
 );
-/* 5.10 — Partial week: fewer free slots than sessions asked for. */
+/* 5.10 — Partial week: fewer free slots than sessions asked for (the contract returns fewer
+   events). The note is app copy from the count. */
 const Lighter = () => (
-  <HomeScreen kicker="Monday, 13 October · Week 2" days={LIGHTER} today={0}
+  <HomeScreen kicker="Monday, 12 October · Week 2" days={LIGHTER} today={0}
     after={<Note tone="info" icon="calendar-range" title="A lighter week" dismiss={false}>Only two mornings are free this week, so there are two sessions. There's nothing to make up.</Note>}
     list={<WeekList days={LIGHTER} today={0} aside="2 sessions"/>}/>
 );
-/* 5.11 — Unscheduled week: the calendar couldn't be read, so nothing has a time. */
+/* 5.11 — Unscheduled week: the calendar couldn't be read, so nothing has a time. Beyond the
+   current contract, where every event has a time and no slots means no events. */
 const NoTimes = () => (
-  <HomeScreen kicker="Monday, 13 October · Week 2" days={OPEN2} today={0} selectable={false}
+  <HomeScreen kicker="Monday, 12 October · Week 2" days={OPEN2} today={0} selectable={false}
     todayHero={<HeroCard icon="calendar-x" kicker="Week 2 · 3 sessions" title="No times yet." body="We couldn't read your calendar, so this week's sessions don't have set times. Pick a day for each when you know your week."
       actions={<Button variant="secondary" icon="rotate-ccw">Try again</Button>}/>}
     list={<OpenList items={UNSCHEDULED}/>}/>
 );
-/* 5.12 — Empty week 3: nothing fits the current choices, and odd weeks bring no trial. A valid plan, not an error. */
+/* 5.12 — Empty week: nothing fits the current choices ({"events": []}). A valid plan, not an error. */
 const Quiet = () => (
-  <HomeScreen kicker="Monday, 20 October · Week 3" days={OPEN3} today={0} selectable={false} change={false}
+  <HomeScreen kicker="Monday, 19 October · Week 3" days={OPEN3} today={0} selectable={false} change={false}
     todayHero={
       <HeroCard icon="calendar" kicker="Week 3" title="A quiet week." body="No session fits your current choices. You can change them whenever you're ready."
         actions={<><Button variant="secondary">Review choices</Button><Button variant="ghost">Open chat</Button></>}>
@@ -532,15 +540,15 @@ const Loading = () => (
 );
 /* 5.14 — The plan can't be fetched. */
 const Offline = () => (
-  <PlainScreen kicker="Wednesday, 8 October" name={null}>
+  <PlainScreen kicker="Wednesday, 7 October" name={null}>
     <HeroCard alert icon="cloud-off" kicker="No connection" title="Plan won't load." body="Check your connection, then try again. Anything you've logged is safe."
       actions={<Button icon="rotate-ccw">Try again</Button>}/>
   </PlainScreen>
 );
 /* 5.15 — Guest demo: seeded week and history, isolated per visitor, limited chat changes. */
 const Guest = () => (
-  <HomeScreen kicker="Wednesday, 8 October · Week 1" name={null} badge={<Badge tone="info">Guest demo</Badge>} days={WED} today={2}
-    note={<Note tone="info" icon="info" title="A sample week">Some history is filled in so you can look around. Changes only affect this demo.</Note>}
+  <HomeScreen kicker="Wednesday, 7 October · Week 1" name={null} badge={<Badge tone="info">Guest demo</Badge>} days={WED} today={2}
+    note={<Note tone="info" icon="info" title="A sample week" action={<TextLink>Make a plan of your own</TextLink>}>Some history is filled in so you can look around. Changes only affect this demo.</Note>}
     list={<WeekList days={WED} today={2} aside="1 of 3 done" summary={SUMMARY1}/>}
     change="3 plan changes left in this demo."/>
 );

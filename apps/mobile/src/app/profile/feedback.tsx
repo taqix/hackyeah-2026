@@ -1,10 +1,5 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { YourFeedbackScreen } from '@/features/profile/feedback-screen';
 
 export default function YourFeedbackRoute() {
-  return (
-    <PlaceholderScreen
-      title="Your feedback"
-      screenId="9.5"
-    />
-  );
+  return <YourFeedbackScreen />;
 }

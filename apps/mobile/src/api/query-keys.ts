@@ -14,6 +14,7 @@ export const queryKeys = {
   log: (id: string) => ['logs', id] as const,
   logsAll: ['logs'] as const,
   lastExercise: (key: string) => ['logs', 'last-exercise', key] as const,
+  lastExerciseAll: ['logs', 'last-exercise'] as const,
   chat: ['chat', 'messages'] as const,
   summary: ['profile', 'summary'] as const,
   feedback: ['profile', 'feedback'] as const,

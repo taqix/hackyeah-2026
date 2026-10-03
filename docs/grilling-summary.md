@@ -66,6 +66,14 @@ feature PRs into `develop` and release PRs from `develop` into `main`.
 These items must be settled before implementing or claiming their corresponding
 capability; they are not silently chosen by this documentation plan.
 
+## Later decisions
+
+The [mobile review of 3 October](mobile-review-2026-10-03.md) settled some of
+these and changed others: plans go one week ahead with full history, sign-in
+adds Google, and the guest demo is web only. Sports come from a database
+catalog with per-sport metrics. Where this page and the review differ, the
+review is newer.
+
 ## Deliverables
 
 - [AGENTS.md](../AGENTS.md): shared compact agent instructions.

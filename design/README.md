@@ -501,9 +501,10 @@ The Calendar tab answers one question: when are my sessions, and when were
 they? It replaced the Plan tab in the review.
 
 - **Calendar (10):** Wednesday 21 October, week 3. A month of sessions: a mark
-  per session under its date (done filled, planned in the accent, skipped a
-  hollow ring) and each day's full label for screen readers. Tap a day for its
-  sessions (an added workout carries **Extra**), or the next session on a free
+  per session under its date (done filled, planned in the accent, skipped or a
+  past session nobody logged a dashed ring) and each day's full label for
+  screen readers. Tap a day for its sessions (an added workout carries
+  **Extra**, an unlogged one **Not logged**), or the next session on a free
   day. Private events and what they contain never show, and the line under the
   day says so. The month pages back to the first session and stops at the last
   planned day: plans go one week ahead. **Plan history** is a section below,

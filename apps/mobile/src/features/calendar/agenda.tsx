@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useLog, useSessionsInRange } from '@/api/hooks';
-import type { ActivityLog, LocalDate, PlannedSession } from '@/api/types';
+import type { ActivityLog, LocalDate } from '@/api/types';
 import { Col } from '@/components/layout';
 import { Badge, Card, Icon, PressableScale, Skeleton, Text } from '@/components/ui';
 import { addDays, formatDayDate, formatDayShort, formatLongDate, formatMinutes, formatTime, fromLocalDate } from '@/lib/dates';
@@ -10,7 +10,7 @@ import { nextPlannedSession, sessionLocalDate, sessionMinutes, sessionStart, ses
 import { routes } from '@/navigation/routes';
 import { useTheme } from '@/theme';
 
-import { type DayItem, feltLabel, type MarkState } from './day-items';
+import { type DayItem, feltLabel, markState, type MarkState, stateWord } from './day-items';
 import { dayOfMonth, isInMonth, monthOf } from './month';
 
 type AgendaProps = {
@@ -43,7 +43,7 @@ export function Agenda({ date, items, today, firstWeekStart, plannedThrough }: A
         ) : items.length ? (
           items.map((item, i) =>
             item.kind === 'session' ? (
-              <SessionLine key={item.key} session={item.session} divider={i > 0} />
+              <SessionLine key={item.key} item={item} today={today} divider={i > 0} />
             ) : (
               <ExtraLine key={item.key} log={item.log} divider={i > 0} />
             ),
@@ -105,15 +105,20 @@ function NextSession({ after, plannedThrough }: { after: LocalDate; plannedThrou
   );
 }
 
-function SessionLine({ session, divider }: { session: PlannedSession; divider: boolean }) {
+type SessionItem = Extract<DayItem, { kind: 'session' }>;
+
+function SessionLine({ item, today, divider }: { item: SessionItem; today: LocalDate; divider: boolean }) {
   const router = useRouter();
-  const done = session.status === 'completed';
-  const log = useLog(done ? session.log_id : null);
-  const state: MarkState = done ? 'done' : session.status === 'skipped' ? 'skipped' : 'planned';
+  const { session } = item;
+  const state = markState(item, today);
+  const log = useLog(state === 'done' ? session.log_id : null);
   const minutes = log.data ? log.data.duration_seconds / 60 : sessionMinutes(session);
   const felt = log.data?.feedback?.felt;
+  // Nothing was logged for planned and unlogged sessions, so they keep their planned time.
   const meta =
-    state === 'planned' ? sessionTimeLabel(session) : formatMinutes(minutes) + (felt ? ` · felt ${feltLabel(felt)}` : '');
+    state === 'planned' || state === 'unlogged'
+      ? sessionTimeLabel(session)
+      : formatMinutes(minutes) + (felt ? ` · felt ${feltLabel(felt)}` : '');
   return (
     <Line
       title={session.title}
@@ -157,8 +162,7 @@ type LineProps = {
 
 function Line({ title, tags, meta, state, divider, hint, onPress }: LineProps) {
   const { colors } = useTheme();
-  const stateWord = state === 'done' ? 'Done' : state === 'skipped' ? 'Skipped' : null;
-  const label = [title, ...tags, meta.split(' · ').join(', '), stateWord].filter(Boolean).join(', ');
+  const label = [title, ...tags, meta.split(' · ').join(', '), stateWord(state)].filter(Boolean).join(', ');
   return (
     <PressableScale
       onPress={onPress}
@@ -186,6 +190,8 @@ function Line({ title, tags, meta, state, divider, hint, onPress }: LineProps) {
         <Badge tone="success" dot style={styles.badge}>
           Done
         </Badge>
+      ) : state === 'unlogged' ? (
+        <Badge style={styles.badge}>Not logged</Badge>
       ) : state === 'skipped' ? (
         <Badge style={styles.badge}>Skipped</Badge>
       ) : (

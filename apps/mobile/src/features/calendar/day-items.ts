@@ -4,20 +4,28 @@
  */
 import type { ActivityLog, Felt, LocalDate, PlannedSession } from '@/api/types';
 import { formatLongDate, formatTime, toLocalDate } from '@/lib/dates';
-import { sessionLocalDate, sessionStart } from '@/lib/sessions';
+import { sessionDayState, sessionLocalDate, sessionStart } from '@/lib/sessions';
 
 export type DayItem =
   | { kind: 'session'; key: string; start: Date; session: PlannedSession }
   | { kind: 'extra'; key: string; start: Date; log: ActivityLog };
 
-/** done is filled, planned is the accent, skipped is a hollow ring. Extras count as done. */
-export type MarkState = 'done' | 'planned' | 'skipped';
+/**
+ * done is filled, planned is the accent, and skipped and unlogged (a past
+ * session nobody logged) share a dashed ring. Extras count as done; today's
+ * session stays planned until the day is over.
+ */
+export type MarkState = 'done' | 'planned' | 'unlogged' | 'skipped';
 
-export function markState(item: DayItem): MarkState {
+export function markState(item: DayItem, today: LocalDate): MarkState {
   if (item.kind === 'extra') return 'done';
-  if (item.session.status === 'completed') return 'done';
-  if (item.session.status === 'skipped') return 'skipped';
-  return 'planned';
+  const state = sessionDayState(item.session, today);
+  return state === 'today' ? 'planned' : state;
+}
+
+/** How a state reads in words: "Done", "Not logged", "Skipped"; null for planned. */
+export function stateWord(state: MarkState): string | null {
+  return { done: 'Done', unlogged: 'Not logged', skipped: 'Skipped', planned: null }[state];
 }
 
 export function itemTitle(item: DayItem): string {
@@ -50,12 +58,11 @@ export function feltLabel(felt: Felt): string {
   return FELT[felt];
 }
 
-function itemPhrase(item: DayItem): string {
+function itemPhrase(item: DayItem, today: LocalDate): string {
   const title = itemTitle(item);
   if (item.kind === 'extra') return `${title}, extra, done`;
-  const state = markState(item);
-  if (state === 'planned') return `${title} at ${formatTime(item.start)}`;
-  return `${title}, ${state}`;
+  const word = stateWord(markState(item, today));
+  return word ? `${title}, ${word.toLowerCase()}` : `${title} at ${formatTime(item.start)}`;
 }
 
 /**
@@ -70,7 +77,7 @@ export function dayAccessibilityLabel(
   const parts = [formatLongDate(date)];
   if (date === today) parts.push('today');
   if (items) {
-    if (items.length) parts.push(items.map(itemPhrase).join('; '));
+    if (items.length) parts.push(items.map((item) => itemPhrase(item, today)).join('; '));
     else parts.push(date > plannedThrough ? 'not planned yet' : 'no sessions');
   }
   return parts.join(', ');

@@ -778,12 +778,17 @@ for (const [status, code] of [
   [403, "AUTHENTICATION"],
   [429, "RATE_LIMIT"],
   [500, "PROVIDER"],
+  [503, "PROVIDER"],
 ] as const) {
   void test(`handles HTTP ${status} without exposing provider content`, async () => {
+    let attempts = 0;
     await assert.rejects(
       generatePlan(input(), {
         ...options,
-        fetchImpl: async () => new Response("secret preferences", { status }),
+        fetchImpl: async () => {
+          attempts++;
+          return new Response("secret preferences", { status });
+        },
       }),
       (error: unknown) => {
         assert.equal((error as { code: string }).code, code);
@@ -791,6 +796,31 @@ for (const [status, code] of [
         return true;
       },
     );
+    assert.equal(attempts, [429, 500, 503].includes(status) ? 4 : 1);
+  });
+}
+
+for (const status of [408, 429, 500, 502, 503, 504]) {
+  void test(`recovers from HTTP ${status} using the identical request and deadline`, async () => {
+    let attempts = 0;
+    let firstBody: RequestInit["body"];
+    let firstSignal: AbortSignal | null | undefined;
+    const result = await generatePlan(input(), {
+      ...options,
+      fetchImpl: async (_url, init) => {
+        attempts++;
+        if (attempts === 1) {
+          firstBody = init?.body;
+          firstSignal = init?.signal;
+          return new Response("private provider content", { status });
+        }
+        assert.equal(init?.body, firstBody);
+        assert.equal(init?.signal, firstSignal);
+        return response(output());
+      },
+    });
+    assert.equal(attempts, 2);
+    assert.deepEqual(result, output());
   });
 }
 

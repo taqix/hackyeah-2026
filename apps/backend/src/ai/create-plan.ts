@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
 
 import {
   buildGeminiOutputSchema,
@@ -134,18 +135,38 @@ export async function generatePlan(
   let payload: unknown;
   const signal = AbortSignal.timeout(PLAN_GENERATION_CONFIG.timeoutMs);
   try {
-    response = await fetchImpl(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
+    for (let attempt = 0; ; attempt++) {
+      signal.throwIfAborted();
+      response = await fetchImpl(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          signal,
+          body: requestBody,
         },
-        signal,
-        body: requestBody,
-      },
-    );
+      );
+      const retryable = [408, 429, 500, 502, 503, 504].includes(
+        response.status,
+      );
+      if (!retryable || attempt >= PLAN_GENERATION_CONFIG.maxRetries) break;
+      // Release the failed response without logging potentially private content.
+      await response.body?.cancel();
+      const backoff = PLAN_GENERATION_CONFIG.retryBaseDelayMs * 2 ** attempt;
+      const retryAfter = response.headers.get("retry-after");
+      const seconds = retryAfter === null ? NaN : Number(retryAfter);
+      const requestedDelay = Number.isFinite(seconds)
+        ? Math.max(0, seconds * 1000)
+        : Math.max(0, Date.parse(retryAfter ?? "") - Date.now()) || 0;
+      await delay(
+        Math.max(backoff * (0.5 + Math.random() * 0.5), requestedDelay),
+        undefined,
+        { signal },
+      );
+    }
     if (response.ok) payload = await response.json();
   } catch (error) {
     if (

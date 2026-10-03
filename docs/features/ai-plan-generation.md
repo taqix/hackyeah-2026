@@ -33,8 +33,8 @@ not a permanent product requirement.
 | Clients         | Provider-independent output shape                                                      | Web/mobile API integration, loading/error/empty states, and chat persistence    |
 | Runtime         | Server-side fetch adapter, timeout, response parsing, and explicit errors              | Live provider verification, usage limits, and operational monitoring            |
 
-No plan HTTP route, automatic weekly scheduler, database migration for plan
-storage, or automatic retry is supplied by this feature. The NestJS module
+No plan HTTP route, automatic weekly scheduler, or database migration for plan
+storage is supplied by this feature. The NestJS module
 currently registers only the health controller. A healthy backend does not
 establish that generation or the end-to-end user journey works.
 
@@ -102,7 +102,11 @@ executes these steps in order:
 7. Await `reviewContent`, if supplied, then return the validated `PlanOutput`.
    Review errors propagate to the caller; they are not wrapped or retried.
 
-There is one provider attempt per call. Conversation is never silently truncated,
+The adapter retries HTTP 408, 429, 500, 502, 503, and 504 up to three times
+with exponential backoff and jitter (1, 2, and 4 second ceilings), honoring
+Retry-After when supplied. All attempts and waits share the 60-second deadline.
+Other HTTP errors, network failures, and invalid output are not retried.
+Conversation is never silently truncated,
 and there is no fallback provider, JSON repair, streamed output, or partial-plan
 recovery from an incomplete provider response. A valid partial schedule is a
 successful result, distinct from truncated or malformed model output.
@@ -317,8 +321,9 @@ Client integration should show loading while generation/saving runs, distinguish
 a valid empty or partial plan from a failure, and keep the current schedule on
 failure. A no-change chat reply should remain visible. Refresh state after a
 stale-version rejection and regenerate from current context; do not replay old
-operations blindly. The adapter does not implement retry/backoff, HTTP error
-mapping, cancellation from the client, guest quotas, or idempotent persistence.
+operations blindly. The adapter implements bounded provider HTTP retries but not
+HTTP error mapping, cancellation from the client, guest quotas, or idempotent
+persistence.
 
 ## Changing AI provider or model
 
@@ -390,7 +395,7 @@ Before enabling the complete feature, verify:
   active version; concurrent revisions cannot overwrite newer state.
 - Authenticated users and web guests cannot read or modify one another's plans.
 - Web/mobile display committed changes, loading, no-change replies, and retry
-  states correctly on the judging device/browser.
+states correctly on the judging device/browser.
 - The selected live provider/model accepts dynamic schemas and produces suitable
   gym/non-gym instructions. Prompt-level suitability needs human/content review.
 

@@ -32,12 +32,28 @@ start command and a stable health endpoint, including a local Docker option.
 - Mobile compatibility: no existing mobile API calls are changed.
 - AI behavior: not applicable.
 
+The Docker build now builds the shared contracts workspace before the backend.
+The runtime preserves both workspace package boundaries for ESM exports and
+includes the contracts' compiled JSON schemas and the backend planning prompt.
+The prompt lives in `apps/backend/src/ai/prompts/` and is copied into
+`dist/ai/prompts/` by Nest's asset build, alongside the AI communication modules.
+Only backend and contracts production dependencies are installed; Expo remains
+excluded. `GEMINI_API_KEY` and `GEMINI_MODEL` are server-side configuration for
+plan generation and are optional for `/health` startup.
+
 ## Verification
 
 - `npm ci`, formatting, workspace lint/typecheck, backend build, and HTTP test:
   passed locally.
 - The Docker image and Compose service served `/health` locally.
 - Expo device smoke check: not applicable to this backend-only change.
+
+The Gemini contract review updated the Docker layout described above. An isolated
+production workspace-install dry run resolved 108 packages and confirmed that
+backend/contracts are included while Expo and React Native are excluded. The
+Docker CLI is unavailable in that review environment, so the revised image and
+Compose service still require a container build and `/health` smoke check before
+merge.
 
 ## Review and documentation
 

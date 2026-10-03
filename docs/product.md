@@ -53,6 +53,10 @@ preferences, a plan, and activity history. Never use a shared guest login.
 Preferences are stored on the server, one JSON document per person, so they
 follow the account to a new phone.
 
+Equipment, available locations, and avoidances accept custom text values rather
+than a fixed option catalog. Clients may suggest common choices without limiting
+what a person can describe.
+
 Guest visitors can explore the core journey, including plan changes, without
 altering another visitor's data. Apply limits to guest AI use. Define retention
 and cleanup before a public launch; guest-to-permanent account conversion is
@@ -73,6 +77,10 @@ failure must not leave a partial active plan.
 
 Plans cover one week ahead: the next week is planned at the end of the current
 one, so a changing calendar is read as late as possible. History is kept in full.
+
+Plans default to one session per local date. An explicit chat request can authorize
+multiple sessions on a date during modification; every session must still fit
+calendar availability and avoid overlaps, including preparation and wrap-up time.
 
 Save every accepted generation as a new version and replace the active version
 atomically. Preserve completed activity records and the plan version to which

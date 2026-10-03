@@ -1,0 +1,31 @@
+{
+  "events": [
+    {
+      "action": "delete",
+      "id": 101
+    },
+    {
+      "action": "add",
+      "sport_id": 1,
+      "time_slot": {
+        "start": "2026-10-06T12:05:00+02:00",
+        "duration": 900
+      },
+      "description": "A gentle fifteen-minute walk on Tuesday.",
+      "metrics": {
+        "duration": 900,
+        "distance": 1200
+      },
+      "parts": [
+        {
+          "description": "Walk slowly for 3 minutes, comfortably for 9 minutes, then slowly for 3 minutes.",
+          "metrics": {
+            "duration": 900,
+            "distance": 1200.0
+          }
+        }
+      ]
+    }
+  ],
+  "message": "I can move your walk to Tuesday and extend it to 15 minutes."
+}

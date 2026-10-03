@@ -1,6 +1,8 @@
 import "reflect-metadata";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
+import { AppModule } from "./app.module.js";
 
 function readPort(value: string | undefined): number {
   if (value === undefined) return 3000;
@@ -17,6 +19,9 @@ export async function bootstrap(): Promise<void> {
   await app.listen(readPort(process.env.PORT), process.env.HOST ?? "0.0.0.0");
 }
 
-if (require.main === module) {
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   void bootstrap();
 }

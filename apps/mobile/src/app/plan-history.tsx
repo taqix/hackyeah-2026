@@ -1,10 +1,5 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { PlanHistoryScreen } from '@/features/calendar/plan-history-screen';
 
 export default function PlanHistoryRoute() {
-  return (
-    <PlaceholderScreen
-      title="Plan history"
-      screenId="10.1"
-    />
-  );
+  return <PlanHistoryScreen />;
 }

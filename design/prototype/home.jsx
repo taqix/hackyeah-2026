@@ -11,7 +11,7 @@
    is kept in full, so the week strip pages back through every past week and forward to a
    planned next week only. A missed session offers Log it and Move it; skipping lives in
    chat. No guest demo, no first-week or lighter-week notes, no unscheduled weeks.
-   Chat is in the tab bar (screens.jsx NavBar), so the header has no chat button.
+   The chat button sits beside the tab bar (screens.jsx NavBar), so the header has none.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
    Layout helpers (Content, Col, Row, H1, Kicker, Body, Section, NavBar, greeting) and Sheet
    (workout.jsx) resolve at render time. Registers window.HOME_SCREENS. */
@@ -311,7 +311,7 @@ function Chip({icon, children}){
   );
 }
 /* Two starter requests. Each chip opens chat with the request filled in; anything else
-   starts from chat in the tab bar, so this stays small. */
+   starts from the chat button, so this stays small. */
 function ChangePlan(){
   return (
     <Col gap={10} style={{marginTop:8}}>

@@ -1,7 +1,7 @@
 /* Chat — screen 8 and states 8.1–8.16 (see README › Chat).
-   Chat is where most things change, so it sits in the tab bar or beside it (screens.jsx
-   NavBar, two variants for a UX test). Product rules (docs/product.md, step 6 and
-   "Plan generation and revisions"):
+   Chat is where most things change, so a chat button sits beside the tab bar on every
+   tab (screens.jsx NavBar) and opens chat full screen over it. Product rules
+   (docs/product.md, step 6 and "Plan generation and revisions"):
      - A valid change becomes the active plan straight away. There is no confirm step;
        Undo on the newest change is the safety net.
      - Every reply says whether the plan changed: a change card when it did,
@@ -16,7 +16,7 @@
    Data follows Home (home.jsx): on Wednesday evening Ana asks for mornings and a shorter
    Friday; Home 5.4 shows the result with Updated tags.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
-   useChatNav and NavBar (screens.jsx) resolve at render time. Registers window.CHAT_SCREENS. */
+   Registers window.CHAT_SCREENS. */
 (() => {
 const { Icon, Button, IconButton, Badge } = window.DS;
 
@@ -76,13 +76,11 @@ function Disc({icon, tone = "accent", size = 32, spin = false}){
 }
 
 /* "Coach": one conversation for changing the plan and for adding workouts done outside it.
-   As a tab (variant A) chat is a top-level screen, so there's no back arrow; as a button
-   (variant B) it opens over the tab you were on, and back returns there. */
+   It opens over the tab you were on, and back returns there. */
 function ChatHeader({sub = "Running · week 1"}){
-  const tab = useChatNav() === "tab";
   return (
     <div style={{flex:"none",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 12px 4px",minHeight:52}}>
-      <div style={{width:44}}>{tab ? null : <IconButton icon="arrow-left" label="Back"/>}</div>
+      <div style={{width:44}}><IconButton icon="arrow-left" label="Back"/></div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <span style={{font:"var(--type-subheading)"}}>Coach</span>
         {sub ? <span style={LEGIBLE}>{sub}</span> : null}
@@ -340,20 +338,16 @@ function About({icon, label}){
 
 /* Message box. state: idle · busy (a change is running) · offline.
    `top` replaces the hint line. Static frames fake focus and caret with `focused`;
-   with `onChange` it is a real input that sends on Enter. With chat as a tab (variant A)
-   the tab bar stays under it. */
+   with `onChange` it is a real input that sends on Enter. */
 function Composer({value, state, about, focused, top, hint = "Changes apply straight away. You can undo.", onChange, onSend, inputRef}){
   const busy = state === "busy", offline = state === "offline";
-  const tab = useChatNav() === "tab";
   const [hasFocus, setHasFocus] = React.useState(false);
   /* A disabled input loses focus without a blur event, so busy clears the ring. */
   const ring = focused || (hasFocus && !busy);
   const canSend = !!(value && value.trim()) && !busy && !offline;
   const placeholder = busy ? "Updating your plan…" : "Message your coach…";
   return (
-    <>
-    {tab ? <NavBar value="chat"/> : null}
-    <div style={{flex:"none",padding:"8px var(--gutter-screen) " + (tab ? 108 : 30) + "px",display:"flex",flexDirection:"column",gap:10,background:"var(--bg-app)"}}>
+    <div style={{flex:"none",padding:"8px var(--gutter-screen) 30px",display:"flex",flexDirection:"column",gap:10,background:"var(--bg-app)"}}>
       {offline ? <OfflineNote/> : top ? top : <Fine align="center">{busy ? "One change at a time." : hint}</Fine>}
       <div style={{display:"flex",alignItems:"flex-end",gap:8}}>
         <div style={{flex:1,minWidth:0,minHeight:52,display:"flex",flexDirection:"column",justifyContent:"center",gap:8,padding:about ? "9px 16px 13px 9px" : "13px 18px",borderRadius:about ? 24 : 26,border:"1px solid " + (ring ? "var(--accent)" : "var(--border-strong)"),boxShadow:ring ? "0 0 0 4px var(--focus-ring)" : "none",background:busy ? "var(--surface-sunken)" : "var(--surface-card)",transition:"border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out)"}}>
@@ -373,7 +367,6 @@ function Composer({value, state, about, focused, top, hint = "Changes apply stra
         <IconButton icon="arrow-up" label="Send" variant="primary" disabled={!canSend} onClick={onSend} style={{marginBottom:4}}/>
       </div>
     </div>
-    </>
   );
 }
 function OfflineNote(){
@@ -622,7 +615,7 @@ function coach(text, plan, attempt, pending){
   return say("Tell us a little more: which day, and what should change?", ["Make " + day + " shorter","Move " + day + " to the morning"]);
 }
 
-/* 8 — First open, from the tab bar (or the chat button). Clickable: tap an example or
+/* 8 — First open, from the chat button. Clickable: tap an example or
    type, send, then Undo. A sentence about a workout you did adds it instead. */
 function Start(){
   const [plan, setPlan] = React.useState(LIVE_PLAN);

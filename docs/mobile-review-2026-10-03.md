@@ -23,8 +23,8 @@ disagrees with an older doc, this page is newer.
   GPS, maps or Strava dependency: the app must work without other apps.
 - The plan sets sets and reps for gym exercises. The weight is the person's,
   pre-filled from their last time, never generated.
-- Where chat lives, a tab in the bar or a button beside it, needs a UX test.
-  Both variants are drawn.
+- Where chat lives, a tab in the bar or a button beside it, needed a UX test.
+  Both variants were drawn; the team then chose the button (see Next steps).
 
 ## Next steps
 
@@ -38,6 +38,7 @@ disagrees with an older doc, this page is newer.
 | Team | Keep the avoided-activities question as a multi-checkbox only | Done: no "Nothing to avoid" (3.4) |
 | Team | Plan one week ahead, keep the full history | Done: week arrows on Home (5, 5.6, 5.10) and the Calendar tab (10) |
 | Team | Missed session: "Log it" and "Move it", with Move it opening chat | Done: Home 5.5 and chat 8.15, where skipping is the last option |
+| Team | Chat placement: a button beside the tab bar, not a Chat tab | Done: Today · Calendar · You and a chat button on every tab; chat opens full screen with a back arrow. The tab variant and the board's switch are removed |
 
 ## Also agreed in the call
 
@@ -68,8 +69,6 @@ them.
 
 ## Open
 
-- Chat placement: compare the two variants (`?chat=tab` and `?chat=button` on
-  the board, or the `nav` flow) with people before choosing.
 - The preference fields changed shape: `preferred_window` (one hour window, or
   null for any time), `starting_obstacles` (an array) and `activity_interests`
   as catalog sport IDs. `PREFERENCES.md` and the plan contract need updating.

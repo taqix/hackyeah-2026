@@ -14,8 +14,8 @@ The screens below apply it; each flow says what changed.
   `components.js` (reference React components). Rules for color, type, spacing,
   voice, and iconography are in [system/README.md](system/README.md).
 - `prototype/screens.jsx` — welcome and sign in, activity and feedback screens
-  as JSX, with the layout helpers, the floating tab bar in both chat placements
-  and the frames that compare them. See [Chat placement](#chat-placement).
+  as JSX, with the layout helpers and the floating tab bar with its chat
+  button. See [Chat placement](#chat-placement).
 - `prototype/onboarding.jsx` — questionnaire and preference screens 2–4, the
   option table and their choice pieces (segmented choice, slider, two-handle
   range slider, checkbox rows, sport search). See
@@ -66,11 +66,8 @@ at the cursor, Space+drag or dragging empty canvas pans. `Shift+1` fits,
 `Shift+0` is 100%, `+`/`-` zoom. The view is kept across live reloads.
 Query parameters:
 
-- `?flow=onboarding|home|workout|chat|profile|calendar|nav` — one flow only;
-  `nav` shows the two chat placements side by side
+- `?flow=onboarding|home|workout|chat|profile|calendar` — one flow only
 - `?theme=light|dark` — one theme only
-- `?chat=tab|button` — where chat sits in the tab bar, on every frame (tab by
-  default). The **chat:** links in the board's top bar switch it.
 
 A frame with a dashed **Fold** line shows its whole scroll; the line marks the
 bottom of the 844 pt screen.
@@ -83,7 +80,7 @@ gap is listed under **Not decided yet** in its flow.
 | Doc | Where | Covers |
 | --- | --- | --- |
 | `docs/product.md`, `docs/grilling-summary.md` | `develop` | Journey, accounts and guest demo, plan versions, revisions, acceptance targets |
-| `docs/mobile-review-2026-10-03.md` | this branch | The 3 October review: scope cuts, Google and email sign-in, no mobile guest, one-week plans, the sport catalog and one logging form, chat placement test |
+| `docs/mobile-review-2026-10-03.md` | this branch | The 3 October review: scope cuts, Google and email sign-in, no mobile guest, one-week plans, the sport catalog and one logging form, the chat button |
 | `docs/plan-creation/` (`PREFERENCES.md`, `LLM_SCHEMA.md`, `SYSTEM_PROMPT.md`) | `feat/llm-plan-creation` | Preference fields and options; the plan generator's input (answers + free `available_slots`) and output (`events`: a start `time` and a `description`, or a gym `series`) |
 | `docs/features/gemini-plan-exchange.md`, `packages/contracts/src/plan-types.ts` | `codex/gemini-plan-contract` | The sport catalog (sports with IDs; non-gym sports list metrics with a key, description, required, value schema and unit; gym exercises have sets and repetitions); create and modify modes, where chat sends the conversation and gets add/delete operations and a message back |
 | `docs/features/device-calendar.md`, `calendar-availability.md` | `develop`, `codex/calendar-availability` | Calendar access from an explicit tap; free slots; denial never reads as an empty calendar |
@@ -132,7 +129,6 @@ football (6.10) frames show other sample plans. The doc fixture
 | Chat | Start (`chat`), From an activity (`chat-activity`); a change: Updating (`chat-updating`), Plan updated (`chat-updated`), Undone (`chat-undone`), Removed and added (`chat-removed`), New sport (`chat-sport`), Partly possible (`chat-partly`); no change: Nothing to change (`chat-nothing`), Needs a detail (`chat-detail`), Can't change that (`chat-cant`), Health and pain (`chat-health`); problems: Didn't work (`chat-failed`), Changed elsewhere (`chat-stale`), Offline (`chat-offline`); Move a missed session (`chat-move`), A workout you did (`chat-workout`) | docs/product.md — step 6, plan generation and revisions, deferred illness behaviour. The Gemini modify mode; the change card and Undo have no contract yet |
 | Profile | You (`profile`, `profile-first-week`); summary: How we see you (`profile-summary`), Why we think this (`profile-why`); Edit: time (`profile-edit-time`); Your feedback (`profile-feedback`); Settings (`profile-settings`); Data and privacy (`profile-privacy`) | `PREFERENCES.md`; docs/product.md — Accounts. Feedback and the summary have no doc yet |
 | Calendar | Calendar (`calendar`), Plan history (`plan-history`) | docs/product.md — plan generation and revisions (one week ahead, versions, kept history) |
-| Chat placement | A · tab (`nav-tab-home`, `nav-tab-chat`), B · button (`nav-button-home`, `nav-button-chat`) | The review: a UX test decides |
 
 ## Onboarding preferences
 
@@ -202,8 +198,8 @@ Frames 5.6 and 5.10 also page between weeks.
 
 Top to bottom: greeting, an optional note, the week (its dates, arrows and
 strip), the hero for the selected day, steps, the week's sessions, then **Need a
-change?**. The floating tab bar stays on every state. Chat lives in the bar
-(see [Chat placement](#chat-placement)), so the header has no chat button.
+change?**. The floating tab bar stays on every state. The chat button sits
+beside it (see [Chat placement](#chat-placement)), so the header has none.
 
 | Part | Shows | Data |
 | --- | --- | --- |
@@ -331,14 +327,14 @@ or other; 33 m was dropped) waits to see whether swimmers need it.
 ## Chat
 
 Chat answers one question: what should change? It is one conversation with our
-assistant, titled **Coach**, reached from the tab bar (see
+assistant, titled **Coach**, reached from the chat button beside the tab bar (see
 [Chat placement](#chat-placement)). A valid change becomes the active plan
 straight away (docs/product.md, step 6). There is no confirm step, so every
 change shows exactly what moved and offers **Undo**. Chat also moves a missed
 session (8.15) and adds a workout done outside the plan (8.16), which replaced
 the separate logging form.
 
-Entry points: the Chat tab or button opens chat empty (8); the **Need a
+Entry points: the chat button opens chat empty (8); the **Need a
 change?** chips open it with the request filled in; **See the chat** on the Plan
 updated note (5.4) opens the thread; **Ask in chat** on Not today (5.2) and
 **Adjust** on an activity (6) attach that session (8.1); **Move it** on a missed
@@ -426,20 +422,15 @@ validated AI call and a log contract shared with the log-it form.
 
 ## Chat placement
 
-Chat is where most changes happen, so it is always one tap away. Where it sits
-waits on a UX test (review, 3 October). Both are drawn: the board shows one on
-every frame (`?chat=tab|button`, or the **chat:** links in its top bar), and the
-`nav` flow shows them side by side on Home 5 and chat 8.3.
+Chat is where most changes happen, so it is always one tap away: a dark round
+button level with the floating tab bar, on every tab. The bar holds Today ·
+Calendar · You, with You last. Chat opens full screen over the tab you were on,
+with no tab bar, and its back arrow returns there.
 
-| | A · Tab | B · Button |
-| --- | --- | --- |
-| Bar | Today · Calendar · Chat · You. You stays last | Today · Calendar · You, in a shorter bar |
-| Chat | A tab like the others: the bar stays on the chat screen, the message box sits above it, and there's no back arrow | A dark round button level with the bar, on every tab. Chat opens full screen over the tab you were on; back returns there |
-| Favours | Chat as a peer of the other tabs, where people expect sections | Chat as the main action, standing apart from where you look things up |
-
-What to compare: how quickly people find chat to change a session or add a
-workout, whether the tab variant's shorter thread feels cramped, and whether the
-button reads as chat without its label.
+The review (3 October) drew two placements: chat as a fourth tab, or this
+button. The team chose the button, which makes chat the main action, apart from
+the tabs where you look things up, and gives the thread the full screen. The
+tab variant is removed.
 
 ## Profile
 

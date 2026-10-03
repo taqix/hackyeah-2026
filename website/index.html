@@ -142,7 +142,8 @@ noscript{display:block;padding:24px 20px;text-align:center;font:var(--type-body)
 .m-num{font:600 18px/1 var(--font-numeric);font-variant-numeric:tabular-nums;letter-spacing:var(--tracking-tight);color:var(--text-primary)}
 .m-srow{display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 0}
 .m-srow+.m-srow{border-top:1px solid var(--border-subtle)}
-.m-nav{position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:var(--radius-pill);padding:6px;display:flex;gap:4px;background:color-mix(in oklch,var(--surface-raised) 72%,transparent);backdrop-filter:var(--blur-bar);-webkit-backdrop-filter:var(--blur-bar);border:1px solid color-mix(in oklch,var(--border-subtle) 80%,transparent);box-shadow:var(--shadow-2)}
+.m-nav{position:absolute;left:20px;right:94px;bottom:24px;height:64px;border-radius:var(--radius-pill);padding:6px;display:flex;gap:4px;background:color-mix(in oklch,var(--surface-raised) 72%,transparent);backdrop-filter:var(--blur-bar);-webkit-backdrop-filter:var(--blur-bar);border:1px solid color-mix(in oklch,var(--border-subtle) 80%,transparent);box-shadow:var(--shadow-2)}
+.m-chat{position:absolute;right:20px;bottom:24px;width:64px;height:64px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;background:var(--surface-inverse);color:var(--text-inverse);box-shadow:var(--shadow-2)}
 .m-tab{flex:1;height:52px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-tertiary)}
 .m-tab.is-on{flex:2;color:var(--text-primary);font:600 14px/1 var(--font-body);background:color-mix(in oklch,var(--text-primary) 7%,transparent)}
 .m-compose{position:absolute;left:0;right:0;bottom:0;padding:8px 20px 30px;display:flex;flex-direction:column;gap:10px;background:var(--bg-app)}
@@ -1306,15 +1307,15 @@ const MOCK_CHANGE = {
     diffs: [{ icon: "clock", from: "18:00", to: "7:00" }, { icon: "timer", from: "20 min", to: "10 min" }] }],
   kept: "Monday to Wednesday stay as you did them.",
 };
-/* The app's tab bar with chat as a tab (design/README.md › Chat placement, variant A). */
-const MockNav = () => (
+/* The app's tab bar with the chat button beside it (design/README.md › Chat placement). */
+const MockNav = () => <>
   <div className="m-nav">
     <span className="m-tab is-on"><Icon name="sun" size={22} strokeWidth={2} />Today</span>
     <span className="m-tab"><Icon name="calendar" size={22} /></span>
-    <span className="m-tab"><Icon name="message-circle" size={22} /></span>
     <span className="m-tab"><Icon name="user-round" size={22} /></span>
   </div>
-);
+  <span className="m-chat"><Icon name="message-circle" size={24} strokeWidth={2} /></span>
+</>;
 function MockAsk() {
   return <>
     <div className="m-top"><IconButton icon="arrow-left" label="Back" /><span className="s-kicker">1 of 5</span></div>

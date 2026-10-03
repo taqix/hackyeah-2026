@@ -118,36 +118,27 @@ const SignInError = () => <PasswordStep known error="That password doesn't match
 
 /* 5 — Home, the Today tab, and its states: home.jsx */
 
-/* Floating glass pill nav: the active tab widens and shows its label.
-   Chat placement waits on a UX test (review, 3 October), so both variants are drawn:
-     tab     Today · Calendar · Chat · You. Chat is a tab like the others: its screen keeps
-             the bar, with the message box above it. You stays last.
-     button  Today · Calendar · You, and chat as a dark round button beside the shorter bar.
-             Chat opens full screen over the current tab; its back arrow returns there.
-   The board shows one variant everywhere (?chat=tab|button, tab by default) and both side
-   by side in the "nav" flow. NavVariant overrides it for one frame. */
-const CHAT_NAV=new URLSearchParams(location.search).get("chat")==="button"?"button":"tab";
-const NavVariant=React.createContext(null);
-const useChatNav=()=>React.useContext(NavVariant)||CHAT_NAV;
-const NAV_ITEMS=[{value:"today",label:"Today",icon:"sun"},{value:"calendar",label:"Calendar",icon:"calendar"},{value:"chat",label:"Chat",icon:"message-circle"},{value:"you",label:"You",icon:"user-round"}];
+/* Floating glass pill nav: the active tab widens and shows its label. Today · Calendar · You,
+   with chat as a dark round button beside the bar (review, 3 October, decided after
+   comparing it with a Chat tab). Chat opens full screen over the current tab; its back
+   arrow returns there. */
+const NAV_ITEMS=[{value:"today",label:"Today",icon:"sun"},{value:"calendar",label:"Calendar",icon:"calendar"},{value:"you",label:"You",icon:"user-round"}];
 function NavBar({value}){
-  const variant=useChatNav();
-  const items=variant==="button"?NAV_ITEMS.filter(it=>it.value!=="chat"):NAV_ITEMS;
   return (
     <>
-      <nav aria-label="Main" style={{position:"absolute",left:20,right:variant==="button"?94:20,bottom:24,height:64,borderRadius:99,background:"color-mix(in oklch, var(--surface-raised) 72%, transparent)",backdropFilter:"var(--blur-bar)",WebkitBackdropFilter:"var(--blur-bar)",border:"1px solid color-mix(in oklch, var(--border-subtle) 80%, transparent)",display:"flex",alignItems:"center",padding:6,gap:4,boxShadow:"var(--shadow-2), inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 60%, transparent)",zIndex:4}}>
-        {items.map(it=>{const a=it.value===value;return (
+      <nav aria-label="Main" style={{position:"absolute",left:20,right:94,bottom:24,height:64,borderRadius:99,background:"color-mix(in oklch, var(--surface-raised) 72%, transparent)",backdropFilter:"var(--blur-bar)",WebkitBackdropFilter:"var(--blur-bar)",border:"1px solid color-mix(in oklch, var(--border-subtle) 80%, transparent)",display:"flex",alignItems:"center",padding:6,gap:4,boxShadow:"var(--shadow-2), inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 60%, transparent)",zIndex:4}}>
+        {NAV_ITEMS.map(it=>{const a=it.value===value;return (
           <button key={it.value} aria-label={it.label} title={it.label} aria-current={a?"page":undefined} style={{flex:a?2:1,minWidth:0,height:52,background:a?"color-mix(in oklch, var(--text-primary) 7%, transparent)":"transparent",border:0,borderRadius:99,padding:"0 12px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:a?"var(--text-primary)":"var(--text-tertiary)",boxShadow:a?"inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 70%, transparent), inset 0 0 0 1px color-mix(in oklch, var(--text-primary) 5%, transparent)":"none",transition:"all var(--dur-base) var(--ease-out)"}}>
             <Icon name={it.icon} size={22} strokeWidth={a?2:1.75}/>
             {a?<span style={{font:"600 14px/1 var(--font-body)"}}>{it.label}</span>:null}
           </button>);})}
       </nav>
-      {variant==="button"?<ChatButton/>:null}
+      <ChatButton/>
     </>
   );
 }
-/* Variant B: the chat button sits level with the bar, solid and darker so it reads as the
-   main way to change anything. */
+/* The chat button sits level with the bar, solid and darker so it reads as the main way
+   to change anything. */
 function ChatButton(){
   return (
     <button type="button" aria-label="Chat" title="Chat" style={{position:"absolute",right:20,bottom:24,width:64,height:64,zIndex:4,borderRadius:99,border:0,background:"var(--surface-inverse)",color:"var(--text-inverse)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"var(--shadow-2)",cursor:"pointer",padding:0}}>
@@ -216,15 +207,6 @@ function Feedback(){
 
 /* 8 — Chat and its states: chat.jsx */
 
-/* Chat placement, A and B side by side: Home 5 and chat 8.3 in each variant. */
-const inVariant=(variant,id)=>()=>{const s=SCREENS.find(x=>x.id===id);return <NavVariant.Provider value={variant}><s.C/></NavVariant.Provider>;};
-const NAV_SCREENS=[
-  {id:"nav-tab-home",label:"A · Chat as a tab · Today",C:inVariant("tab","home"),h:"auto",note:"Four tabs, You last. Chat is a peer of Today and Calendar."},
-  {id:"nav-tab-chat",label:"A · Chat as a tab · Chat",C:inVariant("tab","chat-updated"),note:"The bar stays on the chat tab; the message box sits above it."},
-  {id:"nav-button-home",label:"B · Chat button · Today",C:inVariant("button","home"),h:"auto",note:"A shorter bar and a dark chat button level with it, reachable from every tab."},
-  {id:"nav-button-chat",label:"B · Chat button · Chat",C:inVariant("button","chat-updated"),note:"Chat opens full screen over the tab; back returns there."},
-];
-
 const SCREENS=[
   {id:"welcome",label:"1 · Welcome",C:Welcome,note:"Google in one tap, or one email field: we sign you in or set the account up. No guest entry on mobile."},
   {id:"sign-in",label:"1.1 · Email: account found",C:SignIn},
@@ -238,6 +220,5 @@ const SCREENS=[
   ...CHAT_SCREENS, // 8–8.16, chat: plan changes, missed sessions, workouts done (chat.jsx)
   ...PROFILE_SCREENS, // 9–9.7, the You tab: answers, summary, feedback, settings, privacy (profile.jsx)
   ...CALENDAR_SCREENS, // 10–10.1, the Calendar tab: sessions by day and the plan's versions (calendar.jsx)
-  ...NAV_SCREENS, // chat placement, variants A and B
 ];
-Object.assign(window,{Phone,SCREENS,NavBar,NavVariant,useChatNav,greeting});
+Object.assign(window,{Phone,SCREENS,NavBar,greeting});

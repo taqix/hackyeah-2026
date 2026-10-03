@@ -89,8 +89,6 @@ Agreed in the 3 October review:
 ## Deferred decisions
 
 - AI provider/model, questionnaire fields, and sport-suggestion logic.
-- Where chat sits in the mobile tab bar: a tab, or a button beside the bar
-  (both are drawn for a UX test).
 - Illness-specific chat behavior: define in a dedicated feature before implementing
   condition-dependent changes or claiming this capability in the demo.
 - Hosting provider, budget, and implementation deadline.

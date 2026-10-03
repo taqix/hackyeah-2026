@@ -1,13 +1,5 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { ReviewScreen } from '@/features/onboarding/review/review-screen';
 
 export default function ReviewRoute() {
-  return (
-    <PlaceholderScreen
-      title="Review your answers"
-      screenId="4"
-      links={[
-        { label: 'Build my plan', href: '/(tabs)', replace: true },
-      ]}
-    />
-  );
+  return <ReviewScreen />;
 }

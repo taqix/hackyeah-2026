@@ -2,12 +2,16 @@
  * Home's hero slot and steps card (design/prototype/home.jsx: HeroCard, DayHero,
  * CheckIn, NotTodaySheet, StepCount).
  *
- * INTERFACE STUB. The Today screen (src/features/home) renders these; the
- * home-hero work replaces the bodies. Keep the exported names and props stable:
- * both sides code against them.
+ * The Today screen (src/features/home) renders these. Keep the exported names
+ * and props stable: both sides code against them.
  */
 import type { LocalDate, PlannedSession, PlanWeek } from '@/api/types';
-import { Card, Text } from '@/components/ui';
+
+import { CheckInHero, DoneHero, RestHero, SkippedHero } from './day-heroes';
+import { PreviewSessionHero, TodaySessionHero } from './session-hero';
+import { WeekDoneHero } from './week-done-hero';
+
+export { StepCountCard } from './step-count-card';
 
 export type DayHeroProps = {
   /** The selected day. */
@@ -28,21 +32,34 @@ export type DayHeroProps = {
   nextWeek: PlanWeek | null;
 };
 
-/** The one hero for the selected day: a session to start, a done day, rest, a missed session to log or move, or the week done. */
-export function DayHero({ session, date }: DayHeroProps) {
-  return (
-    <Card variant="sunken">
-      <Text variant="heading">{session ? session.title : 'Rest day'}</Text>
-      <Text variant="bodySm">{date}</Text>
-    </Card>
-  );
-}
+/**
+ * The one hero for the selected day: a session to start, a done day, rest, a
+ * missed session to log or move, or the week done. Only a planned session gets
+ * the photo card; other days use a tinted card in the same slot.
+ */
+export function DayHero({ date, today, session, week, nextSession, readOnly, weekDone, nextWeek }: DayHeroProps) {
+  const day = { date, today, readOnly, nextSession };
 
-/** Today's steps from the phone (useStepCounter): never a made-up zero. */
-export function StepCountCard() {
-  return (
-    <Card variant="sunken">
-      <Text variant="bodySm">Steps</Text>
-    </Card>
-  );
+  if (weekDone) {
+    return (
+      <WeekDoneHero
+        date={date}
+        today={today}
+        session={session}
+        week={week}
+        nextSession={nextSession}
+        nextWeek={nextWeek}
+        readOnly={readOnly}
+      />
+    );
+  }
+  if (!session) return <RestHero {...day} week={week} />;
+  if (session.status === 'completed') return <DoneHero {...day} session={session} />;
+  if (session.status === 'skipped') return <SkippedHero {...day} session={session} />;
+  // Planned: today starts it, a later day previews it, an earlier day asks Log it or Move it.
+  if (date < today) return <CheckInHero date={date} today={today} readOnly={readOnly} session={session} />;
+  if (date === today && !readOnly) {
+    return <TodaySessionHero date={date} today={today} session={session} nextSession={nextSession} />;
+  }
+  return <PreviewSessionHero date={date} today={today} session={session} nextSession={nextSession} />;
 }

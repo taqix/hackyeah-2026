@@ -1,29 +1,34 @@
 import { View } from 'react-native';
 
 import { useWeek } from '@/api/hooks';
-import type { ActivityLog } from '@/api/types';
+import type { ActivityLog, PlannedSession } from '@/api/types';
 import { Col, H1, Kicker, Row } from '@/components/layout';
 import { Disc, ProgressRing, Skeleton } from '@/components/ui';
 import { now } from '@/lib/clock';
 import { startOfWeek } from '@/lib/dates';
-import { weekProgress } from '@/lib/sessions';
+import { sessionLocalDate, weekProgress } from '@/lib/sessions';
 import { sportIcon } from '@/lib/sport-visuals';
 
 import { feedbackHeading, feedbackKicker, weekWord } from './copy';
 
 const RING = 64;
 
-/** The week's ring, then "Wednesday · 20 min · 2 of 3 this week" and a calm heading. */
-export function FeedbackHeader({ log }: { log: ActivityLog }) {
-  const weekStart = startOfWeek(log.started_at);
-  const week = useWeek(weekStart);
+/**
+ * The week's ring, then "Wednesday · 20 min · 2 of 3 this week" and a calm heading.
+ * Progress counts the plan week the session belongs to, which differs from the
+ * log's day when a session is done early or late. `session` is undefined while it loads.
+ */
+export function FeedbackHeader({ log, session }: { log: ActivityLog; session: PlannedSession | null | undefined }) {
+  const sessionPending = log.session_id !== null && session === undefined;
+  const weekStart = startOfWeek(session ? sessionLocalDate(session) : log.started_at);
+  const week = useWeek(sessionPending ? null : weekStart);
   const today = now();
   const progress = week.data ? weekProgress(week.data) : null;
   const showRing = !!progress && progress.total > 0;
 
   return (
     <Row gap={16} style={{ alignItems: 'center' }}>
-      {week.isPending ? (
+      {sessionPending || week.isPending ? (
         <Skeleton width={RING} height={RING} radius={RING / 2} />
       ) : showRing ? (
         <ProgressRing

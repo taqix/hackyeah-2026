@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
 import {
-  geminiOutputSchema,
+  buildGeminiOutputSchema,
   parsePlanInput,
   parsePlanOutput,
   type PlanInput,
@@ -33,7 +33,7 @@ export interface PlanOptions {
 }
 
 /** Server-side provider adapter. Does not save or replace an active plan. */
-export async function createPlan(
+export async function generatePlan(
   value: unknown,
   {
     apiKey = process.env.GEMINI_API_KEY,
@@ -46,7 +46,8 @@ export async function createPlan(
   const preferences = parsePlanInput(value);
   if (!Number.isFinite(new Date(now).getTime()))
     fail('CONFIGURATION', 'now must be a valid timestamp.');
-  if (!preferences.available_slots.length) return { events: [] };
+  if (preferences.mode === 'create' && !preferences.available_slots.length)
+    return { events: [], message: null };
   let serialized;
   try {
     serialized = JSON.stringify(preferences, (_key, value) => {
@@ -60,11 +61,15 @@ export async function createPlan(
       return value;
     });
   } catch {
-    fail('INVALID_PREFERENCES', 'Preferences must contain serializable JSON values.');
+    fail('INVALID_INPUT', 'The planning request must contain serializable JSON values.');
   }
-  if (!serialized || serialized === 'null' || Buffer.byteLength(serialized) > 64_000) {
-    fail('INVALID_PREFERENCES', 'Preferences must be JSON and at most 64 KB.');
-  }
+  if (!serialized || serialized === 'null')
+    fail('INVALID_INPUT', 'The planning request must contain serializable JSON.');
+  if (Buffer.byteLength(serialized) > PLAN_GENERATION_CONFIG.maxRequestBytes)
+    fail(
+      'INPUT_TOO_LARGE',
+      'The complete planning context exceeds the request size limit. Conversation was not truncated.',
+    );
   if (typeof apiKey !== 'string' || !apiKey.trim())
     fail('CONFIGURATION', 'Set GEMINI_API_KEY on the server.');
   if (typeof model !== 'string' || !/^[a-zA-Z0-9._-]+$/.test(model))
@@ -76,6 +81,37 @@ export async function createPlan(
     fail('CONFIGURATION', 'Cannot read the bundled planning system prompt.');
   }
   if (!systemPrompt.trim()) fail('CONFIGURATION', 'The system prompt file must not be empty.');
+
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [
+        {
+          text: `${systemPrompt}\nCurrent time: ${new Date(now).toISOString()}. Do not repeat onboarding.`,
+        },
+      ],
+    },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `Process this validated ${preferences.mode} workout planning request. The conversation contains all preceding messages; user_prompt is the newest message:\n${serialized}`,
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseJsonSchema: buildGeminiOutputSchema(preferences),
+      maxOutputTokens: PLAN_GENERATION_CONFIG.maxOutputTokens,
+      candidateCount: 1,
+    },
+  });
+  if (Buffer.byteLength(requestBody) > PLAN_GENERATION_CONFIG.maxRequestBytes)
+    fail(
+      'INPUT_TOO_LARGE',
+      'The complete planning context and sport schema exceed the request size limit. Conversation was not truncated.',
+    );
 
   let response;
   let payload:
@@ -95,27 +131,7 @@ export async function createPlan(
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         signal,
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: `${systemPrompt}\nCurrent time: ${new Date(now).toISOString()}. Do not repeat onboarding.`,
-              },
-            ],
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Create a movement plan from this validated input:\n${serialized}` }],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseJsonSchema: geminiOutputSchema,
-            maxOutputTokens: PLAN_GENERATION_CONFIG.maxOutputTokens,
-            candidateCount: 1,
-          },
-        }),
+        body: requestBody,
       },
     );
     if (response.ok) payload = await response.json();
@@ -166,3 +182,6 @@ export async function createPlan(
   if (reviewContent) await reviewContent(validated, preferences);
   return validated;
 }
+
+/** Compatibility entry point; both modes use generatePlan. */
+export const createPlan = generatePlan;

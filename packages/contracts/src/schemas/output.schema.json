@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["events"],
+  "required": ["events", "message"],
   "properties": {
     "events": {
       "type": "array",
@@ -11,30 +11,43 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["time", "description"],
+            "required": ["action", "sport_id", "time_slot", "description", "metrics", "parts"],
             "properties": {
-              "time": {
+              "action": {
+                "const": "add"
+              },
+              "sport_id": {
                 "type": "string",
-                "format": "date-time"
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "time_slot": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["start", "duration"],
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "duration": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                }
               },
               "description": {
                 "type": "string",
                 "minLength": 1
-              }
-            }
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["time", "series"],
-            "properties": {
-              "time": {
-                "type": "string",
-                "format": "date-time"
               },
-              "series": {
+              "metrics": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": ["string", "number", "boolean"]
+                }
+              },
+              "parts": {
                 "type": "array",
-                "minItems": 1,
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
@@ -45,12 +58,97 @@
                       "minLength": 1
                     }
                   }
+                },
+                "minItems": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "sport_id", "time_slot", "description", "exercises"],
+            "properties": {
+              "action": {
+                "const": "add"
+              },
+              "sport_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "time_slot": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["start", "duration"],
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "duration": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
                 }
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "sets", "repetitions", "description"],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "exercise_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "sets": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "repetitions": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "minItems": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "id"],
+            "properties": {
+              "action": {
+                "const": "delete"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
               }
             }
           }
         ]
       }
+    },
+    "message": {
+      "type": ["string", "null"]
     }
   }
 }

@@ -1,9 +1,13 @@
 {
+  "mode": "create",
+  "planning_window": {
+    "start": "2026-10-05T00:00:00+02:00",
+    "duration": 604800
+  },
   "preferences": {
     "timezone": "Europe/Warsaw",
     "starting_comfort": "starting_out",
     "sessions_per_week": 2,
-    "session_minutes": 10,
     "activity_interests": ["walking", "strength"],
     "available_locations": ["outdoors", "gym"],
     "available_equipment": [],
@@ -12,7 +16,63 @@
     "avoidances": ["jumping"],
     "starting_obstacle": "time",
     "excluded_activity_types": [],
-    "comfortable_swimming": null
+    "comfortable_swimming": null,
+    "preferred_duration": 600
   },
-  "available_slots": []
+  "available_slots": [],
+  "user_description": "A beginner who works at a desk and wants a gentle start.",
+  "sports": [
+    {
+      "id": "walking",
+      "kind": "non_gym",
+      "name": "Walking",
+      "description": "Easy outdoor walking",
+      "metrics": [
+        {
+          "key": "duration",
+          "description": "Total workout duration in seconds",
+          "unit": "seconds",
+          "required": true,
+          "represents_session_duration": true,
+          "value_schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        {
+          "key": "distance",
+          "description": "Estimated total distance",
+          "unit": "metres",
+          "required": false,
+          "value_schema": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "strength",
+      "kind": "gym",
+      "name": "Gym",
+      "description": "Gentle beginner gym exercises",
+      "exercises": [
+        {
+          "id": "chair_squat",
+          "name": "Chair squat",
+          "description": "Sit back toward a stable chair and stand with control."
+        },
+        {
+          "id": "wall_pushup",
+          "name": "Wall push-up",
+          "description": "Stand facing a wall, bend the elbows and press back slowly."
+        }
+      ]
+    }
+  ],
+  "previous_week_events": [],
+  "current_week_events": [],
+  "target_window_events": [],
+  "conversation": [],
+  "user_prompt": null
 }

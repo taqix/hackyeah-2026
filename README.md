@@ -46,3 +46,7 @@ Installation is not available yet.
 - Keep setup instructions up to date as the application takes shape.
 - Commit environment variable templates (e.g. `.env.example`) when needed.
 - Keep credentials in ignored local environment files — never commit secrets.
+
+## Project documentation
+
+- [Gemini workout planning exchange](docs/features/gemini-plan-exchange.md) — creation, chat changes and [JSON contract](docs/features/gemini-json-contract.md).

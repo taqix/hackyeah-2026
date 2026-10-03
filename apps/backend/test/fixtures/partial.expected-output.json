@@ -1,8 +1,26 @@
 {
   "events": [
     {
-      "time": "2026-10-05T12:05:00+02:00",
-      "description": "Walk outdoors at an easy, comfortable pace for 10 minutes."
+      "action": "add",
+      "sport_id": "walking",
+      "time_slot": {
+        "start": "2026-10-05T12:05:00+02:00",
+        "duration": 600
+      },
+      "description": "An easy ten-minute outdoor walk.",
+      "metrics": {
+        "duration": 600,
+        "distance": 800
+      },
+      "parts": [
+        {
+          "description": "Walk slowly for 2 minutes to warm up."
+        },
+        {
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
+        }
+      ]
     }
-  ]
+  ],
+  "message": null
 }

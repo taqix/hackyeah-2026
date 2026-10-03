@@ -1,25 +1,51 @@
 {
   "events": [
     {
-      "time": "2026-10-05T12:05:00+02:00",
-      "description": "Walk outdoors at an easy, comfortable pace for 10 minutes."
+      "action": "add",
+      "sport_id": "walking",
+      "time_slot": {
+        "start": "2026-10-05T12:05:00+02:00",
+        "duration": 600
+      },
+      "description": "An easy ten-minute outdoor walk.",
+      "metrics": {
+        "duration": 600,
+        "distance": 800
+      },
+      "parts": [
+        {
+          "description": "Walk slowly for 2 minutes to warm up."
+        },
+        {
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
+        }
+      ]
     },
     {
-      "time": "2026-10-07T18:05:00+02:00",
-      "series": [
+      "action": "add",
+      "sport_id": "strength",
+      "time_slot": {
+        "start": "2026-10-07T18:05:00+02:00",
+        "duration": 600
+      },
+      "description": "Warm up with 2 minutes of gentle marching. Complete the exercises, then walk slowly for 2 minutes to cool down.",
+      "exercises": [
         {
-          "description": "Warm up in the gym with 2 minutes of easy walking and gentle shoulder movements."
+          "exercise_id": "chair_squat",
+          "name": "Chair squat",
+          "sets": 2,
+          "repetitions": 5,
+          "description": "Sit back toward a stable chair and stand slowly. Rest 30 seconds between sets. Allow 3 minutes including rest."
         },
         {
-          "description": "For the next 3 minutes, do 2 sets of 5 sit-to-stands from a stable bench. Stand slowly and sit with control; rest between sets and for any remaining time."
-        },
-        {
-          "description": "For the next 3 minutes, do 2 sets of 5 wall push-ups. Keep your body straight and move slowly; rest between sets and for any remaining time."
-        },
-        {
-          "description": "Finish with 2 minutes of easy walking and relaxed breathing."
+          "exercise_id": "wall_pushup",
+          "name": "Wall push-up",
+          "sets": 2,
+          "repetitions": 5,
+          "description": "Keep your body straight and bend the elbows toward the wall. Rest 30 seconds between sets. Allow 3 minutes including rest."
         }
       ]
     }
-  ]
+  ],
+  "message": null
 }

@@ -2,8 +2,26 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["preferences", "available_slots"],
+  "required": [
+    "mode",
+    "planning_window",
+    "preferences",
+    "available_slots",
+    "user_description",
+    "sports",
+    "previous_week_events",
+    "current_week_events",
+    "target_window_events",
+    "conversation",
+    "user_prompt"
+  ],
   "properties": {
+    "mode": {
+      "enum": ["create", "modify"]
+    },
+    "planning_window": {
+      "$ref": "#/$defs/time_slot"
+    },
     "preferences": {
       "type": "object",
       "additionalProperties": false,
@@ -11,7 +29,7 @@
         "timezone",
         "starting_comfort",
         "sessions_per_week",
-        "session_minutes",
+        "preferred_duration",
         "activity_interests",
         "available_locations",
         "available_equipment",
@@ -29,15 +47,13 @@
           "type": "integer",
           "enum": [1, 2, 3]
         },
-        "session_minutes": {
-          "type": "integer",
-          "enum": [5, 10, 20]
-        },
         "activity_interests": {
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "$ref": "#/$defs/activity_type"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
           }
         },
         "available_locations": {
@@ -79,11 +95,17 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "$ref": "#/$defs/activity_type"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
           }
         },
         "comfortable_swimming": {
           "type": ["boolean", "null"]
+        },
+        "preferred_duration": {
+          "type": "number",
+          "exclusiveMinimum": 0
         }
       },
       "if": {
@@ -105,25 +127,381 @@
     "available_slots": {
       "type": "array",
       "items": {
+        "$ref": "#/$defs/time_slot"
+      }
+    },
+    "user_description": {
+      "type": "string"
+    },
+    "sports": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "description", "kind", "metrics"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "buffer_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "kind": {
+                "const": "non_gym"
+              },
+              "metrics": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["key", "description", "required", "value_schema"],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "value_schema": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["type"],
+                          "properties": {
+                            "type": {
+                              "enum": ["number", "integer"]
+                            },
+                            "minimum": {
+                              "type": "number"
+                            },
+                            "maximum": {
+                              "type": "number"
+                            },
+                            "enum": {
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 1,
+                              "uniqueItems": true
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["type"],
+                          "properties": {
+                            "type": {
+                              "const": "string"
+                            },
+                            "minLength": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "maxLength": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "enum": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "minItems": 1,
+                              "uniqueItems": true
+                            },
+                            "format": {
+                              "enum": ["date", "date-time", "time", "duration"]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["type"],
+                          "properties": {
+                            "type": {
+                              "const": "boolean"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "represents_session_duration": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "description", "kind"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "buffer_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "kind": {
+                "const": "gym"
+              },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "name", "description"],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "minItems": 1
+              }
+            }
+          }
+        ]
+      }
+    },
+    "previous_week_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/existing_workout"
+      }
+    },
+    "current_week_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/existing_workout"
+      }
+    },
+    "target_window_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/existing_workout"
+      }
+    },
+    "conversation": {
+      "type": "array",
+      "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["start", "end"],
+        "required": ["role", "content"],
         "properties": {
-          "start": {
-            "type": "string",
-            "format": "date-time"
+          "role": {
+            "enum": ["user", "assistant"]
           },
-          "end": {
+          "content": {
             "type": "string",
-            "format": "date-time"
+            "minLength": 1
           }
         }
       }
+    },
+    "user_prompt": {
+      "type": ["string", "null"]
     }
   },
   "$defs": {
-    "activity_type": {
-      "enum": ["walking", "strength", "running", "cycling", "swimming", "mobility"]
+    "time_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "duration"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "existing_workout": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sport_id",
+            "time_slot",
+            "description",
+            "metrics",
+            "parts",
+            "id",
+            "status",
+            "editable"
+          ],
+          "properties": {
+            "sport_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "time_slot": {
+              "$ref": "#/$defs/time_slot"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "metrics": {
+              "type": "object",
+              "additionalProperties": {
+                "type": ["string", "number", "boolean"]
+              }
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["description"],
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "minItems": 1
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "enum": ["planned", "completed", "skipped"]
+            },
+            "editable": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sport_id",
+            "time_slot",
+            "description",
+            "exercises",
+            "id",
+            "status",
+            "editable"
+          ],
+          "properties": {
+            "sport_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "time_slot": {
+              "$ref": "#/$defs/time_slot"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "exercises": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "sets", "repetitions", "description"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "exercise_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "sets": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "repetitions": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "minItems": 1
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "enum": ["planned", "completed", "skipped"]
+            },
+            "editable": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     }
   }
 }

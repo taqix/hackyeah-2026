@@ -1,13 +1,12 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+
+import { PasswordScreen, parseAuthMode } from '@/features/auth';
 
 export default function PasswordRoute() {
-  return (
-    <PlaceholderScreen
-      title="Password"
-      screenId="1.1 / 1.2 / 1.3"
-      links={[
-        { label: 'Continue to onboarding', href: '/onboarding/starting', replace: true },
-      ]}
-    />
-  );
+  const params = useLocalSearchParams<{ email?: string; mode?: string }>();
+  const email = typeof params.email === 'string' ? params.email : '';
+  if (!email) return <Redirect href="/welcome" />;
+  const mode = parseAuthMode(params.mode);
+  // Keyed so "Sign in instead" (same route, another mode) starts a fresh form.
+  return <PasswordScreen key={`${mode}:${email}`} email={email} mode={mode} />;
 }

@@ -50,6 +50,18 @@ export function useSaveFeedback() {
   });
 }
 
+/**
+ * Feedback closed without an answer: save the log as it is. The saved log can
+ * have a new ID, so screens that keep showing it read the resolved log's id.
+ */
+export function useCommitLog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.logs.commit(id),
+    onSuccess: (log) => logChanged(queryClient, log),
+  });
+}
+
 /** "Last time, Mon 12 Oct: 3 × 10 · 8 kg" for a gym exercise, or null with no history. */
 export function useLastExercise(exercise: { exercise_id?: string; name: string } | null | undefined) {
   const key = exercise ? (exercise.exercise_id ?? exercise.name) : '';

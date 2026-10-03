@@ -46,6 +46,8 @@ export function createMockApiClient(): ApiClient {
       signUpWithEmail: (email, password) => call(() => backend.auth.signUpWithEmail(email, password)),
       signInWithGoogle: () => call(() => backend.auth.signInWithGoogle()),
       sendPasswordReset: (email) => call(() => backend.auth.sendPasswordReset(email)),
+      updatePassword: (password) => call(() => backend.auth.updatePassword(password)),
+      getProviders: () => call(() => backend.auth.getProviders()),
       signOut: () => call(() => backend.auth.signOut()),
     },
     catalog: {
@@ -57,7 +59,8 @@ export function createMockApiClient(): ApiClient {
     },
     plan: {
       getState: () => call(() => backend.plan.getState()),
-      build: (input) => call(() => backend.plan.build(copy(input), demo.consume('failNextBuild'))),
+      // The mock plans from the preferred window; it does not read the calendar.
+      build: () => call(() => backend.plan.build(null, demo.consume('failNextBuild'))),
       getWeek: (weekStart) => call(() => backend.plan.getWeek(weekStart)),
       listSessions: (range) => call(() => backend.plan.listSessions(range)),
       getSession: (id) => call(() => backend.plan.getSession(id)),
@@ -69,6 +72,7 @@ export function createMockApiClient(): ApiClient {
       get: (id) => call(() => backend.logs.get(id)),
       update: (id, patch) => call(() => backend.logs.update(id, copy(patch))),
       saveFeedback: (logId, feedback) => call(() => backend.logs.saveFeedback(logId, copy(feedback))),
+      commit: (id) => call(() => backend.logs.commit(id)),
       lastForExercise: (exercise) => call(() => backend.logs.lastForExercise(exercise)),
     },
     chat: {

@@ -80,7 +80,7 @@ export function HomeScreen() {
   const name = firstName(session.data?.user.name);
   const answers = preferences.data ? answersSentence(preferences.data, sports.data) : null;
   const header = <HomeHeader kicker={headerKicker(today, ready ? plan.first_week_start : null)} name={name} now={now} />;
-  const buildPlan = () => build.mutate({ available_slots: null });
+  const buildPlan = () => build.mutate({ week_start: currentWeek });
 
   let body: ReactNode;
   if (planState.isPending) {

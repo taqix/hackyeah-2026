@@ -217,14 +217,14 @@ test('the first plan builds in about three seconds, or fails and keeps the answe
   const backend = createBackend({ db: () => db, now: () => clock.now, wallMs: () => clock.now.getTime() });
   backend.auth.signUpWithEmail('new@example.com', 'long enough');
   backend.preferences.save(SAMPLE_PREFS);
-  assert.equal(backend.plan.build({ available_slots: null }, true).status, 'building');
+  assert.equal(backend.plan.build(null, true).status, 'building');
   clock.now = new Date(clock.now.getTime() + 3_500);
   const failed = backend.plan.getState();
   assert.equal(failed.status, 'failed');
   assert.ok(backend.preferences.get());
   assert.equal(backend.plan.listSessions({ from: '2026-10-01', to: '2026-10-31' }).sessions.length, 0);
 
-  backend.plan.build({ available_slots: null });
+  backend.plan.build();
   clock.now = new Date(clock.now.getTime() + 3_500);
   const ready = backend.plan.getState();
   assert.equal(ready.status, 'ready');

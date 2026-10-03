@@ -32,6 +32,7 @@ export function useSendChatMessage() {
       api.chat.send({
         text: input.text,
         about_session_id: input.about_session_id,
+        request_id: input.request_id,
         base_version:
           input.base_version !== undefined
             ? input.base_version

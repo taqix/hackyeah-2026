@@ -41,6 +41,11 @@ export interface AuthSession {
   access_token: string;
 }
 
+/** Which sign-in methods the server has switched on (Welcome hides Google while it is off). */
+export interface AuthProviders {
+  google: boolean;
+}
+
 /** One email field for everyone: an existing account asks for its password, a new one creates it. */
 export interface EmailLookup {
   email: string;
@@ -219,6 +224,12 @@ export interface PlanState {
   planned_through: LocalDate | null;
   /** Shown on Home 5.8; answers are kept. */
   failure_message: string | null;
+  /**
+   * Why the last build failed, with status failed: ai_unavailable means the plan
+   * assistant is not connected yet (a provider-pending state, no Try again
+   * loop); anything else is a failure worth retrying. Null otherwise.
+   */
+  failure_code: ApiErrorCode | null;
   /** Home 5.4: the most recent chat change, until the person has seen it on Home. */
   recent_change: { summary: string; chat_message_id: string; created_at: IsoDateTime } | null;
 }
@@ -252,9 +263,19 @@ export interface PlanVersion {
   active: boolean;
 }
 
+/**
+ * What to plan. Free time is read by the client itself (device calendar, or
+ * the preferred window without access), so callers pass no slots.
+ */
 export interface BuildPlanInput {
-  /** Free calendar time for the planning window, or null when calendar access is off (the planner uses the preferred window). */
-  available_slots: TimeSlot[] | null;
+  /** The Monday of the week to plan. Defaults to the current week. */
+  week_start?: LocalDate;
+  /**
+   * One ID per user action (`newRequestId()` in `lib/ids`). Pass the same ID
+   * again only to resend the same action after a transport failure (offline,
+   * timeout); the server then replays the saved result instead of planning twice.
+   */
+  request_id?: string;
 }
 
 /* ------------------------------------------------------------------ Logs */
@@ -304,6 +325,12 @@ export interface ActivityLog {
   extra: boolean;
   feedback: SessionFeedback | null;
   created_at: IsoDateTime;
+  /**
+   * True once the log is saved on the server: its time, metrics and sets can
+   * no longer change (feedback still can), so Edit and Fix sets are hidden.
+   * Unset or false: editable (a local draft, or any mock log).
+   */
+  actuals_locked?: boolean;
 }
 
 export interface CreateLogInput {
@@ -435,6 +462,12 @@ export interface SendChatInput {
   about_session_id: string | null;
   /** The active plan version the request was built on; a stale one is rejected (8.13). */
   base_version: number | null;
+  /**
+   * One ID per user action (`newRequestId()` in `lib/ids`). Reuse it only for a
+   * transport retry of the same message (offline, timeout); a stale_version
+   * retry or a new message gets a new one. Omitted: the client makes one.
+   */
+  request_id?: string;
 }
 
 /** The messages a turn added (the user's message first). Refetch the thread for updated cards. */
@@ -531,6 +564,12 @@ export type ApiErrorCode =
   /** The plan changed elsewhere while the request ran; nothing was applied. */
   | 'stale_version'
   | 'conflict'
+  /** The plan assistant is not connected yet (no AI provider). Not retryable; answers and the plan are kept. */
+  | 'ai_unavailable'
+  /** Sign-up worked, but the email address has to be confirmed before signing in. */
+  | 'confirmation_required'
+  /** This build has no backend configuration (Supabase URL or key missing). */
+  | 'not_configured'
   | 'unknown';
 
 export class ApiError extends Error {

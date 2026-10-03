@@ -2,6 +2,7 @@ import type {
   Account,
   ActivityLog,
   AssistantSummary,
+  AuthProviders,
   AuthSession,
   BuildPlanInput,
   ChatMessage,
@@ -24,9 +25,9 @@ import type {
 } from './types';
 
 /**
- * Everything the app asks the backend. Implemented by the in-memory mock
- * (`src/api/mock`) until the NestJS API exists; an HTTP implementation will
- * replace it behind the same interface. Methods reject with `ApiError`.
+ * Everything the app asks the backend. Implemented by the Supabase product
+ * API adapter (`src/api/remote`) and by the in-memory mock (`src/api/mock`,
+ * `EXPO_PUBLIC_API_MODE=mock`). Methods reject with `ApiError`.
  * The caller is always the signed-in user: no method takes a user ID.
  */
 export interface ApiClient {
@@ -39,6 +40,13 @@ export interface ApiClient {
     signUpWithEmail(email: string, password: string): Promise<AuthSession>;
     signInWithGoogle(): Promise<AuthSession>;
     sendPasswordReset(email: string): Promise<void>;
+    /**
+     * Sets a new password for the signed-in account (the password reset link
+     * signs the person in first). Rejects with weak_password under 8 characters.
+     */
+    updatePassword(password: string): Promise<void>;
+    /** Which sign-in methods are switched on, so Welcome offers only working ones. */
+    getProviders(): Promise<AuthProviders>;
     signOut(): Promise<void>;
   };
   catalog: {
@@ -51,7 +59,10 @@ export interface ApiClient {
   };
   plan: {
     getState(): Promise<PlanState>;
-    /** Starts generation of the first plan (or a retry after failure); poll getState until it settles. */
+    /**
+     * Starts planning a week (the first plan, a retry after failure, or the next
+     * week) and resolves with status building; poll getState until it settles.
+     */
     build(input: BuildPlanInput): Promise<PlanState>;
     /** Any Monday from first_week_start to the week after planned_through. */
     getWeek(weekStart: LocalDate): Promise<PlanWeek>;
@@ -72,6 +83,13 @@ export interface ApiClient {
     get(id: string): Promise<ActivityLog>;
     update(id: string, patch: UpdateLogInput): Promise<ActivityLog>;
     saveFeedback(logId: string, feedback: SaveFeedbackInput): Promise<ActivityLog>;
+    /**
+     * Saves a log that is not saved yet, without feedback: called when the
+     * feedback screen closes without an answer. Feedback can still be given
+     * later with saveFeedback. Resolves with the saved log (its ID may change);
+     * a log that is already saved comes back unchanged.
+     */
+    commit(id: string): Promise<ActivityLog>;
     /** The most recent logged sets of an exercise (by exercise_id, else name), or null. */
     lastForExercise(exercise: { exercise_id?: string; name: string }): Promise<LastExerciseResult | null>;
   };

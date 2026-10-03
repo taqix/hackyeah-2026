@@ -60,7 +60,8 @@ export type PendingCoach =
   | { kind: 'move'; session_id: string }
   | { kind: 'easier'; session_id: string | null };
 
-export interface PlanMeta extends PlanState {
+/** failure_code is derived from status when read, so saved demo data needs no migration. */
+export interface PlanMeta extends Omit<PlanState, 'failure_code'> {
   /** A first plan in progress: settles at `ready_at_ms` (device clock). */
   build: { ready_at_ms: number; fail: boolean; slots: TimeSlot[] | null } | null;
 }

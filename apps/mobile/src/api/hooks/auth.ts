@@ -55,6 +55,16 @@ export function useSendPasswordReset() {
   return useMutation({ mutationFn: (email: string) => api.auth.sendPasswordReset(email) });
 }
 
+/** The new-password screen after a reset link; rejects with weak_password under 8 characters. */
+export function useUpdatePassword() {
+  return useMutation({ mutationFn: (password: string) => api.auth.updatePassword(password) });
+}
+
+/** Which sign-in methods are on (Welcome hides Google while it is off). */
+export function useAuthProviders() {
+  return useQuery({ queryKey: queryKeys.authProviders, queryFn: () => api.auth.getProviders(), staleTime: 5 * 60_000 });
+}
+
 /** Sign out: the session becomes null and every other cached query is dropped. */
 export function useSignOut() {
   const queryClient = useQueryClient();

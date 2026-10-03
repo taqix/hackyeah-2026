@@ -1,14 +1,9 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { useLocalSearchParams } from 'expo-router';
 
+import { LogScreen } from '@/features/workout/log/log-screen';
+
+/** Log it (6.1, 6.2, 6.9, 6.10): `sessionId` is a planned session or `new`; `logId` edits a saved log. */
 export default function LogRoute() {
-  return (
-    <PlaceholderScreen
-      title="Log it"
-      screenId="6.1 / 6.2 / 6.9 / 6.10"
-      links={[
-        { label: 'Save', href: routes.feedback('demo-log'), replace: true },
-      ]}
-    />
-  );
+  const { sessionId, logId } = useLocalSearchParams<{ sessionId: string; logId?: string }>();
+  return <LogScreen key={`${sessionId}:${logId ?? ''}`} sessionId={sessionId} logId={logId} />;
 }

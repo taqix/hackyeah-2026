@@ -189,7 +189,7 @@ export function RangeSlider({
           }}
           style={{ height: SLIDER_HEIGHT }}>
           <Track />
-          <Animated.View pointerEvents="none" style={[trackStyles.fill, { backgroundColor: colors.accent }, fillStyle]} />
+          <Animated.View style={[trackStyles.fill, { pointerEvents: 'none', backgroundColor: colors.accent }, fillStyle]} />
           <Ticks
             range={range}
             marks={marks}

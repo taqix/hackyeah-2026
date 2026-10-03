@@ -26,17 +26,16 @@ export function BottomBar({ children, style }: BottomBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View
-      pointerEvents="box-none"
       style={[
         styles.bar,
+        { pointerEvents: 'box-none' },
         { paddingHorizontal: layout.gutter, paddingBottom: Math.max(insets.bottom, 20) },
         style,
       ]}>
       <LinearGradient
-        pointerEvents="none"
         colors={[withAlpha(colors.bgApp, 0), colors.bgApp, colors.bgApp]}
         locations={[0, 0.3, 1]}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
       />
       <View style={styles.row}>{children}</View>
     </View>

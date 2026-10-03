@@ -125,8 +125,7 @@ export function SuggestionCard({
       <LinearGradient
         colors={PROTECTION}
         locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
       />
       {onDismiss ? (
         <PressableScale

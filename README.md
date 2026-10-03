@@ -81,6 +81,7 @@ Start feature/documentation branches from `develop` and open PRs against it. Pro
 - [Wearable implementation and integration guide](docs/features/wearable-extraction.md) — run `npm run demo:wearables` or `npm run test:wearables`.
 - [Deployment plan](docs/deployment.md)
 - [Feature template](docs/features/TEMPLATE.md)
+- [FIT/GPX activity import API](docs/features/activity-file-import.md)
 - [Device calendar access](docs/features/device-calendar.md)
 
 Keep setup instructions up to date as the application takes shape. Commit environment variable templates such as `.env.example` when needed, and keep credentials in ignored local environment files.

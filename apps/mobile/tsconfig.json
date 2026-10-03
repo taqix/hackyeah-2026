@@ -11,6 +11,7 @@
       ]
     }
   },
+  "exclude": ["tests"],
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",

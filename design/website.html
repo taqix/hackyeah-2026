@@ -144,7 +144,7 @@ noscript{display:block;padding:24px 20px;text-align:center;font:var(--type-body)
 .m-srow+.m-srow{border-top:1px solid var(--border-subtle)}
 .m-nav{position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:var(--radius-pill);padding:6px;display:flex;gap:4px;background:color-mix(in oklch,var(--surface-raised) 72%,transparent);backdrop-filter:var(--blur-bar);-webkit-backdrop-filter:var(--blur-bar);border:1px solid color-mix(in oklch,var(--border-subtle) 80%,transparent);box-shadow:var(--shadow-2)}
 .m-tab{flex:1;height:52px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-tertiary)}
-.m-tab.is-on{flex:1.5;color:var(--text-primary);font:600 14px/1 var(--font-body);background:color-mix(in oklch,var(--text-primary) 7%,transparent)}
+.m-tab.is-on{flex:2;color:var(--text-primary);font:600 14px/1 var(--font-body);background:color-mix(in oklch,var(--text-primary) 7%,transparent)}
 .m-compose{position:absolute;left:0;right:0;bottom:0;padding:8px 20px 30px;display:flex;flex-direction:column;gap:10px;background:var(--bg-app)}
 .m-input{flex:1;min-width:0;height:52px;padding:0 18px;display:flex;align-items:center;border-radius:26px;border:1px solid var(--border-strong);background:var(--surface-card);font:var(--type-body);color:var(--text-tertiary)}
 
@@ -1306,10 +1306,12 @@ const MOCK_CHANGE = {
     diffs: [{ icon: "clock", from: "18:00", to: "7:00" }, { icon: "timer", from: "20 min", to: "10 min" }] }],
   kept: "Monday to Wednesday stay as you did them.",
 };
+/* The app's tab bar with chat as a tab (design/README.md › Chat placement, variant A). */
 const MockNav = () => (
   <div className="m-nav">
     <span className="m-tab is-on"><Icon name="sun" size={22} strokeWidth={2} />Today</span>
     <span className="m-tab"><Icon name="calendar" size={22} /></span>
+    <span className="m-tab"><Icon name="message-circle" size={22} /></span>
     <span className="m-tab"><Icon name="user-round" size={22} /></span>
   </div>
 );
@@ -1330,9 +1332,10 @@ function MockAsk() {
 function MockPlan() {
   return <>
     <div className="m-content" style={{ gap: 20 }}>
-      <div className="s-row" style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div className="s-col" style={{ gap: 4 }}><Kicker>Wednesday, 7 October · Week 1</Kicker><div className="m-h1">Good morning, Ana</div></div>
-        <IconButton icon="message-circle" label="Change plan" variant="secondary" />
+      <div className="s-col" style={{ gap: 4 }}><Kicker>Wednesday, 7 October · Week 1</Kicker><div className="m-h1">Good morning, Ana</div></div>
+      <div className="s-row" style={{ justifyContent: "space-between", marginBottom: -12 }}>
+        <span className="s-label" style={{ color: "var(--text-secondary)" }}>5–11 Oct · this week</span>
+        <span className="s-row" style={{ gap: 14, color: "var(--text-tertiary)", opacity: 0.4 }}><Icon name="chevron-left" size={18} /><Icon name="chevron-right" size={18} /></span>
       </div>
       <div className="m-strip">
         {MOCK_WEEK.map((w, i) => (
@@ -1375,18 +1378,18 @@ function MockChange() {
   return <>
     <div className="m-top" style={{ minHeight: 52 }}>
       <IconButton icon="arrow-left" label="Back" />
-      <span className="s-col" style={{ alignItems: "center", gap: 2 }}><span className="s-sub">Change your plan</span><span className="s-cap" style={{ color: "var(--text-secondary)" }}>Running · week 1</span></span>
+      <span className="s-col" style={{ alignItems: "center", gap: 2 }}><span className="s-sub">Coach</span><span className="s-cap" style={{ color: "var(--text-secondary)" }}>Running · week 1</span></span>
       <span style={{ width: 44 }}></span>
     </div>
     <div className="m-content" style={{ gap: 12 }}>
-      <DemoBubble>Tell us what to change. Your plan updates straight away, and you can always undo.</DemoBubble>
+      <DemoBubble>Tell us what to change, or a workout you did. Your plan updates straight away, and you can always undo.</DemoBubble>
       <DemoBubble me>Can we keep everything to mornings this week, and make Friday shorter?</DemoBubble>
       <ChangeCard {...MOCK_CHANGE} onUndo={() => {}} onSeePlan={() => {}} seeLabel="See week" />
     </div>
     <div className="m-compose">
       <span className="s-cap" style={{ textAlign: "center", color: "var(--text-secondary)" }}>Changes apply straight away. You can undo.</span>
       <div className="s-row" style={{ gap: 8 }}>
-        <span className="m-input">Ask for a change…</span>
+        <span className="m-input">Message your coach…</span>
         <IconButton icon="arrow-up" label="Send" variant="primary" disabled />
       </div>
     </div>

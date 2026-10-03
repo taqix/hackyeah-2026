@@ -1,14 +1,19 @@
-/* Home — the Today tab: screen 5 and states 5.1–5.15 (see README › Home).
+/* Home — the Today tab: screen 5 and states 5.1–5.13 (see README › Home).
    One question: what do I do today, and how is my week going?
    Data follows docs/product.md and the plan contract on feat/llm-plan-creation
    (docs/plan-creation): each session is an event with a start time and a description,
    or a gym series; a plan can hold fewer sessions than asked (partial) or none (empty).
-   Week summaries, notes and "Outside your preferred times." are app copy computed from
-   the plan and the answers. Optional sessions, the Not today choices and unscheduled
-   weeks go beyond the current contract (README › Home › Not decided yet). Copy never
-   claims automatic progress and never asks anyone to make up a session.
+   Week summaries and "Outside your preferred times." are app copy computed from the plan
+   and the answers. Optional sessions and the Not today choices go beyond the current
+   contract (README › Home › Not decided yet). Copy never claims automatic progress and
+   never asks anyone to make up a session.
+   3 October review (docs/mobile-review-2026-10-03.md): plans run one week ahead and history
+   is kept in full, so the week strip pages back through every past week and forward to a
+   planned next week only. A missed session offers Log it and Move it; skipping lives in
+   chat. No guest demo, no first-week or lighter-week notes, no unscheduled weeks.
+   Chat is in the tab bar (screens.jsx NavBar), so the header has no chat button.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
-   Layout helpers (Content, Col, Row, H1, Kicker, Body, Section, NavBar) and Sheet
+   Layout helpers (Content, Col, Row, H1, Kicker, Body, Section, NavBar, greeting) and Sheet
    (workout.jsx) resolve at render time. Registers window.HOME_SCREENS. */
 (() => {
 const { Icon, Button, IconButton, Badge, Card, SuggestionCard } = window.DS;
@@ -23,13 +28,14 @@ if (!document.getElementById("home-motion")) {
   document.head.appendChild(css);
 }
 
-/* ---------- Data: Ana's first two weeks ---------- */
+/* ---------- Data: Ana's first weeks ---------- */
 
 /* Ana's answers, as on onboarding's review (4) and the You tab (9): walk and run, three
-   days a week, 20 minutes, mornings, occasional new suggestions. Week 1 (5–11 Oct 2026) as
-   planned on Monday, 24-hour times. `why` is the session's description from the plan.
-   Friday sits in the evening (no free morning) until her chat on Wednesday evening (8.3). */
-const ANSWERS = "walk and run, three days a week, 20 minutes, mornings";
+   days a week, 20 minutes, between 7:00 and 11:00, occasional new suggestions. Week 1
+   (5–11 Oct 2026) as planned on Monday, 24-hour times. `why` is the session's description
+   from the plan. Friday sits in the evening (no free morning) until her chat on Wednesday
+   evening (8.3). */
+const ANSWERS = "walk and run, three days a week, 20 minutes, between 7:00 and 11:00";
 const WEEK1 = [
   {short:"Mon",day:"Monday",date:5,state:"planned",title:"Brisk walk",time:"7:00",min:20,why:"A brisk walk outdoors, at a pace where you can still talk."},
   {short:"Tue",day:"Tuesday",date:6,state:"rest"},
@@ -44,9 +50,11 @@ const WED = edit(WEEK1, {0:{state:"done",felt:"easy"}});
 const WED_DONE = edit(WED, {2:{state:"done",felt:"just right"}});
 const THU = edit(WED_DONE, {4:{time:"7:00",min:10,updated:true,why:"Three one-minute runs with easy walks between, in the morning as you asked."}});
 const SAT = edit(THU, {4:{state:"unlogged"}});
+/* Saturday's Move it opened chat (8.15), where Ana chose to skip it this time. */
 const SUN = edit(SAT, {4:{state:"skipped"}});
 
-/* Week 2 (12–18 Oct). "Occasional" discovery may add one new activity, marked optional. */
+/* Week 2 (12–18 Oct), planned on Sunday 11. "Occasional" discovery may add one new
+   activity, marked optional. */
 const WEEK2 = [
   {short:"Mon",day:"Monday",date:12,state:"planned",title:"Walk-run intervals",time:"7:00",min:20,why:"Six one-minute runs with easy walks between, like last week."},
   {short:"Tue",day:"Tuesday",date:13,state:"rest"},
@@ -56,16 +64,14 @@ const WEEK2 = [
   {short:"Sat",day:"Saturday",date:17,state:"planned",title:"Easy walk",time:"7:00",min:20,why:"An easy walk outdoors to round off the week."},
   {short:"Sun",day:"Sunday",date:18,state:"rest"},
 ];
-const OPEN2 = WEEK2.map(({short, day, date}) => ({short, day, date, state:"open"}));
-const OPEN3 = OPEN2.map(d => ({...d, date:d.date + 7}));
-const LIGHTER = edit(OPEN2, {0:WEEK2[0], 5:WEEK2[5]});
-const UNSCHEDULED = [
-  {title:"Walk-run intervals",min:20,why:"Six one-minute runs, walks between."},
-  {title:"Easy walk",min:20},
-  {title:"Gentle stretching",min:20,optional:true,why:"Something new, if you like."},
-];
+const WEEK2_WED = edit(WEEK2, {0:{state:"done",felt:"just right"}});
+const OPEN3 = WEEK2.map(({short, day, date}) => ({short, day, date:date + 7, state:"open"}));
 const SUMMARY1 = "Three short sessions, with rest days between. There's no need to add more.";
 const SUMMARY2 = "A walk-run, an easy walk, and one optional stretch to try.";
+/* Weeks as Home pages through them: the current one, history before it, and at most one
+   planned week after it. */
+const W1 = days => ({range:"5–11 Oct", days, summary:SUMMARY1});
+const W2 = days => ({range:"12–18 Oct", days, summary:SUMMARY2});
 const nextSession = (days, i) => days.slice(i + 1).find(d => d.state === "planned");
 
 /* ---------- Pieces ---------- */
@@ -77,15 +83,14 @@ const HAIRLINE_ON_TINT = "1px solid color-mix(in oklch, var(--text-primary) 10%,
 const ROW_BTN = {display:"flex",alignItems:"center",width:"100%",padding:0,border:0,background:"transparent",color:"inherit",textAlign:"left",cursor:"pointer"};
 const SR_ONLY = {position:"absolute",width:1,height:1,margin:-1,overflow:"hidden",clip:"rect(0 0 0 0)",whiteSpace:"nowrap"};
 
-function HomeHeader({kicker, name = "Ana", badge, chat = true}){
+/* The greeting follows the time of day (screens.jsx greeting); every frame is at 9:41. */
+function HomeHeader({kicker, name = "Ana", hour}){
+  const hello = greeting(hour);
   return (
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-      <Col gap={4} style={{minWidth:0}}>
-        <Row gap={8} style={{flexWrap:"wrap"}}><Kicker>{kicker}</Kicker>{badge}</Row>
-        <H1>{name ? "Good morning, " + name : "Good morning"}</H1>
-      </Col>
-      {chat ? <IconButton icon="message-circle" label="Change plan" variant="secondary"/> : null}
-    </div>
+    <Col gap={4} style={{minWidth:0}}>
+      <Kicker>{kicker}</Kicker>
+      <H1>{name ? hello + ", " + name : hello}</H1>
+    </Col>
   );
 }
 
@@ -100,11 +105,24 @@ function CheckBadge(){
     </span>
   );
 }
+/* Which week the strip shows, with arrows. Back goes through every past week; forward only
+   to a week that's already planned, which is at most the next one (plans are made a week
+   at a time, on Sunday). Away from this week, "This week" jumps back. */
+function WeekNav({label, onPrev, onNext, nextHint, onThisWeek}){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:2,minHeight:36,margin:"0 -6px 0 0"}}>
+      <span style={{flex:1,minWidth:0,font:"var(--type-label)",color:"var(--text-secondary)",fontVariantNumeric:"tabular-nums"}}>{label}</span>
+      {onThisWeek ? <Button variant="ghost" size="sm" onClick={onThisWeek} style={{marginRight:2}}>This week</Button> : null}
+      <IconButton icon="chevron-left" size="sm" label={onPrev ? "Previous week" : "No earlier weeks"} disabled={!onPrev} onClick={onPrev}/>
+      <IconButton icon="chevron-right" size="sm" label={onNext ? "Next week" : nextHint} disabled={!onNext} onClick={onNext}/>
+    </div>
+  );
+}
 /* Week strip. Today is filled. Done days get a check, planned days a dot, a past session
    nobody logged a dashed ring, another selected day a ring. Never colour alone. */
 function WeekStrip({days, today, selected = today, onSelect, loading}){
   return (
-    <div role="group" aria-label={loading ? "This week, loading" : "This week"} style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:4}}>
+    <div role="group" aria-label={loading ? "This week, loading" : "Week"} style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:4}}>
       {days.map((d, i) => {
         const isToday = i === today, s = loading ? "loading" : d.state;
         const ring = onSelect && i === selected && !isToday;
@@ -168,6 +186,9 @@ function NextRow({d}){
     </button>
   );
 }
+/* A past session with no outcome: log it, or move it. Move it opens chat with the session
+   attached (8.15), where skipping it is one option among the free days, not the first. */
+const LogOrMove = () => <><Button variant="secondary" icon="check">Log it</Button><Button variant="secondary" icon="calendar-arrow-up">Move it</Button></>;
 /* The hero follows the selected day: a session to start or preview, or what the day holds. */
 function DayHero({d, isToday, next}){
   const when = isToday ? "Today" : d.day;
@@ -182,7 +203,7 @@ function DayHero({d, isToday, next}){
         </HeroCard>
       );
     case "unlogged":
-      return <HeroCard icon="calendar-clock" kicker={when + " · " + d.time + " · " + d.min + " min"} title={d.title + "."} body="Not logged. If you went, you can still log it." actions={<Button variant="secondary">Log it</Button>}/>;
+      return <HeroCard icon="calendar-clock" kicker={when + " · " + d.time + " · " + d.min + " min"} title={d.title + "."} body="Not logged. If you went, log it. If not, move it to a day that suits you." actions={<LogOrMove/>}/>;
     case "skipped":
       return <HeroCard icon="moon" kicker={when + " · skipped"} title={d.title + "."} body="Skipped, and that's fine. There's nothing to make up."/>;
     case "open":
@@ -196,7 +217,8 @@ function DayHero({d, isToday, next}){
   }
 }
 
-/* A past session with no outcome. Asked once, without guilt; skipping never creates catch-up. */
+/* A past session with no outcome, asked once, without guilt. Skipping never creates
+   catch-up, and it isn't offered here: Move it leads to chat, where it is. */
 function CheckIn({d}){
   return (
     <Card padding={20}>
@@ -205,8 +227,8 @@ function CheckIn({d}){
           <span style={CAPTION}>{d.day} · {d.time} · {d.title}</span>
           <span style={{font:"var(--type-heading)",letterSpacing:"var(--tracking-tight)"}}>Did {d.day} happen?</span>
         </Col>
-        <p style={SMALL}>Log it if you went. If not, that's fine — there's nothing to make up.</p>
-        <Row gap={8}><Button variant="secondary">Log it</Button><Button variant="ghost">Skip it</Button></Row>
+        <p style={SMALL}>Log it if you went. If not, move it to a day that suits you.</p>
+        <Row gap={8}><LogOrMove/></Row>
       </Col>
     </Card>
   );
@@ -256,36 +278,18 @@ function SessionRow({d, isToday, divider}){
     </button>
   );
 }
-function WeekList({title = "This week", days, today, aside, summary}){
-  const rows = days.map((d, i) => ({...d, i})).filter(d => d.title && d.state !== "rest" && d.state !== "open");
+/* A week's sessions. The aside counts what's done, or how many there are. */
+function WeekList({title, week, today}){
+  const rows = week.days.map((d, i) => ({...d, i})).filter(d => d.title && d.state !== "rest" && d.state !== "open");
+  const done = rows.filter(d => d.state === "done").length, total = rows.filter(d => !d.optional).length;
   return (
     <Col gap={0} style={{marginTop:8}}>
       <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:12}}>
         <Section>{title}</Section>
-        {aside ? <span style={{...CAPTION,fontVariantNumeric:"tabular-nums"}}>{aside}</span> : null}
+        <span style={{...CAPTION,fontVariantNumeric:"tabular-nums"}}>{done ? done + " of " + total + " done" : rows.length + " sessions"}</span>
       </div>
-      {summary ? <p style={{...SMALL,marginTop:6}}>{summary}</p> : null}
+      {week.summary ? <p style={{...SMALL,marginTop:6}}>{week.summary}</p> : null}
       <div style={{marginTop:8}}>{rows.map((d, k) => <SessionRow key={d.i} d={d} isToday={d.i === today} divider={k > 0}/>)}</div>
-    </Col>
-  );
-}
-/* Sessions without a time, when the calendar can't be read. Picking a day schedules one. */
-function OpenList({items}){
-  return (
-    <Col gap={0} style={{marginTop:8}}>
-      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:12}}>
-        <Section>This week</Section>
-        <span style={CAPTION}>{items.length} to fit in</span>
-      </div>
-      <div style={{marginTop:8}}>{items.map((s, i) => (
-        <button key={s.title} type="button" style={{...ROW_BTN,gap:14,minHeight:68,padding:"10px 0",borderTop:i ? "1px solid var(--border-subtle)" : "none"}}>
-          <span style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:2}}>
-            <span style={{display:"flex",alignItems:"center",gap:8}}><span style={STRONG}>{s.title}</span>{s.optional ? <Badge>Optional</Badge> : null}</span>
-            <span style={CAPTION}>{s.min} min{s.why ? " · " + s.why : ""}</span>
-          </span>
-          <span style={{display:"inline-flex",alignItems:"center",gap:2,font:"var(--type-label)",color:"var(--accent-text)",whiteSpace:"nowrap"}}>Pick a day<Icon name="chevron-right" size={16}/></span>
-        </button>
-      ))}</div>
     </Col>
   );
 }
@@ -306,56 +310,40 @@ function Chip({icon, children}){
     </button>
   );
 }
-/* Chat entry with starter requests. Each chip opens chat with the request filled in. */
-function ChangePlan({note}){
+/* Two starter requests. Each chip opens chat with the request filled in; anything else
+   starts from chat in the tab bar, so this stays small. */
+function ChangePlan(){
   return (
-    <Card variant="sunken" padding={20} style={{marginTop:8}}>
-      <Col gap={14}>
-        <Col gap={4}>
-          <Section>Need a change?</Section>
-          <p style={SMALL}>Say it in a sentence. Your plan updates straight away.</p>
-        </Col>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-          <Chip icon="timer">Shorter sessions</Chip>
-          <Chip icon="calendar-days">Other days</Chip>
-          <Chip icon="message-circle">Something else</Chip>
-        </div>
-        {note ? <span style={CAPTION}>{note}</span> : null}
-      </Col>
-    </Card>
+    <Col gap={10} style={{marginTop:8}}>
+      <Section>Need a change?</Section>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        <Chip icon="timer">Shorter sessions</Chip>
+        <Chip icon="calendar-days">Other days</Chip>
+      </div>
+    </Col>
   );
 }
 
-/* Notes sit above or below the hero. Accent: the plan changed. Warm: encouragement, never
-   an action. Info: something about the week or the account. One sentence each. */
-const NOTE = {accent:["var(--accent-soft)","var(--accent-text)"], warm:["var(--tint-peach)","var(--warm-text)"], info:["var(--info-soft)","var(--info)"]};
-function Note({tone = "accent", icon, title, meta, dismiss = true, action, children}){
-  const [bg, fg] = NOTE[tone];
-  return (
-    <section role="status" style={{display:"flex",flexDirection:"column",gap:4,padding:dismiss ? "6px 4px 16px 16px" : "14px 16px 16px",borderRadius:"var(--radius-card)",background:bg}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,minHeight:dismiss ? 44 : 0}}>
-        <Icon name={icon} size={18} strokeWidth={2} color={fg}/>
-        <span style={{...STRONG,flex:1,minWidth:0}}>{title}{meta ? <span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}> · {meta}</span> : null}</span>
-        {dismiss ? <IconButton icon="x" label="Dismiss"/> : null}
-      </div>
-      <div style={{...SMALL,paddingRight:dismiss ? 12 : 0}}>{children}</div>
-      {action}
-    </section>
-  );
-}
-/* The chat card's summary (8.3), shown once on Home. The changed session gets an Updated
-   tag in the list; old → new values stay in chat. */
+/* The one note Home keeps: the plan changed, with the chat card's summary (8.3), shown once.
+   The changed session gets an Updated tag in the list; old → new values stay in chat.
+   Other info notes (first week, lighter week) were dropped as clutter in the review. */
 function PlanUpdated(){
   return (
-    <Note icon="check" title="Plan updated" meta="last night" action={<TextLink>See the chat</TextLink>}>
-      All your sessions are at 7:00 now, and Friday is 10 minutes.
-    </Note>
+    <section role="status" style={{display:"flex",flexDirection:"column",gap:4,padding:"6px 4px 16px 16px",borderRadius:"var(--radius-card)",background:"var(--accent-soft)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,minHeight:44}}>
+        <Icon name="check" size={18} strokeWidth={2} color="var(--accent-text)"/>
+        <span style={{...STRONG,flex:1,minWidth:0}}>Plan updated<span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}> · last night</span></span>
+        <IconButton icon="x" label="Dismiss"/>
+      </div>
+      <div style={{...SMALL,paddingRight:12}}>All your sessions are at 7:00 now, and Friday is 10 minutes.</div>
+      <TextLink>See the chat</TextLink>
+    </section>
   );
 }
 
 /* Alternatives to today's session: simpler, five minutes, move, or skip with nothing to
-   make up. Anything else goes to chat. Each one is a plan change like a chat request;
-   the current contract has no such shortcuts yet (README › Home). */
+   make up. Each opens chat with the request filled in, and chat updates the plan.
+   The current contract has no such shortcuts yet (README › Home). */
 const NOT_TODAY = [
   {icon:"feather",title:"Make it simpler",detail:"A gentler version, still 20 min."},
   {icon:"timer",title:"Five minutes instead",detail:"A short version. It still counts."},
@@ -392,22 +380,37 @@ function Working({label}){
 
 /* ---------- Layout ---------- */
 
-/* Top to bottom: greeting, note, week, hero, extra card, steps, sessions, chat entry.
-   The strip drives the hero; tap a day to see it. */
-function HomeScreen({kicker, name, badge, note, days, today, initial = today, selectable = true, todayHero, after, steps, list, change = true}){
-  const [sel, setSel] = React.useState(initial);
-  const hero = sel === today && todayHero ? todayHero : <DayHero d={days[sel]} isToday={sel === today} next={nextSession(days, sel)}/>;
+const weekWord = (w, current) => w === current ? "this week" : w === current + 1 ? "next week" : w === current - 1 ? "last week" : null;
+const listTitle = (weeks, w, current) => { const word = weekWord(w, current); return word ? word[0].toUpperCase() + word.slice(1) : "Week of " + weeks[w].range; };
+
+/* Top to bottom: greeting, note, week (with its arrows), hero, extra card, steps, sessions,
+   chat starters. The strip drives the hero; tap a day to see it, or page to another week.
+   `weeks` holds history before `current` and at most one planned week after it.
+   `previewNext` lists next week under this week's hero (Sunday, once it's planned). */
+function HomeScreen({kicker, name, hour, note, weeks, current = 0, today, initialWeek = current, initialDay = today, selectable = true, todayHero, after, steps, previewNext, change = true}){
+  const [w, setW] = React.useState(initialWeek);
+  const [sel, setSel] = React.useState(initialDay);
+  const isCurrent = w === current, days = weeks[w].days;
+  const hero = isCurrent && sel === today && todayHero ? todayHero : <DayHero d={days[sel]} isToday={isCurrent && sel === today} next={nextSession(days, sel)}/>;
+  const listWeek = previewNext && isCurrent && weeks[w + 1] ? w + 1 : w;
+  const word = weekWord(w, current);
   return (
     <>
       <Content pb={120} gap={20}>
-        <HomeHeader kicker={kicker} name={name} badge={badge}/>
+        <HomeHeader kicker={kicker} name={name} hour={hour}/>
         {note}
-        <WeekStrip days={days} today={today} selected={sel} onSelect={selectable ? setSel : undefined}/>
+        <Col gap={6}>
+          {selectable ? <WeekNav label={weeks[w].range + (word ? " · " + word : "")}
+            onPrev={w > 0 ? () => setW(w - 1) : null} onNext={w < weeks.length - 1 ? () => setW(w + 1) : null}
+            nextHint={w > current ? "Plans go one week ahead" : "Next week is planned on Sunday"}
+            onThisWeek={isCurrent ? null : () => { setW(current); setSel(today); }}/> : null}
+          <WeekStrip days={days} today={isCurrent ? today : -1} selected={sel} onSelect={selectable ? setSel : undefined}/>
+        </Col>
         {hero}
-        {after}
-        {steps}
-        {list}
-        {change ? <ChangePlan note={typeof change === "string" ? change : null}/> : null}
+        {isCurrent ? after : null}
+        {isCurrent ? steps : null}
+        <WeekList title={listTitle(weeks, listWeek, current)} week={listWeek < current ? {...weeks[listWeek], summary:null} : weeks[listWeek]} today={listWeek === current ? today : -1}/>
+        {change ? <ChangePlan/> : null}
       </Content>
       <NavBar value="today"/>
     </>
@@ -418,7 +421,7 @@ function PlainScreen({kicker, name, children}){
   return (
     <>
       <Content pb={120} gap={20}>
-        <HomeHeader kicker={kicker} name={name} chat={false}/>
+        <HomeHeader kicker={kicker} name={name}/>
         {children}
       </Content>
       <NavBar value="today"/>
@@ -428,49 +431,53 @@ function PlainScreen({kicker, name, children}){
 
 /* ---------- Screens ---------- */
 
-/* 5 — Wednesday morning of week 1. Interactive: tap a day. */
-const Today = ({initial}) => (
-  <HomeScreen kicker="Wednesday, 7 October · Week 1" days={WED} today={2} initial={initial}
-    steps={<StepCount count="3,240" at="9:38"/>}
-    list={<WeekList days={WED} today={2} aside="1 of 3 done" summary={SUMMARY1}/>}/>
+/* 5 — Wednesday morning of week 1. Interactive: tap a day. Both arrows are off: there are
+   no earlier weeks yet, and next week is planned on Sunday. */
+const Today = ({initialDay}) => (
+  <HomeScreen kicker="Wednesday, 7 October · Week 1" weeks={[W1(WED)]} today={2} initialDay={initialDay}
+    steps={<StepCount count="3,240" at="9:38"/>}/>
 );
 /* 5.1 — Another day selected: Friday's session to preview, with its "outside your preferred times" label. */
-const FridaySelected = () => <Today initial={4}/>;
+const FridaySelected = () => <Today initialDay={4}/>;
 /* 5.2 — "Not today" on the hero opens alternatives instead of a guilt trip. */
 const NotToday = () => <><Today/><NotTodaySheet/></>;
 /* 5.3 — After completion and feedback (screen 7). */
 const DoneToday = () => (
-  <HomeScreen kicker="Wednesday, 7 October · Week 1" days={WED_DONE} today={2}
-    steps={<StepCount count="5,906" at="9:38"/>}
-    list={<WeekList days={WED_DONE} today={2} aside="2 of 3 done" summary={SUMMARY1}/>}/>
+  <HomeScreen kicker="Wednesday, 7 October · Week 1" weeks={[W1(WED_DONE)]} today={2}
+    steps={<StepCount count="5,906" at="9:38"/>}/>
 );
 /* 5.4 — Thursday: a rest day, the morning after a chat revision. */
 const Updated = () => (
-  <HomeScreen kicker="Thursday, 8 October · Week 1" note={<PlanUpdated/>} days={THU} today={3}
-    steps={<StepCount count="1,204" at="9:38"/>}
-    list={<WeekList days={THU} today={3} aside="2 of 3 done" summary={SUMMARY1}/>}/>
+  <HomeScreen kicker="Thursday, 8 October · Week 1" note={<PlanUpdated/>} weeks={[W1(THU)]} today={3}
+    steps={<StepCount count="1,204" at="9:38"/>}/>
 );
-/* 5.5 — Saturday: Friday passed with nothing logged. */
+/* 5.5 — Saturday: Friday passed with nothing logged. Log it, or Move it into chat. */
 const CheckInDay = () => (
-  <HomeScreen kicker="Saturday, 10 October · Week 1" days={SAT} today={5} after={<CheckIn d={SAT[4]}/>}
-    steps={<StepCount count="860" at="9:38"/>}
-    list={<WeekList days={SAT} today={5} aside="2 of 3 done" summary={SUMMARY1}/>}/>
+  <HomeScreen kicker="Saturday, 10 October · Week 1" weeks={[W1(SAT)]} today={5} after={<CheckIn d={SAT[4]}/>}
+    steps={<StepCount count="860" at="9:38"/>}/>
 );
-/* 5.6 — Sunday: the week is done, Friday skipped without fuss; week 2 has one optional new activity. */
+/* 5.6 — Sunday: the week is done and celebrated, Friday skipped without fuss. Week 2 is
+   planned now, so the forward arrow opens it and the list previews it. One plain line on
+   why it matters; no streaks, no scores. */
 const WeekDone = () => (
-  <HomeScreen kicker="Sunday, 11 October · Week 1" days={SUN} today={6}
-    todayHero={<HeroCard tone="warm" icon="sun" kicker="Week 1 · 2 sessions" title="First week, done." body="Two sessions, both at 7 in the morning. Rest today — week 2 starts tomorrow."/>}
-    steps={<StepCount count="2,315" at="9:38"/>}
-    list={<WeekList title="Next week" days={WEEK2} aside="12–18 Oct" summary={SUMMARY2}/>}/>
+  <HomeScreen kicker="Sunday, 11 October · Week 1" weeks={[W1(SUN), W2(WEEK2)]} today={6} previewNext
+    todayHero={
+      <HeroCard tone="warm" icon="sun" kicker="Week 1 · 2 sessions" title="First week, done." body="Two sessions, both at 7 in the morning. Good work — keep it going. Rest today; week 2 starts tomorrow.">
+        <Row gap={8} style={{alignItems:"flex-start",marginTop:6,paddingTop:12,borderTop:HAIRLINE_ON_TINT}}>
+          <Icon name="heart" size={16} color="var(--warm-text)" style={{marginTop:1}}/>
+          <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)",textWrap:"pretty"}}>Moving a little most weeks is good for your mood, your sleep and your heart.</span>
+        </Row>
+      </HeroCard>}
+    steps={<StepCount count="2,315" at="9:38"/>}/>
 );
 /* 5.7 — Right after onboarding's Build plan (4): the first plan is being generated. */
 const Building = () => (
   <>
     <Content pb={120} gap={20}>
-      <HomeHeader kicker="Monday, 5 October" chat={false}/>
+      <HomeHeader kicker="Monday, 5 October"/>
       <WeekStrip days={WEEK1} today={0} loading/>
       <div role="status">
-        <SuggestionCard tone="sage" kicker="Your first week" title="Building your week." body="Walk and run, three days a week, 20 minutes, mornings. This takes about a minute.">
+        <SuggestionCard tone="sage" kicker="Your first week" title="Building your week." body="Walk and run, three days a week, 20 minutes, between 7:00 and 11:00. This takes about a minute.">
           <Working label="Building your plan"/>
         </SuggestionCard>
       </div>
@@ -487,31 +494,19 @@ const BuildFailed = () => (
     <p style={{...CAPTION,margin:0}}>From your answers: {ANSWERS}.</p>
   </PlainScreen>
 );
-/* 5.9 — Monday of week 1: the first open after the plan is ready. */
+/* 5.9 — Monday of week 1: the first open after the plan is ready. No first-week note. */
 const DayOne = () => (
-  <HomeScreen kicker="Monday, 5 October · Week 1" days={WEEK1} today={0}
-    note={<Note tone="warm" icon="sun" title="Your first week">{SUMMARY1}</Note>}
-    steps={<StepCount/>}
-    list={<WeekList days={WEEK1} today={0} aside="3 sessions"/>}/>
+  <HomeScreen kicker="Monday, 5 October · Week 1" weeks={[W1(WEEK1)]} today={0} steps={<StepCount/>}/>
 );
-/* 5.10 — Partial week: fewer free slots than sessions asked for (the contract returns fewer
-   events). The note is app copy from the count. */
-const Lighter = () => (
-  <HomeScreen kicker="Monday, 12 October · Week 2" days={LIGHTER} today={0}
-    after={<Note tone="info" icon="calendar-range" title="A lighter week" dismiss={false}>Only two mornings are free this week, so there are two sessions. There's nothing to make up.</Note>}
-    list={<WeekList days={LIGHTER} today={0} aside="2 sessions"/>}/>
+/* 5.10 — Wednesday of week 2, paged back to week 1: history in full, read-only. "This week"
+   jumps back; forward stops at this week until Sunday plans the next. */
+const EarlierWeek = () => (
+  <HomeScreen kicker="Wednesday, 14 October · Week 2" weeks={[W1(SUN), W2(WEEK2_WED)]} current={1} today={2} initialWeek={0}
+    steps={<StepCount count="4,012" at="9:38"/>}/>
 );
-/* 5.11 — Unscheduled week: the calendar couldn't be read, so nothing has a time. Beyond the
-   current contract, where every event has a time and no slots means no events. */
-const NoTimes = () => (
-  <HomeScreen kicker="Monday, 12 October · Week 2" days={OPEN2} today={0} selectable={false}
-    todayHero={<HeroCard icon="calendar-x" kicker="Week 2 · 3 sessions" title="No times yet." body="We couldn't read your calendar, so this week's sessions don't have set times. Pick a day for each when you know your week."
-      actions={<Button variant="secondary" icon="rotate-ccw">Try again</Button>}/>}
-    list={<OpenList items={UNSCHEDULED}/>}/>
-);
-/* 5.12 — Empty week: nothing fits the current choices ({"events": []}). A valid plan, not an error. */
+/* 5.11 — Empty week: nothing fits the current choices ({"events": []}). A valid plan, not an error. */
 const Quiet = () => (
-  <HomeScreen kicker="Monday, 19 October · Week 3" days={OPEN3} today={0} selectable={false} change={false}
+  <HomeScreen kicker="Monday, 19 October · Week 3" weeks={[{range:"19–25 Oct", days:OPEN3}]} today={0} selectable={false} change={false}
     todayHero={
       <HeroCard icon="calendar" kicker="Week 3" title="A quiet week." body="No session fits your current choices. You can change them whenever you're ready."
         actions={<><Button variant="secondary">Review choices</Button><Button variant="ghost">Open chat</Button></>}>
@@ -521,13 +516,13 @@ const Quiet = () => (
         </Row>
       </HeroCard>}/>
 );
-/* 5.13 — First load. Shapes match the loaded screen so nothing jumps. */
+/* 5.12 — First load. Shapes match the loaded screen so nothing jumps. */
 const Loading = () => (
   <>
     <Content pb={120} gap={20}>
       <span role="status" style={SR_ONLY}>Loading your plan</span>
       <Col gap={10} style={{paddingTop:2}}><Sk w={196} h={14}/><Sk w={258} h={32} r={10}/><Sk w={118} h={32} r={10}/></Col>
-      <WeekStrip days={WED} today={2} loading/>
+      <Col gap={6}><Sk w={132} h={14}/><WeekStrip days={WED} today={2} loading/></Col>
       <Sk h={236} r={32}/>
       <Sk h={64} r={18}/>
       <Col gap={18} style={{marginTop:8}}>
@@ -538,19 +533,12 @@ const Loading = () => (
     <NavBar value="today"/>
   </>
 );
-/* 5.14 — The plan can't be fetched. */
+/* 5.13 — The plan can't be fetched. */
 const Offline = () => (
   <PlainScreen kicker="Wednesday, 7 October" name={null}>
     <HeroCard alert icon="cloud-off" kicker="No connection" title="Plan won't load." body="Check your connection, then try again. Anything you've logged is safe."
       actions={<Button icon="rotate-ccw">Try again</Button>}/>
   </PlainScreen>
-);
-/* 5.15 — Guest demo: seeded week and history, isolated per visitor, limited chat changes. */
-const Guest = () => (
-  <HomeScreen kicker="Wednesday, 7 October · Week 1" name={null} badge={<Badge tone="info">Guest demo</Badge>} days={WED} today={2}
-    note={<Note tone="info" icon="info" title="A sample week" action={<TextLink>Make a plan of your own</TextLink>}>Some history is filled in so you can look around. Changes only affect this demo.</Note>}
-    list={<WeekList days={WED} today={2} aside="1 of 3 done" summary={SUMMARY1}/>}
-    change="3 plan changes left in this demo."/>
 );
 
 window.HOME_SCREENS = [
@@ -559,16 +547,14 @@ window.HOME_SCREENS = [
   {id:"home-not-today",label:"5.2 · Not today",C:NotToday},
   {id:"home-done",label:"5.3 · Done for today",C:DoneToday,h:"auto"},
   {id:"home-updated",label:"5.4 · Rest day, plan updated",C:Updated,h:"auto"},
-  {id:"home-check-in",label:"5.5 · Did it happen?",C:CheckInDay,h:"auto"},
-  {id:"home-week-done",label:"5.6 · Week done",C:WeekDone,h:"auto"},
+  {id:"home-check-in",label:"5.5 · Did it happen?",C:CheckInDay,h:"auto",note:"Log it, or Move it. Move it opens chat with Friday attached (8.15); skipping is offered there, not here."},
+  {id:"home-week-done",label:"5.6 · Week done",C:WeekDone,h:"auto",note:"Week 2 is planned now: the forward arrow opens it. Encouragement without hype."},
   {id:"home-building",label:"5.7 · Building the plan",C:Building},
   {id:"home-build-failed",label:"5.8 · Plan didn't build",C:BuildFailed},
   {id:"home-day-one",label:"5.9 · Day one",C:DayOne,h:"auto"},
-  {id:"home-lighter",label:"5.10 · Lighter week",C:Lighter,h:"auto"},
-  {id:"home-no-times",label:"5.11 · No set times",C:NoTimes,h:"auto"},
-  {id:"home-quiet",label:"5.12 · Quiet week",C:Quiet},
-  {id:"home-loading",label:"5.13 · Loading",C:Loading},
-  {id:"home-offline",label:"5.14 · Can't load",C:Offline},
-  {id:"home-guest",label:"5.15 · Guest demo",C:Guest,h:"auto"},
+  {id:"home-earlier-week",label:"5.10 · An earlier week",C:EarlierWeek,h:"auto",note:"History goes back to the first week. Forward stops at the planned week: one week ahead at most."},
+  {id:"home-quiet",label:"5.11 · Quiet week",C:Quiet},
+  {id:"home-loading",label:"5.12 · Loading",C:Loading},
+  {id:"home-offline",label:"5.13 · Can't load",C:Offline},
 ];
 })();

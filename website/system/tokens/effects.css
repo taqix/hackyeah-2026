@@ -1,0 +1,22 @@
+:root,[data-theme="light"]{
+--shadow-1:0 1px 2px rgba(60,42,20,.06);
+--shadow-2:0 1px 2px rgba(60,42,20,.05),0 6px 18px -6px rgba(60,42,20,.12);
+--shadow-3:0 2px 6px rgba(60,42,20,.06),0 18px 40px -12px rgba(60,42,20,.22);
+}
+:root{
+--shadow-card:var(--shadow-1);
+--shadow-sheet:var(--shadow-3);
+
+--ease-out:cubic-bezier(.22,.8,.3,1);/* @kind other */
+--ease-in-out:cubic-bezier(.65,0,.35,1);/* @kind other */
+--ease-spring:cubic-bezier(.34,1.4,.64,1);/* @kind other */
+--dur-fast:120ms;/* @kind other */--dur-base:200ms;/* @kind other */--dur-slow:320ms;/* @kind other */--dur-calm:600ms;/* @kind other */
+
+--press-scale:.97;/* @kind other */
+--blur-bar:saturate(1.4) blur(16px);/* @kind other */
+}
+[data-theme="dark"]{
+--shadow-1:0 0 0 1px rgba(255,240,220,.03);
+--shadow-2:0 0 0 1px rgba(255,240,220,.04),0 8px 24px -8px rgba(0,0,0,.6);
+--shadow-3:0 0 0 1px rgba(255,240,220,.05),0 24px 48px -12px rgba(0,0,0,.7);
+}

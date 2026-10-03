@@ -1,0 +1,9 @@
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg-app);color:var(--text-primary);font:var(--type-body);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:var(--tracking-tight);margin:0;text-wrap:balance}
+p{margin:0;text-wrap:pretty}
+a{color:var(--accent-text);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--text-primary)}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.num{font-family:var(--font-numeric);font-variant-numeric:tabular-nums;letter-spacing:var(--tracking-tight)}

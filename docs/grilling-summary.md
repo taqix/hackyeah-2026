@@ -33,10 +33,10 @@ interview. Detailed procedures live in the linked docs rather than agent files.
   builds, and a documented Expo smoke check for affected changes.
 - Keep API changes compatible with the locally running mobile demo or coordinate
   its update explicitly.
-- Deploy backend/web from `main` after successful checks. Also support a manual
-  CLI trigger that runs the same checked CI deployment workflow.
+- Current backend work runs locally with Node.js or Docker Compose. Cloud
+  hosting and release automation are deferred.
 - Keep `AGENTS.md` and `CLAUDE.md` compact; use detailed docs and a feature template
-  for procedures, acceptance criteria, verification, deployment, and rollback.
+  for procedures, acceptance criteria, verification, and local runtime behavior.
 - Both instruction files were explicitly requested. Keep `AGENTS.md` authoritative
   and `CLAUDE.md` a forwarder; route setup-skill instruction edits to `AGENTS.md`
   instead of the skill's default `CLAUDE.md` target.
@@ -73,6 +73,6 @@ capability; they are not silently chosen by this documentation plan.
 - [Product plan](product.md): journey, MVP boundaries, and acceptance targets.
 - [Development plan](development.md): current setup, target architecture,
   conventions, PR workflow, checks, and implementation sequence.
-- [Deployment plan](deployment.md): triggers, migrations, secrets, smoke checks,
-  and rollback requirements.
+- [Runtime status](deployment.md): current local backend commands and hosting
+  deferral.
 - [Feature template](features/TEMPLATE.md): repeatable feature/review checklist.

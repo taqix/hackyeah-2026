@@ -1,0 +1,15 @@
+.git
+.github
+.agents
+.claude
+.codex
+node_modules
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+apps/mobile
+docs
+coverage

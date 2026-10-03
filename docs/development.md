@@ -8,11 +8,13 @@ Root commands include `npm start`, `npm run android`, `npm run ios`,
 `npm run web`, `npm run typecheck`, and `npm run lint`. The current web command
 starts Expo's web target, not the planned standalone React dashboard.
 
-Backend, standalone web and CI workflows remain unimplemented. Shared wearable
-contracts, the extraction library and an additive storage migration are available;
-see the [integration guide](features/wearable-extraction.md). Existing scripts are confirmed from package manifests;
-they have not been executed as part of this documentation change. Commands in
-the target-script table below are planned interfaces.
+The NestJS backend now serves `GET /health` and has a Dockerfile and Compose
+setup for local development. The standalone web app and CI workflows remain
+unimplemented. Shared wearable contracts, the extraction library, and an
+additive storage migration are available; see the
+[integration guide](features/wearable-extraction.md). The backend commands below
+have been run locally. The pnpm commands in the target-script table remain
+planned interfaces.
 
 ## Target layout
 
@@ -146,14 +148,13 @@ The source is [Software Mansion's skills repository](https://github.com/software
 ## Branches, commits, and PRs
 
 Branch from the latest `develop` using names such as `feat/guest-entry`,
-`fix/plan-revision`, or `docs/deployment`. Target feature/documentation PRs to
+`fix/plan-revision`, or `docs/local-runtime`. Target feature/documentation PRs to
 `develop`; promote reviewed releases from `develop` to `main`. Keep each PR focused
-and obtain one teammate approval before merging. Only `main` triggers the hosted
-release workflow.
+and obtain one teammate approval before merging. No hosting workflow is configured.
 
 Write commit subjects that explain the resulting change. PR descriptions state
 the problem, behavior, acceptance criteria, verification evidence, and migration
-or deployment impact. Use [the feature template](features/TEMPLATE.md) for a new
+or local runtime impact. Use [the feature template](features/TEMPLATE.md) for a new
 feature and link the resulting document from the PR. Tracker selection is not
 required to use the template; an issue can be linked when available.
 
@@ -182,7 +183,6 @@ matters. Do not add tests that merely repeat implementation details.
 
 Record an Expo smoke check for changes affecting mobile: sign in, load a plan,
 complete an activity, and observe a chat revision on a real device or emulator.
-Backend/web deployment is gated by the complete CI result, not just push linting.
 
 ## Suggested implementation order
 
@@ -193,7 +193,7 @@ Backend/web deployment is gated by the complete CI result, not just push linting
 4. Implement questionnaire, suggestions, and the four working sport journeys.
 5. Add validated AI plan generation and transactional chat revisions.
 6. Complete web dashboard, mobile journey, completion, and feedback.
-7. Wire required PR checks and deployment triggers; verify the judging demo.
+7. Wire required PR checks and verify the local judging demo.
 
-Select hosting before implementing deployment, and select the AI model before
-integrating live generation. Track illness-specific behavior as a future feature.
+Cloud hosting is deferred. Select the AI model before integrating live generation.
+Track illness-specific behavior as a future feature.

@@ -46,17 +46,17 @@ contract work early so parallel client/backend work uses the same interface.
 
 Record completed checks honestly; do not present planned checks as successful.
 
-## Deployment and rollback
+## Local runtime and recovery
 
 - Environment/configuration changes:
-- Migration/release order:
-- Post-deployment checks:
-- Rollback or forward-repair plan:
+- Local migration/start order:
+- Post-start checks:
+- Recovery or forward-repair plan:
 
 ## Review and documentation
 
 - [ ] Acceptance criteria verified and evidence attached to the PR.
 - [ ] Required checks pass and one teammate approves.
-- [ ] Affected product/development/deployment docs updated.
+- [ ] Affected product/development/runtime docs updated.
 - [ ] Secrets and personal data excluded from committed examples and logs.
 - [ ] Known limitations and follow-up work recorded.

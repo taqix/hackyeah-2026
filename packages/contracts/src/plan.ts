@@ -44,7 +44,7 @@ function nonBlank(text: string, label: string) {
   if (!text.trim()) reject(`${label} must not be blank.`);
 }
 
-function unique(values: string[], label: string) {
+function unique(values: (string | number)[], label: string) {
   if (new Set(values).size !== values.length) reject(`${label} must be unique.`);
 }
 
@@ -61,7 +61,7 @@ function canonical(value: unknown): string {
 }
 
 function history(input: PlanInput): ExistingWorkout[] {
-  const events = new Map<string, ExistingWorkout>();
+  const events = new Map<number, ExistingWorkout>();
   for (const event of [
     ...input.previous_week_events,
     ...input.current_week_events,
@@ -106,23 +106,9 @@ export function parsePlanInput(value: unknown): PlanInput {
     'Sport IDs',
   );
   for (const sport of value.sports) {
-    nonBlank(sport.id, 'Sport ID');
     nonBlank(sport.name, 'Sport name');
     nonBlank(sport.description, 'Sport description');
-    if (sport.is_gym === 1) {
-      if (sport.exercises) {
-        unique(
-          sport.exercises.map((exercise) => exercise.id),
-          'Exercise IDs',
-        );
-        for (const exercise of sport.exercises) {
-          nonBlank(exercise.id, 'Exercise ID');
-          nonBlank(exercise.name, 'Exercise name');
-          nonBlank(exercise.description, 'Exercise description');
-        }
-      }
-      continue;
-    }
+    if (sport.is_gym === 1) continue;
     unique(
       sport.metrics.map((metric) => metric.key),
       'Metric keys',
@@ -182,8 +168,6 @@ export function parsePlanInput(value: unknown): PlanInput {
     if (!catalog.has(id)) reject('Preference sport IDs must exist in the supplied catalog.');
   }
   for (const event of history(value)) {
-    nonBlank(event.id, 'Workout ID');
-    nonBlank(event.sport_id, 'Workout sport ID');
     interval(event.time_slot);
     validateWorkoutText(event);
   }
@@ -215,7 +199,7 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
 
   const existing = history(input);
   const window = interval(input.planning_window);
-  const deleted = new Set<string>();
+  const deleted = new Set<number>();
   for (const event of value.events) {
     if (event.action !== 'delete') continue;
     if (input.mode !== 'modify') reject('Creation cannot delete workouts.');
@@ -282,14 +266,6 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
           event.metrics[metric.key] !== event.time_slot.duration
         )
           reject('Whole-session duration metric must equal the time slot duration in seconds.');
-      }
-    }
-    if ('exercises' in event && sport.is_gym === 1 && sport.exercises) {
-      for (const exercise of event.exercises) {
-        if (
-          sport.exercises.find((item) => item.id === exercise.exercise_id)?.name !== exercise.name
-        )
-          reject('Exercise ID and name must match the supplied exercise catalog.');
       }
     }
     validateWorkoutText(event);

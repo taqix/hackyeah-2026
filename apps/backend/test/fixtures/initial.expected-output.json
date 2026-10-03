@@ -2,7 +2,7 @@
   "events": [
     {
       "action": "add",
-      "sport_id": "walking",
+      "sport_id": 1,
       "time_slot": {
         "start": "2026-10-05T12:05:00+02:00",
         "duration": 600
@@ -23,7 +23,7 @@
     },
     {
       "action": "add",
-      "sport_id": "strength",
+      "sport_id": 2,
       "time_slot": {
         "start": "2026-10-07T18:05:00+02:00",
         "duration": 600
@@ -31,14 +31,12 @@
       "description": "Warm up with 2 minutes of gentle marching. Complete the exercises, then walk slowly for 2 minutes to cool down.",
       "exercises": [
         {
-          "exercise_id": "chair_squat",
           "name": "Chair squat",
           "sets": 2,
           "repetitions": 5,
           "description": "Sit back toward a stable chair and stand slowly. Rest 30 seconds between sets. Allow 3 minutes including rest."
         },
         {
-          "exercise_id": "wall_pushup",
           "name": "Wall push-up",
           "sets": 2,
           "repetitions": 5,

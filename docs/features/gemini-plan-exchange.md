@@ -27,7 +27,8 @@ reply for the user.
 Import `generatePlan` (or the compatibility name `createPlan`) from
 `@hackyeah/backend`; import types and validators from `@hackyeah/contracts/plan`.
 Both adapter names accept the new request and return the new response. This is a
-breaking JSON contract change; the old request/output JSON is rejected.
+breaking JSON contract change; string IDs, gym sport exercise catalogs and
+exercise IDs are rejected along with the old request/output JSON.
 
 See runnable examples in `apps/backend/test/fixtures/initial.input.json` and
 `modify.input.json`, with corresponding `*.expected-output.json` files.
@@ -41,7 +42,7 @@ The application supplies:
 - `mode`: `create` or `modify`.
 - `planning_window`: `{ start, duration }`, bounding all additions and deletions.
 - `preferences`: existing fields, replacing `session_minutes` with positive
-  numeric `preferred_duration`. Interest/exclusion values are database sport IDs.
+  numeric `preferred_duration`. Interest/exclusion values are numeric database sport IDs.
 - `available_slots`: raw calendar free intervals, also `{ start, duration }`.
 - `user_description`: profile text, possibly empty.
 - `sports`: a JSON array populated from the database.
@@ -67,6 +68,10 @@ window, including neighboring workouts whose buffers could overlap additions.
 
 ### Sport catalog
 
+All sport/workout IDs, deletion IDs and preference interest/exclusion IDs are
+positive safe integer JSON numbers (`1` through `9007199254740991`), never numeric
+strings. The examples use sport IDs `1` and `2` and workout IDs `101` and `102`.
+
 Every sport has `id`, `name`, `description`, `is_gym: 0 | 1` (`1` for gym), and optionally
 `buffer_seconds`, an allowance for EACH side of the activity. The default is
 300 seconds; supply 900 for swimming where appropriate. Availability must not
@@ -88,10 +93,10 @@ begin with a letter and contain letters, digits or underscores. A metric marked
 returned slot duration if present. Other time metrics may use their documented
 units and refer to an active portion rather than the whole session.
 
-Gym sports may provide an `exercises` catalog with `id`, `name`, `description`.
-If present, generated exercises must reference its exact IDs and names.
-Otherwise exercises use names and cannot invent IDs. Sets/repetitions are uniform
-per exercise and must be positive integers.
+Gym sports contain metadata only, without `metrics` or an `exercises` catalog.
+Generated gym workouts contain exercise names, descriptions, sets and repetitions;
+they cannot include exercise IDs. Sets/repetitions must be positive integers and
+are uniform per exercise.
 
 ### Output
 
@@ -99,7 +104,7 @@ per exercise and must be positive integers.
 
 - Add: `action: add`, `sport_id`, `time_slot`, overall `description`, plus
   non-gym `metrics` and ordered non-empty `parts: [{ description }]`, or gym
-  ordered non-empty `exercises: [{ name, exercise_id?, sets, repetitions,
+  ordered non-empty `exercises: [{ name, sets, repetitions,
 description }]`.
 - Delete: only `action: delete` and `id`.
 - `message`: non-blank for modification, null for creation.
@@ -187,8 +192,9 @@ preserved. The test runner copies fixture and prompt assets into ignored
 `.test-dist/`. Backend build/dev/test/typecheck scripts build contracts first.
 
 The backend/contract builds, full workspace TypeScript checks and ESLint passed.
-All 39 backend tests passed under Node 22.23.3, including `/health`, integer metric
-range regressions and malformed provider envelopes. The shared wearable suite
+All 40 backend tests passed under Node 22.23.3, including `/health`, integer metric
+range regressions, numeric database IDs, gym metadata without exercise catalogs
+and malformed provider envelopes. The shared wearable suite
 also passed (38 tests). Backend/shared-plan Prettier and `git diff --check` passed.
 A production-entry smoke check served `/health` and loaded the compiled Gemini
 adapter, shared contracts and prompt with a mocked provider response on Node 22.

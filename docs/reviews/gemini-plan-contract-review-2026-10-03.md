@@ -103,3 +103,22 @@ weekly frequency, catalog matching, provider failures and oversized conversation
   merging. Push requires the owner's approval. Because the branch was rebased,
   a future update to its existing remote branch will require a history rewrite
   protected by `--force-with-lease`; no such update was attempted.
+
+## Follow-up: numeric IDs and gym sport metadata
+
+The owner subsequently approved pushing the initial review fixes. This follow-up
+implements the next requested contract changes and has not been pushed.
+
+- Gym sport catalog entries contain metadata only, without `exercises` or
+  `metrics`. Generated gym workouts still include exercise names, instructions,
+  sets and repetitions, without exercise IDs.
+- Sport/workout IDs, preference interest/exclusion IDs and deletion IDs are
+  numeric positive safe integers in types, validation, Gemini schemas, fixtures
+  and both plan documentation files. Strings and fractional/unsafe IDs are
+  rejected. Examples use sports `1`/`2` and workouts `101`/`102`.
+- The prompt and JSON contract guide now describe the same format. Older string
+  IDs and gym exercise catalogs are a breaking contract change; there are no
+  existing mobile plan callers on this branch.
+- Node 22 verification: all 40 backend tests passed; workspace typecheck and
+  lint passed; formatting and `git diff --check` passed. Both complete
+  documentation request/response pairs validate and exactly match the fixtures.

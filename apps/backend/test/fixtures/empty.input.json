@@ -8,7 +8,7 @@
     "timezone": "Europe/Warsaw",
     "starting_comfort": "starting_out",
     "sessions_per_week": 2,
-    "activity_interests": ["walking", "strength"],
+    "activity_interests": [1, 2],
     "available_locations": ["outdoors", "gym"],
     "available_equipment": [],
     "preferred_times": ["lunch", "evening"],
@@ -23,7 +23,7 @@
   "user_description": "A beginner who works at a desk and wants a gentle start.",
   "sports": [
     {
-      "id": "walking",
+      "id": 1,
       "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
@@ -52,22 +52,10 @@
       ]
     },
     {
-      "id": "strength",
+      "id": 2,
       "is_gym": 1,
       "name": "Gym",
-      "description": "Gentle beginner gym exercises",
-      "exercises": [
-        {
-          "id": "chair_squat",
-          "name": "Chair squat",
-          "description": "Sit back toward a stable chair and stand with control."
-        },
-        {
-          "id": "wall_pushup",
-          "name": "Wall push-up",
-          "description": "Stand facing a wall, bend the elbows and press back slowly."
-        }
-      ]
+      "description": "Gentle beginner gym exercises"
     }
   ],
   "previous_week_events": [],

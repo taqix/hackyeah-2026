@@ -48,7 +48,7 @@ is available. Additional object fields are rejected by the contract schemas.
 | `preferences`          | Required preference object described below.                                                                                                         |
 | `available_slots`      | Calendar free intervals computed by the application. Supply raw free time, without subtracting the sport buffers again.                             |
 | `user_description`     | Profile text for personalization. An empty string is allowed.                                                                                       |
-| `sports`               | Database-derived catalog containing the sports the model can add. IDs are opaque application identifiers, not a fixed enum of English names.        |
+| `sports`               | Database-derived catalog containing the sports the model can add. IDs are numeric database identifiers, not a fixed enum of English names.          |
 | `previous_week_events` | Previous-week workout context.                                                                                                                      |
 | `current_week_events`  | Current-week workout context.                                                                                                                       |
 | `target_window_events` | Existing workouts relevant to the target planning window, including workouts beyond the current week.                                               |
@@ -93,12 +93,17 @@ natural-language authorization occurred.
 
 ### Existing workouts and deduplication
 
+Sport IDs, workout IDs, preference interest/exclusion IDs and deletion IDs are
+JSON numbers containing positive safe integers. Numeric strings are rejected.
+For example, sport `1` is Walking and sport `2` is Gym in the examples below;
+workouts `101` and `102` are existing activities, not sport IDs.
+
 Each history entry has the same workout fields as an addition, without `action`,
 and also:
 
 | Field      | Meaning                                                                                        |
 | ---------- | ---------------------------------------------------------------------------------------------- |
-| `id`       | Stable existing workout ID.                                                                    |
+| `id`       | Stable numeric database workout ID.                                                            |
 | `status`   | `planned`, `completed`, or `skipped`.                                                          |
 | `editable` | Backend-derived Boolean after checking ownership; a client-provided flag is not authorization. |
 
@@ -109,7 +114,7 @@ contains workouts only; calendar events are represented through free time slots.
 
 Historical sport IDs may be absent from the current catalog. History is validated
 for its generic workout shape, times, and non-blank instructions, without requiring
-historical metrics or exercise IDs to match today's catalog.
+historical metrics to match today's catalog.
 
 Completed workouts remain in the schedule and count toward creation frequency.
 Skipped workouts do not occupy the resulting schedule and cannot be deleted.
@@ -123,8 +128,8 @@ membership during validation.
 ## Sport catalog
 
 Every sport requires `id`, `name`, `description`, and `is_gym`. `is_gym` is `1`
-for gym sports and `0` for non-gym sports. IDs are unique and
-limited to 128 characters; sport IDs, names, and descriptions must be non-blank.
+for gym sports and `0` for non-gym sports. IDs are unique positive safe integers
+(`1` through `9007199254740991`); names and descriptions must be non-blank.
 `buffer_seconds` is optional and non-negative. It applies separately before
 and after a workout, defaults to 300 seconds per side, and may be zero. For
 example, swimming can specify 900 seconds per side for preparation and changing.
@@ -133,7 +138,7 @@ example, swimming can specify 900 seconds per side for preparation and changing.
 
 ```json
 {
-  "id": "walking",
+  "id": 1,
   "is_gym": 0,
   "name": "Walking",
   "description": "Easy outdoor walking",
@@ -144,14 +149,20 @@ example, swimming can specify 900 seconds per side for preparation and changing.
       "required": true,
       "unit": "seconds",
       "represents_session_duration": true,
-      "value_schema": { "type": "integer", "minimum": 1 }
+      "value_schema": {
+        "type": "integer",
+        "minimum": 1
+      }
     },
     {
       "key": "distance",
       "description": "Estimated total distance",
       "required": false,
       "unit": "metres",
-      "value_schema": { "type": "number", "minimum": 0 }
+      "value_schema": {
+        "type": "number",
+        "minimum": 0
+      }
     }
   ]
 }
@@ -185,32 +196,26 @@ an active portion using their documented units.
 
 ```json
 {
-  "id": "strength",
+  "id": 2,
   "is_gym": 1,
   "name": "Gym",
-  "description": "Gentle beginner gym exercises",
-  "exercises": [
-    {
-      "id": "chair_squat",
-      "name": "Chair squat",
-      "description": "Sit back toward a stable chair and stand with control."
-    }
-  ]
+  "description": "Gentle beginner gym exercises"
 }
 ```
 
-Gym sports do not define `metrics`. The optional `exercises` catalog, when
-present, must be non-empty and contain unique IDs with non-blank names and
-descriptions. Added workouts must then include `exercise_id` and the exact
-matching exercise name. Without a catalog, added exercises use names and must
-omit `exercise_id`; the model cannot invent IDs.
+Gym sports do not define `metrics` or `exercises`. They provide sport metadata
+only. The model generates exercise names and instructions in gym workout output;
+exercises have no database IDs and must not include `exercise_id`.
 
 ## Response and operation semantics
 
 The response has exactly `events` and `message`:
 
 ```json
-{ "events": [], "message": null }
+{
+  "events": [],
+  "message": null
+}
 ```
 
 `events` is an operations list, not the complete resulting schedule. Omit
@@ -241,8 +246,8 @@ Required fields are `action: "add"`, `sport_id`, `time_slot`, `description`,
 and an ordered non-empty `exercises` list. The sport must have `is_gym: 1`.
 Each exercise requires non-blank `name` and `description`, plus positive
 integer `sets` and `repetitions`. Repetitions are uniform across the sets of
-that exercise. `exercise_id` is required when a catalog exists and prohibited
-when it does not. Gym additions do not contain `metrics` or `parts`.
+that exercise. Exercises contain no IDs. Gym additions do not contain `metrics`
+or `parts`.
 
 Descriptions explain technique, rest, and warm-up/cool-down as appropriate.
 The prompt requires all workout activity, rest, and transitions to fit within
@@ -252,7 +257,10 @@ validator.
 ### Delete a workout
 
 ```json
-{ "action": "delete", "id": "walk-1" }
+{
+  "action": "delete",
+  "id": 101
+}
 ```
 
 Only these two fields are permitted. Deletion is allowed only in modification
@@ -294,8 +302,9 @@ now)` expects an already validated, backend-owned input and enforces:
   deletions. Duration/frequency limits are not hard validation limits in this
   mode, but availability, protected workouts, exclusions, and scheduling rules
   still apply.
-- Catalog metric formats/bounds, whole-session duration consistency, and
-  exact exercise ID/name matching when a gym exercise catalog is supplied.
+- Catalog metric formats/bounds and whole-session duration consistency. Gym
+  exercise names/instructions must be non-blank, with positive integer sets and
+  repetitions and no exercise IDs.
 
 Validation does not reject an unchanged historical schedule solely for its
 existing conflicts or mismatch with current preferences. Historical workout
@@ -324,7 +333,7 @@ silently shortened. Provider context limits can still reject a smaller request.
 These request/response pairs reproduce the deterministic backend fixtures. For
 validation examples, use an evaluation time before the scheduled workouts, such
 as `2026-10-03T10:00:00Z`. They are illustrative operations, not a persistence
-receipt. The modification replaces only `walk-1` and leaves `gym-1` unchanged.
+receipt. The modification replaces only `101` and leaves `102` unchanged.
 
 ### Create a new plan
 
@@ -341,7 +350,7 @@ Request:
     "timezone": "Europe/Warsaw",
     "starting_comfort": "starting_out",
     "sessions_per_week": 2,
-    "activity_interests": ["walking", "strength"],
+    "activity_interests": [1, 2],
     "available_locations": ["outdoors", "gym"],
     "available_equipment": [],
     "preferred_times": ["lunch", "evening"],
@@ -365,7 +374,7 @@ Request:
   "user_description": "A beginner who works at a desk and wants a gentle start.",
   "sports": [
     {
-      "id": "walking",
+      "id": 1,
       "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
@@ -394,22 +403,10 @@ Request:
       ]
     },
     {
-      "id": "strength",
+      "id": 2,
       "is_gym": 1,
       "name": "Gym",
-      "description": "Gentle beginner gym exercises",
-      "exercises": [
-        {
-          "id": "chair_squat",
-          "name": "Chair squat",
-          "description": "Sit back toward a stable chair and stand with control."
-        },
-        {
-          "id": "wall_pushup",
-          "name": "Wall push-up",
-          "description": "Stand facing a wall, bend the elbows and press back slowly."
-        }
-      ]
+      "description": "Gentle beginner gym exercises"
     }
   ],
   "previous_week_events": [],
@@ -427,7 +424,7 @@ Response:
   "events": [
     {
       "action": "add",
-      "sport_id": "walking",
+      "sport_id": 1,
       "time_slot": {
         "start": "2026-10-05T12:05:00+02:00",
         "duration": 600
@@ -448,7 +445,7 @@ Response:
     },
     {
       "action": "add",
-      "sport_id": "strength",
+      "sport_id": 2,
       "time_slot": {
         "start": "2026-10-07T18:05:00+02:00",
         "duration": 600
@@ -456,14 +453,12 @@ Response:
       "description": "Warm up with 2 minutes of gentle marching. Complete the exercises, then walk slowly for 2 minutes to cool down.",
       "exercises": [
         {
-          "exercise_id": "chair_squat",
           "name": "Chair squat",
           "sets": 2,
           "repetitions": 5,
           "description": "Sit back toward a stable chair and stand slowly. Rest 30 seconds between sets. Allow 3 minutes including rest."
         },
         {
-          "exercise_id": "wall_pushup",
           "name": "Wall push-up",
           "sets": 2,
           "repetitions": 5,
@@ -491,7 +486,7 @@ Request:
     "timezone": "Europe/Warsaw",
     "starting_comfort": "starting_out",
     "sessions_per_week": 2,
-    "activity_interests": ["walking", "strength"],
+    "activity_interests": [1, 2],
     "available_locations": ["outdoors", "gym"],
     "available_equipment": [],
     "preferred_times": ["lunch", "evening"],
@@ -519,7 +514,7 @@ Request:
   "user_description": "A beginner who works at a desk and wants a gentle start.",
   "sports": [
     {
-      "id": "walking",
+      "id": 1,
       "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
@@ -548,29 +543,17 @@ Request:
       ]
     },
     {
-      "id": "strength",
+      "id": 2,
       "is_gym": 1,
       "name": "Gym",
-      "description": "Gentle beginner gym exercises",
-      "exercises": [
-        {
-          "id": "chair_squat",
-          "name": "Chair squat",
-          "description": "Sit back toward a stable chair and stand with control."
-        },
-        {
-          "id": "wall_pushup",
-          "name": "Wall push-up",
-          "description": "Stand facing a wall, bend the elbows and press back slowly."
-        }
-      ]
+      "description": "Gentle beginner gym exercises"
     }
   ],
   "previous_week_events": [],
   "current_week_events": [],
   "target_window_events": [
     {
-      "sport_id": "walking",
+      "sport_id": 1,
       "time_slot": {
         "start": "2026-10-05T12:05:00+02:00",
         "duration": 600
@@ -588,12 +571,12 @@ Request:
           "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes."
         }
       ],
-      "id": "walk-1",
+      "id": 101,
       "status": "planned",
       "editable": true
     },
     {
-      "sport_id": "strength",
+      "sport_id": 2,
       "time_slot": {
         "start": "2026-10-07T18:05:00+02:00",
         "duration": 600
@@ -601,21 +584,19 @@ Request:
       "description": "Warm up with 2 minutes of gentle marching. Complete the exercises, then walk slowly for 2 minutes to cool down.",
       "exercises": [
         {
-          "exercise_id": "chair_squat",
           "name": "Chair squat",
           "sets": 2,
           "repetitions": 5,
           "description": "Sit back toward a stable chair and stand slowly. Rest 30 seconds between sets. Allow 3 minutes including rest."
         },
         {
-          "exercise_id": "wall_pushup",
           "name": "Wall push-up",
           "sets": 2,
           "repetitions": 5,
           "description": "Keep your body straight and bend the elbows toward the wall. Rest 30 seconds between sets. Allow 3 minutes including rest."
         }
       ],
-      "id": "gym-1",
+      "id": 102,
       "status": "planned",
       "editable": true
     }
@@ -641,11 +622,11 @@ Response:
   "events": [
     {
       "action": "delete",
-      "id": "walk-1"
+      "id": 101
     },
     {
       "action": "add",
-      "sport_id": "walking",
+      "sport_id": 1,
       "time_slot": {
         "start": "2026-10-06T12:05:00+02:00",
         "duration": 900

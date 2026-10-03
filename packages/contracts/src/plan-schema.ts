@@ -26,7 +26,7 @@ export function buildPlanOutputSchema(input: PlanInput): JsonSchema {
         ...nonGym,
         properties: {
           ...nonGym.properties,
-          sport_id: { type: 'string', enum: [sport.id] },
+          sport_id: { type: 'integer', enum: [sport.id] },
           metrics: {
             type: 'object',
             additionalProperties: false,
@@ -44,33 +44,11 @@ export function buildPlanOutputSchema(input: PlanInput): JsonSchema {
         },
       };
     }
-    const exerciseList = gym.properties.exercises;
-    const exercise = exerciseList?.items as ObjectSchema | undefined;
-    if (!exerciseList || !exercise) throw new Error('Missing exercise schema.');
     return {
       ...gym,
       properties: {
         ...gym.properties,
-        sport_id: { type: 'string', enum: [sport.id] },
-        exercises: {
-          ...exerciseList,
-          items: sport.exercises
-            ? {
-                ...exercise,
-                required: [...exercise.required, 'exercise_id'],
-                properties: {
-                  ...exercise.properties,
-                  exercise_id: { type: 'string', enum: sport.exercises.map((item) => item.id) },
-                },
-              }
-            : {
-                ...exercise,
-                // Without a catalog, use names and do not invent exercise IDs.
-                properties: Object.fromEntries(
-                  Object.entries(exercise.properties).filter(([key]) => key !== 'exercise_id'),
-                ),
-              },
-        },
+        sport_id: { type: 'integer', enum: [sport.id] },
       },
     };
   });
@@ -94,7 +72,7 @@ export function buildPlanOutputSchema(input: PlanInput): JsonSchema {
   if (input.mode === 'modify' && deletable.length) {
     additions.push({
       ...deletion,
-      properties: { ...deletion.properties, id: { type: 'string', enum: deletable } },
+      properties: { ...deletion.properties, id: { type: 'integer', enum: deletable } },
     });
   }
   return {

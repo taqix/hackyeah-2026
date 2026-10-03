@@ -10,15 +10,15 @@ export interface PlanPreferences {
   /** Any integer; creation treats this as the per-week session limit. */
   sessions_per_week: number;
   preferred_duration: number;
-  /** Database sport IDs, not a fixed list of activity names. */
-  activity_interests: string[];
+  /** Positive safe integer database sport IDs. */
+  activity_interests: number[];
   available_locations: string[];
   available_equipment: string[];
   discovery_preference: 'selected_only' | 'occasional' | 'explore';
   preferred_times?: string[];
   avoidances?: string[];
   starting_obstacle?: string | null;
-  excluded_activity_types?: string[];
+  excluded_activity_types?: number[];
   comfortable_swimming?: boolean | null;
 }
 
@@ -44,34 +44,25 @@ export interface SportMetric {
   represents_session_duration?: boolean;
 }
 
-export interface ExerciseDefinition {
-  id: string;
-  name: string;
-  description: string;
-}
-
 interface SportBase {
-  id: string;
+  id: number;
   name: string;
   description: string;
   /** Preparation AND wrap-up allowance, each in seconds. Defaults to 300. */
   buffer_seconds?: number;
 }
 
-export type SportDefinition = SportBase &
-  ({ is_gym: 0; metrics: SportMetric[] } | { is_gym: 1; exercises?: ExerciseDefinition[] });
+export type SportDefinition = SportBase & ({ is_gym: 0; metrics: SportMetric[] } | { is_gym: 1 });
 
 export interface GymExercise {
   name: string;
-  /** Required when the sport supplies an exercise catalog. */
-  exercise_id?: string;
   sets: number;
   repetitions: number;
   description: string;
 }
 
 export type Workout = {
-  sport_id: string;
+  sport_id: number;
   time_slot: TimeSlot;
   description: string;
 } & (
@@ -80,7 +71,7 @@ export type Workout = {
 );
 
 export type ExistingWorkout = Workout & {
-  id: string;
+  id: number;
   status: 'planned' | 'completed' | 'skipped';
   /** Set by the backend after checking ownership, never accepted as client authorization. */
   editable: boolean;
@@ -101,7 +92,7 @@ export interface PlanInput {
   user_prompt: string | null;
 }
 
-export type PlanEvent = ({ action: 'add' } & Workout) | { action: 'delete'; id: string };
+export type PlanEvent = ({ action: 'add' } & Workout) | { action: 'delete'; id: number };
 
 export interface PlanOutput {
   events: PlanEvent[];

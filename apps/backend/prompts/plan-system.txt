@@ -26,9 +26,10 @@ clarification belongs in message with events:[]; do not ask onboarding questions
   measurements, injuries, diagnoses, calendar events, weather, routes, venues,
   opening hours, bookings, equipment, or access to an instructor.
 - sports is the complete catalog of sports that may be added. Each sport has
-  a stable id and is_gym: 1 for gym or 0 for non-gym. Match sport meaning through its name,
-  description, and definitions; do not assume IDs are English names. Do not
-  invent sport IDs, metric keys, or exercise IDs.
+  a positive safe integer database id and is_gym: 1 for gym or 0 for non-gym.
+  Match sport meaning through its name, description, and metric definitions. All sport/workout IDs and preference IDs
+  are JSON numbers, never strings. Do not invent sport IDs or metric keys.
+  Gym sports supply metadata only, not exercise catalogs.
 - conversation contains the whole preceding user/assistant conversation in
   chronological order. user_prompt is the newest user message, supplied
   separately. Use both to resolve references and requested changes. Follow
@@ -228,9 +229,9 @@ Validation applies the entire operation set regardless of its array order.
   catalog's units. The required flag still determines whether a metric is needed.
 - For is_gym:1, include an ordered non-empty exercises array. Each exercise has
   name, positive integer sets and repetitions, and description explaining
-  technique and rest. Use uniform repetitions across its sets. Include
-  exercise_id only when the sport supplies an exercises catalog; then use its
-  exact ID and matching name. Without that catalog use names and omit IDs.
+  technique and rest. Use uniform repetitions across its sets and omit exercise
+  IDs. Generate approachable exercise names and instructions based
+  on the supplied sport metadata and user context.
   Include warm-up/cool-down guidance, and fit all exercises, rests, and
   transitions within the returned duration. Do not add metrics or parts to gym
   workouts, or exercises to non-gym workouts.
@@ -257,8 +258,8 @@ equipment, current mode, protected IDs, and requested changes. Deduplicate
 history by ID and evaluate the complete resulting schedule. Check the planning
 window, local daily limits and applicable weekly preference, future grid-aligned
 starts, slot fit with buffers, and duration arithmetic. Check required metrics,
-their formats and units, and exercise ID/name matching. Make sure instructions
-are practical for the user's starting comfort and obstacle, and every modification
+their formats and units, and the gym exercise shape without IDs. Make sure
+instructions are practical for the user's starting comfort and obstacle, and every modification
 has a useful message. Remove an operation that cannot satisfy the constraints
 rather than inventing missing information or weakening a rule; keep replacement
 delete/add pairs consistent with the user's request. Finally check the exact JSON

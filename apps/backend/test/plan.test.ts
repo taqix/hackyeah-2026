@@ -36,7 +36,7 @@ function walk(start?: string, duration = 600) {
   return event;
 }
 
-function existing(start?: string, id = 'retained'): ExistingWorkout {
+function existing(start?: string, id = 201): ExistingWorkout {
   const { action: _action, ...workout } = walk(start);
   return { ...workout, id, status: 'planned', editable: true };
 }
@@ -106,7 +106,7 @@ void test('empty creation availability needs no credentials or provider call', a
 });
 
 void test('empty modification availability still calls Gemini for deletions and replies', async () => {
-  for (const events of [[{ action: 'delete', id: 'walk-1' }], []]) {
+  for (const events of [[{ action: 'delete', id: 101 }], []]) {
     const expected = { events, message: 'Here is the update.' };
     const result = await generatePlan(
       { ...modify(), available_slots: [] },
@@ -133,7 +133,7 @@ void test('rejects invalid input before a provider call', async () => {
     { timezone: 'Invalid/Zone' },
     { preferred_duration: 0 },
     { preferred_duration: Infinity },
-    { activity_interests: ['unknown'] },
+    { activity_interests: [999] },
     { activity_interests: [], discovery_preference: 'selected_only' },
   ]) {
     await assert.rejects(
@@ -227,9 +227,9 @@ void test('history deduplicates matching IDs regardless of object key order and 
 void test('accepts DB sport IDs, open durations and an unordered list of additions', () => {
   const request = input();
   request.preferences.preferred_duration = 720;
-  request.preferences.activity_interests = ['db-sport-42', 'strength'];
-  request.sports[0] = { ...request.sports[0]!, id: 'db-sport-42' };
-  const event = { ...walk(undefined, 720), sport_id: 'db-sport-42' };
+  request.preferences.activity_interests = [42, 2];
+  request.sports[0] = { ...request.sports[0]!, id: 42 };
+  const event = { ...walk(undefined, 720), sport_id: 42 };
   assert.deepEqual(parsePlanOutput(plan(event), parsePlanInput(request), now), plan(event));
   assert.deepEqual(
     parsePlanOutput({ ...output(), events: output().events.reverse() }, input(), now).events[0],
@@ -250,14 +250,8 @@ void test('enforces catalog metric formats, required keys, workout shapes and se
       () => parsePlanOutput(plan({ ...walk(), metrics }), input(), now),
       /catalog|duration metric/,
     );
-  assert.throws(
-    () => parsePlanOutput(plan({ ...walk(), sport_id: 'unknown' }), input(), now),
-    /catalog/,
-  );
-  assert.throws(
-    () => parsePlanOutput(plan({ ...walk(), sport_id: 'strength' }), input(), now),
-    /catalog/,
-  );
+  assert.throws(() => parsePlanOutput(plan({ ...walk(), sport_id: 999 }), input(), now), /catalog/);
+  assert.throws(() => parsePlanOutput(plan({ ...walk(), sport_id: 2 }), input(), now), /catalog/);
   assert.throws(
     () => parsePlanOutput(plan({ ...walk(), description: '  ' }), input(), now),
     /blank/,
@@ -318,20 +312,15 @@ void test('Gemini discriminators have explicit types and duration format stays l
   assert.throws(() => parsePlanOutput(plan(event), request, now), /catalog/);
 });
 
-void test('gym workouts validate sets, repetitions, gym access and optional exercise catalogs', () => {
+void test('gym workouts use generated exercise instructions without a sport exercise catalog', () => {
   const gym = output().events[1];
   if (!gym || gym.action !== 'add' || !('exercises' in gym)) throw Error('Missing gym');
-  for (const patch of [
-    { sets: 0 },
-    { repetitions: 1.5 },
-    { exercise_id: 'unknown' },
-    { name: 'Wrong exercise' },
-  ]) {
+  for (const patch of [{ sets: 0 }, { repetitions: 1.5 }, { exercise_id: 999 }, { name: '  ' }]) {
     const changed = {
       ...gym,
       exercises: gym.exercises.map((exercise) => ({ ...exercise, ...patch })),
     };
-    assert.throws(() => parsePlanOutput(plan(changed), input(), now), /catalog|schema/);
+    assert.throws(() => parsePlanOutput(plan(changed), input(), now), /catalog|schema|blank/);
   }
   assert.throws(
     () =>
@@ -342,30 +331,33 @@ void test('gym workouts validate sets, repetitions, gym access and optional exer
       ),
     /gym access/i,
   );
-  const request = input();
-  const sport = request.sports[1];
-  if (!sport || sport.is_gym !== 1) throw Error('Missing gym sport');
-  delete sport.exercises;
-  const withoutIds = {
+  assert.deepEqual(parsePlanOutput(plan(gym), parsePlanInput(input()), now), plan(gym));
+  const renamed = {
     ...gym,
-    exercises: gym.exercises.map(({ exercise_id: _id, ...exercise }) => exercise),
+    exercises: gym.exercises.map((exercise) => ({
+      ...exercise,
+      name: 'Gentle bodyweight movement',
+    })),
   };
-  assert.deepEqual(
-    parsePlanOutput(plan(withoutIds), parsePlanInput(request), now),
-    plan(withoutIds),
+  assert.deepEqual(parsePlanOutput(plan(renamed), input(), now), plan(renamed));
+  const request = input();
+  assert.throws(
+    () =>
+      parsePlanInput({
+        ...request,
+        sports: request.sports.map((sport) =>
+          sport.is_gym === 1 ? { ...sport, exercises: [] } : sport,
+        ),
+      }),
+    /schema/,
   );
-  assert.throws(() => parsePlanOutput(plan(gym), request, now), /catalog/);
 });
 
 void test('deletions reject unknown, repeated, completed, skipped, past and non-editable activities', () => {
   const request = modify();
   assert.throws(
     () =>
-      parsePlanOutput(
-        { events: [{ action: 'delete', id: 'unknown' }], message: 'Delete' },
-        request,
-        now,
-      ),
+      parsePlanOutput({ events: [{ action: 'delete', id: 999 }], message: 'Delete' }, request, now),
     /known/,
   );
   assert.throws(
@@ -373,8 +365,8 @@ void test('deletions reject unknown, repeated, completed, skipped, past and non-
       parsePlanOutput(
         {
           events: [
-            { action: 'delete', id: 'walk-1' },
-            { action: 'delete', id: 'walk-1' },
+            { action: 'delete', id: 101 },
+            { action: 'delete', id: 101 },
           ],
           message: 'Delete',
         },
@@ -405,7 +397,7 @@ void test('deletions reject unknown, repeated, completed, skipped, past and non-
   assert.throws(
     () =>
       parsePlanOutput(
-        plan({ action: 'delete', id: 'walk-1' }),
+        plan({ action: 'delete', id: 101 }),
         { ...request, mode: 'create', user_prompt: null },
         now,
       ),
@@ -420,7 +412,7 @@ void test('requires modification replies and keeps operation objects minimal', (
   assert.throws(
     () =>
       parsePlanOutput(
-        { events: [{ action: 'delete', id: 'walk-1', description: 'Extra' }], message: 'Delete' },
+        { events: [{ action: 'delete', id: 101, description: 'Extra' }], message: 'Delete' },
         modify(),
         now,
       ),
@@ -484,7 +476,7 @@ void test('final schedule includes retained workouts, counts completions and ign
 
 void test('replacement validation applies deletions first regardless of operation order', () => {
   const request = modify();
-  const replacement = { events: [walk(), { action: 'delete', id: 'walk-1' }], message: 'Replace' };
+  const replacement = { events: [walk(), { action: 'delete', id: 101 }], message: 'Replace' };
   assert.deepEqual(parsePlanOutput(replacement, request, now), replacement);
 });
 
@@ -522,7 +514,7 @@ void test('creation retains frequency limits while chat still respects sport exc
         modified(),
         {
           ...modify(),
-          preferences: { ...modify().preferences, excluded_activity_types: ['walking'] },
+          preferences: { ...modify().preferences, excluded_activity_types: [1] },
         },
         now,
       ),
@@ -566,7 +558,7 @@ void test('empty sport catalog still supports modification deletions', () => {
   };
   assert.deepEqual(
     parsePlanOutput(
-      { events: [{ action: 'delete', id: 'walk-1' }], message: 'Delete' },
+      { events: [{ action: 'delete', id: 101 }], message: 'Delete' },
       parsePlanInput(request),
       now,
     ).events.length,
@@ -705,5 +697,55 @@ void test('rejects malformed provider envelopes with explicit errors', async () 
       }),
       { code: 'INVALID_RESPONSE' },
     );
+  }
+});
+
+void test('database IDs are numeric positive safe integers and are never coerced', () => {
+  for (const id of ['1', 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    const request = input();
+    assert.throws(
+      () =>
+        parsePlanInput({ ...request, sports: [{ ...request.sports[0], id }, request.sports[1]] }),
+      /schema/,
+    );
+    assert.throws(
+      () =>
+        parsePlanInput({
+          ...request,
+          preferences: { ...request.preferences, activity_interests: [id] },
+        }),
+      /schema/,
+    );
+    assert.throws(
+      () =>
+        parsePlanInput({
+          ...request,
+          preferences: { ...request.preferences, excluded_activity_types: [id] },
+        }),
+      /schema/,
+    );
+    assert.throws(
+      () =>
+        parsePlanInput({
+          ...modify(),
+          target_window_events: modify().target_window_events.map((event) => ({ ...event, id })),
+        }),
+      /schema/,
+    );
+    assert.throws(
+      () => parsePlanOutput({ events: [{ ...walk(), sport_id: id }], message: null }, request, now),
+      /schema/,
+    );
+    assert.throws(
+      () =>
+        parsePlanOutput({ events: [{ action: 'delete', id }], message: 'Delete' }, modify(), now),
+      /schema/,
+    );
+  }
+  const schema = JSON.parse(JSON.stringify(buildGeminiOutputSchema(modify())));
+  for (const branch of schema.properties.events.items.anyOf) {
+    const identifier = branch.properties.sport_id ?? branch.properties.id;
+    assert.equal(identifier.type, 'integer');
+    assert.ok(identifier.enum.every((id: unknown) => typeof id === 'number'));
   }
 });

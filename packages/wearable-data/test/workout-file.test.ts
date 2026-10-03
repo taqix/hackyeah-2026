@@ -324,6 +324,29 @@ describe('storage-independent workout file summaries', () => {
     expect(missing.activities[0]?.metrics.movingTime?.value).toBe(10);
     expect(missing.warnings.some((w) => w.code === 'missing_session')).toBe(true);
   });
+  it('shares a FIT boundary sample with adjacent sessions', async () => {
+    const result = await extractWorkoutSummary(
+      fit(
+        [0, 10, 20].map((t) => ({ timestamp: time(t), speed: 2, distance: t * 2 })),
+        [
+          { startTime: time(0), timestamp: time(10), sport: 'running' },
+          { startTime: time(10), timestamp: time(20), sport: 'cycling' },
+        ],
+      ),
+    );
+    expect(result.activities.map((a) => a.metrics.movingTime?.value)).toEqual([10, 10]);
+    expect(result.activities.map((a) => a.sampleCount)).toEqual([2, 2]);
+  });
+  it('applies timer events that precede records when FIT session summaries are absent', async () => {
+    const s = await summary(
+      fit(
+        [10, 20].map((t) => ({ timestamp: time(t), speed: 2 })),
+        [],
+        [{ timestamp: time(0), event: 'timer', eventType: 'stop' }],
+      ),
+    );
+    expect(s.movingTime?.value).toBe(0);
+  });
 });
 
 it('labels unobserved FIT duration as incomplete and never fills it with movement', async () => {

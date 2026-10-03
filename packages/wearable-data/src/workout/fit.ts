@@ -65,8 +65,9 @@ export function parseFit(bytes: Uint8Array, result: Extraction, config: Config):
   if (sessions.length > 100)
     throw new ExtractionError('session_limit', 'FIT has more than 100 sessions.');
   const records = ordered.filter((m) => m.num === 20),
-    allocated = new Set<number>();
-  if (!sessions.length) {
+    assigned = new Set<number>();
+  const missingSessions = !sessions.length;
+  if (missingSessions) {
     warn(
       result.warnings,
       'missing_session',
@@ -88,6 +89,7 @@ export function parseFit(bytes: Uint8Array, result: Extraction, config: Config):
       ).toISOString();
     const previousIndex = sessions[j - 1]?.index ?? -1;
     const belongs = (m: typeof s): boolean => {
+      if (missingSessions) return true;
       const t = time(m.message.timestamp, [], a.id);
       const left = seconds(a.startTime, t),
         right = seconds(t, a.endTime);
@@ -95,12 +97,10 @@ export function parseFit(bytes: Uint8Array, result: Extraction, config: Config):
         ? left >= 0 && right >= 0
         : m.index > previousIndex && m.index < s.index;
     };
-    const ps = records
-      .filter((m) => !allocated.has(m.index) && belongs(m))
-      .map((m) => {
-        allocated.add(m.index);
-        return fitSample(m.message, m.index, result, a.id);
-      });
+    const ps = records.filter(belongs).map((m) => {
+      assigned.add(m.index);
+      return fitSample(m.message, m.index, result, a.id);
+    });
     a.segments = [{ id: `${a.id}/segment:0`, samples: ps }];
     a.startTime ??= ps[0]?.timestamp ?? null;
     a.endTime ??= ps.at(-1)?.timestamp ?? null;
@@ -118,7 +118,7 @@ export function parseFit(bytes: Uint8Array, result: Extraction, config: Config):
     }
     result.activities.push(a);
   }
-  const unassigned = records.filter((m) => !allocated.has(m.index));
+  const unassigned = records.filter((m) => !assigned.has(m.index));
   if (unassigned.length) {
     const a = activity('unassigned');
     a.segments = [

@@ -51,3 +51,4 @@ Installation is not available yet.
 
 - [AI plan generation](docs/features/ai-plan-generation.md) — feature flow, setup, prompts, validation, errors, testing, and provider replacement.
 - [AI JSON contract](docs/features/ai-json-contract.md) — request/response fields, sport metrics, scheduling rules, and complete examples.
+- [FIT/GPX workout summaries](docs/features/workout-file-summary.md) — extraction API, moving time, elevation gain, limits and verification; storage is deferred.

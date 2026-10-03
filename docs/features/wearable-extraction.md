@@ -232,3 +232,12 @@ Primary references used for implementation: [official Garmin FIT SDK](https://gi
 The shared architecture in `docs/data-extraction/README.md` remains authoritative
 for the later production stages; this file distinguishes implemented behavior
 from those planned stages.
+
+### Storage-independent FIT/GPX workout summaries
+
+For filling a workout log before saving it, use `extractWorkoutSummary(bytes)`.
+It requires no connection or store, supports FIT activity files and GPX 1.1 tracks,
+and returns per-session/track metrics including derived moving time and elevation
+gain with provenance and coverage. See [workout file summaries](workout-file-summary.md)
+for algorithms, limits and integration. Existing `importActivityFit` behavior and
+storage contracts are unchanged.

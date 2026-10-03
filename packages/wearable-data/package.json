@@ -19,6 +19,7 @@
     "@garmin/fitsdk": "21.217.0",
     "@hackyeah/contracts": "1.0.0",
     "ajv": "8.20.0",
+    "saxes": "6.0.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { isMockMode } from '@/api/config';
 import { queryClient } from '@/api/query-client';
 import { queryKeys } from '@/api/query-keys';
 import { setNowOverride } from '@/lib/clock';
@@ -62,8 +63,13 @@ const get = () => settings;
 export const demo = {
   get,
   subscribe,
-  /** Loads saved settings once, applying a saved time override before anything reads the clock. */
+  /**
+   * Loads saved settings once, applying a saved time override before anything
+   * reads the clock. Mock mode only: the real API must always see the device
+   * clock, so outside it the saved settings are never loaded.
+   */
   hydrate(): Promise<void> {
+    if (!isMockMode) return Promise.resolve();
     hydration ??= (async () => {
       try {
         const raw = await AsyncStorage.getItem(KEY);
@@ -100,6 +106,7 @@ export const demo = {
   },
   /** Time-travel the whole app (or back to the device clock with null); data refetches. */
   setNow(date: Date | null) {
+    if (!isMockMode) return;
     setNowOverride(date);
     update({ nowOverride: date ? date.toISOString() : null });
     queryClient.invalidateQueries();

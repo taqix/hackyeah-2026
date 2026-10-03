@@ -39,7 +39,7 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
       <Content
         gap={24}
         bottomInset={save.isError ? BOTTOM_BAR_CLEARANCE + Math.max(insets.bottom, 20) + ERROR_SPACE : 'bottomBar'}>
-        <FeedbackHeader log={log} />
+        <FeedbackHeader log={log} session={log.session_id && !session.isError ? session.data : null} />
         <Col gap={12}>
           <Question>{FELT_QUESTION}</Question>
           <RadioGroup label={FELT_QUESTION}>

@@ -62,6 +62,7 @@ Start feature/documentation branches from `develop` and open PRs against it. Pro
 
 - [Grilling session summary](docs/grilling-summary.md)
 - [Product scope](docs/product.md)
+- [Six-person bootstrap plan](docs/roadmap.md)
 - [Development and implementation plan](docs/development.md)
 - [Deployment plan](docs/deployment.md)
 - [Feature template](docs/features/TEMPLATE.md)

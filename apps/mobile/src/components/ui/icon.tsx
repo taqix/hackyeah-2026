@@ -88,7 +88,7 @@ import {
   Wind,
   X,
 } from 'lucide-react-native';
-import type { ColorValue } from 'react-native';
+import { type ColorValue, Platform } from 'react-native';
 
 import { useTheme } from '@/theme';
 
@@ -200,6 +200,9 @@ export type IconProps = {
   strokeWidth?: number;
 };
 
+/** Native-only props: on the web react-native-svg would pass them to the DOM. */
+const HIDDEN = Platform.OS === 'web' ? {} : ({ accessible: false, importantForAccessibility: 'no-hide-descendants' } as const);
+
 /** Decorative by default: put the accessible label on the pressable around it. */
 export function Icon({ name, size = 20, color, strokeWidth = 1.75 }: IconProps) {
   const { colors } = useTheme();
@@ -210,8 +213,7 @@ export function Icon({ name, size = 20, color, strokeWidth = 1.75 }: IconProps) 
       color={(color ?? colors.textPrimary) as string}
       strokeWidth={strokeWidth}
       absoluteStrokeWidth={false}
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+      {...HIDDEN}
     />
   );
 }

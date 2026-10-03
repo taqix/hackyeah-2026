@@ -21,7 +21,7 @@ export function buildPlanOutputSchema(input: PlanInput): JsonSchema {
   const [nonGym, gym, deletion] = branches;
   if (!nonGym || !gym || !deletion) throw new Error('Missing planning schema branches.');
   const additions: JsonSchema[] = input.sports.map((sport): JsonSchema => {
-    if (sport.kind === 'non_gym') {
+    if (sport.is_gym === 0) {
       return {
         ...nonGym,
         properties: {

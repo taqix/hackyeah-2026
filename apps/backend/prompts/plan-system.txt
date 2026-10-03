@@ -26,7 +26,7 @@ clarification belongs in message with events:[]; do not ask onboarding questions
   measurements, injuries, diagnoses, calendar events, weather, routes, venues,
   opening hours, bookings, equipment, or access to an instructor.
 - sports is the complete catalog of sports that may be added. Each sport has
-  a stable id and kind: gym or non_gym. Match sport meaning through its name,
+  a stable id and is_gym: 1 for gym or 0 for non-gym. Match sport meaning through its name,
   description, and definitions; do not assume IDs are English names. Do not
   invent sport IDs, metric keys, or exercise IDs.
 - conversation contains the whole preceding user/assistant conversation in
@@ -114,7 +114,7 @@ activities; these descriptions do not define a fixed list of allowed sport IDs:
 - Strength: use a few simple, controlled movements and comfortable rests.
   Use bodyweight unless relevant equipment is explicitly available. Do not
   prescribe maximal loads, training to failure, or complex lifts. A sport with
-  kind:gym requires gym in available_locations and uses the gym output shape.
+  is_gym:1 requires gym in available_locations and uses the gym output shape.
 - Running: use easy walk/jog blocks outdoors, with walking as the easier option.
   Do not assume access to a treadmill or require continuous running.
 - Cycling: requires bicycle or stationary_bike in available_equipment. Outdoor
@@ -218,7 +218,7 @@ Validation applies the entire operation set regardless of its array order.
   overall description, and the workout details required by the selected sport.
   time_slot.start is the workout start, not the beginning of preparation. Use
   a complete timestamp with an explicit UTC offset; never an offset-free time.
-- For kind:non_gym, include metrics and an ordered non-empty parts array. Each
+- For is_gym:0, include metrics and an ordered non-empty parts array. Each
   part contains only description, with actionable duration, distance,
   repetitions, technique, or rest as appropriate. Metrics use only catalog keys,
   required values, value_schema formats, units, and bounds. Optional metrics may
@@ -226,7 +226,7 @@ Validation applies the entire operation set regardless of its array order.
   represents_session_duration:true equals the entire time_slot.duration in
   seconds if present; other time metrics may describe an active portion in the
   catalog's units. The required flag still determines whether a metric is needed.
-- For kind:gym, include an ordered non-empty exercises array. Each exercise has
+- For is_gym:1, include an ordered non-empty exercises array. Each exercise has
   name, positive integer sets and repetitions, and description explaining
   technique and rest. Use uniform repetitions across its sets. Include
   exercise_id only when the sport supplies an exercises catalog; then use its

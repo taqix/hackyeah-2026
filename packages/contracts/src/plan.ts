@@ -109,7 +109,7 @@ export function parsePlanInput(value: unknown): PlanInput {
     nonBlank(sport.id, 'Sport ID');
     nonBlank(sport.name, 'Sport name');
     nonBlank(sport.description, 'Sport description');
-    if (sport.kind === 'gym') {
+    if (sport.is_gym === 1) {
       if (sport.exercises) {
         unique(
           sport.exercises.map((exercise) => exercise.id),
@@ -226,7 +226,7 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
   const schema = buildPlanOutputSchema(input);
   try {
     if (!ajv.compile<PlanOutput>(schema)(value))
-      reject('Output does not match the supplied sport catalog, metric formats or workout kind.');
+      reject('Output does not match the supplied sport catalog, metric formats or workout shape.');
   } finally {
     ajv.removeSchema(schema);
   }
@@ -265,9 +265,9 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
       !input.preferences.activity_interests.includes(sport.id)
     )
       reject('Selected-only discovery requires a selected sport.');
-    if (sport.kind === 'gym' && !input.preferences.available_locations.includes('gym'))
+    if (sport.is_gym === 1 && !input.preferences.available_locations.includes('gym'))
       reject('Gym workouts require gym access.');
-    if ('metrics' in event && sport.kind === 'non_gym') {
+    if ('metrics' in event && sport.is_gym === 0) {
       for (const metric of sport.metrics) {
         if (
           metric.represents_session_duration &&
@@ -277,7 +277,7 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
           reject('Whole-session duration metric must equal the time slot duration in seconds.');
       }
     }
-    if ('exercises' in event && sport.kind === 'gym' && sport.exercises) {
+    if ('exercises' in event && sport.is_gym === 1 && sport.exercises) {
       for (const exercise of event.exercises) {
         if (
           sport.exercises.find((item) => item.id === exercise.exercise_id)?.name !== exercise.name

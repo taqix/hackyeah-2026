@@ -131,7 +131,6 @@ test('empty modification availability still calls Gemini for deletions and repli
 test('rejects invalid input before a provider call', async () => {
   for (const patch of [
     { timezone: 'Invalid/Zone' },
-    { sessions_per_week: 4 },
     { preferred_duration: 0 },
     { preferred_duration: Infinity },
     { activity_interests: ['unknown'] },
@@ -139,6 +138,13 @@ test('rejects invalid input before a provider call', async () => {
   ]) {
     await assert.rejects(
       generatePlan({ ...input(), preferences: { ...input().preferences, ...patch } }, options),
+    );
+  }
+  for (const sessions_per_week of [-1, 0, 4]) {
+    assert.equal(
+      parsePlanInput({ ...input(), preferences: { ...input().preferences, sessions_per_week } })
+        .preferences.sessions_per_week,
+      sessions_per_week,
     );
   }
   for (const request of [
@@ -157,7 +163,23 @@ test('rejects invalid input before a provider call', async () => {
 test('catalog definitions reject duplicate IDs, keys, contradictory bounds and unsupported schemas', () => {
   const request = input();
   const sport = request.sports[0];
-  if (!sport || sport.kind !== 'non_gym') throw Error('Missing sport fixture');
+  if (!sport || sport.is_gym !== 0) throw Error('Missing sport fixture');
+  assert.throws(
+    () =>
+      parsePlanInput({
+        ...request,
+        sports: [{ ...sport, kind: 'non_gym' }],
+      }),
+    /schema/,
+  );
+  assert.throws(
+    () =>
+      parsePlanInput({
+        ...request,
+        sports: [{ ...sport, is_gym: 2 }],
+      }),
+    /schema/,
+  );
   assert.throws(() => parsePlanInput({ ...request, sports: [...request.sports, sport] }), /unique/);
   for (const value_schema of [
     { type: 'number', minimum: 5, maximum: 1 },
@@ -215,7 +237,7 @@ test('accepts DB sport IDs, open durations and an unordered list of additions', 
   );
 });
 
-test('enforces catalog metric formats, required keys, workout kind and session-duration consistency', () => {
+test('enforces catalog metric formats, required keys, workout shapes and session-duration consistency', () => {
   const cases: Record<string, string | number | boolean>[] = [
     {},
     { duration: '600' },
@@ -246,7 +268,7 @@ test('enforces catalog metric formats, required keys, workout kind and session-d
 test('supports string/boolean metric values and preserves schema-like metric names', () => {
   const request = input();
   const sport = request.sports[0];
-  if (!sport || sport.kind !== 'non_gym') throw Error('Missing sport');
+  if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
   sport.metrics.push(
     {
       key: 'minimum',
@@ -273,7 +295,7 @@ test('supports string/boolean metric values and preserves schema-like metric nam
 test('Gemini discriminators have explicit types and duration format stays local', () => {
   const request = input();
   const sport = request.sports[0];
-  if (!sport || sport.kind !== 'non_gym') throw Error('Missing sport');
+  if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
   sport.metrics.push({
     key: 'active_duration',
     description: 'Active movement time in ISO 8601 duration format',
@@ -322,7 +344,7 @@ test('gym workouts validate sets, repetitions, gym access and optional exercise 
   );
   const request = input();
   const sport = request.sports[1];
-  if (!sport || sport.kind !== 'gym') throw Error('Missing gym sport');
+  if (!sport || sport.is_gym !== 1) throw Error('Missing gym sport');
   delete sport.exercises;
   const withoutIds = {
     ...gym,

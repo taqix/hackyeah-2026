@@ -67,7 +67,7 @@ window, including neighboring workouts whose buffers could overlap additions.
 
 ### Sport catalog
 
-Every sport has `id`, `name`, `description`, `kind: gym | non_gym`, and optionally
+Every sport has `id`, `name`, `description`, `is_gym: 0 | 1` (`1` for gym), and optionally
 `buffer_seconds`, an allowance for EACH side of the activity. The default is
 300 seconds; supply 900 for swimming where appropriate. Availability must not
 already subtract these same buffers.

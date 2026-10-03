@@ -44,8 +44,7 @@
           "enum": ["starting_out", "occasionally_active", "some_routine"]
         },
         "sessions_per_week": {
-          "type": "integer",
-          "enum": [1, 2, 3]
+          "type": "integer"
         },
         "activity_interests": {
           "type": "array",
@@ -140,7 +139,7 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "name", "description", "kind", "metrics"],
+            "required": ["id", "name", "description", "is_gym", "metrics"],
             "properties": {
               "id": {
                 "type": "string",
@@ -159,8 +158,8 @@
                 "type": "number",
                 "minimum": 0
               },
-              "kind": {
-                "const": "non_gym"
+              "is_gym": {
+                "const": 0
               },
               "metrics": {
                 "type": "array",
@@ -263,7 +262,7 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "name", "description", "kind"],
+            "required": ["id", "name", "description", "is_gym"],
             "properties": {
               "id": {
                 "type": "string",
@@ -282,8 +281,8 @@
                 "type": "number",
                 "minimum": 0
               },
-              "kind": {
-                "const": "gym"
+              "is_gym": {
+                "const": 1
               },
               "exercises": {
                 "type": "array",

@@ -68,7 +68,7 @@ caller responsibilities, not conditions the JSON validator can establish.
 | ------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
 | `timezone`                | Yes      | Valid IANA timezone.                                                                              |
 | `starting_comfort`        | Yes      | `starting_out`, `occasionally_active`, `some_routine`.                                            |
-| `sessions_per_week`       | Yes      | Integer `1`, `2`, or `3`.                                                                         |
+| `sessions_per_week`       | Yes      | Any integer.                                                                                      |
 | `preferred_duration`      | Yes      | Positive number of seconds; no fixed 5/10/20-minute enum.                                         |
 | `activity_interests`      | Yes      | Unique sport IDs from `sports`; may be empty.                                                     |
 | `available_locations`     | Yes      | Non-empty unique list of `home`, `outdoors`, `gym`, `pool`.                                       |
@@ -122,7 +122,8 @@ membership during validation.
 
 ## Sport catalog
 
-Every sport requires `id`, `name`, `description`, and `kind`. IDs are unique and
+Every sport requires `id`, `name`, `description`, and `is_gym`. `is_gym` is `1`
+for gym sports and `0` for non-gym sports. IDs are unique and
 limited to 128 characters; sport IDs, names, and descriptions must be non-blank.
 `buffer_seconds` is optional and non-negative. It applies separately before
 and after a workout, defaults to 300 seconds per side, and may be zero. For
@@ -133,7 +134,7 @@ example, swimming can specify 900 seconds per side for preparation and changing.
 ```json
 {
   "id": "walking",
-  "kind": "non_gym",
+  "is_gym": 0,
   "name": "Walking",
   "description": "Easy outdoor walking",
   "metrics": [
@@ -185,7 +186,7 @@ an active portion using their documented units.
 ```json
 {
   "id": "strength",
-  "kind": "gym",
+  "is_gym": 1,
   "name": "Gym",
   "description": "Gentle beginner gym exercises",
   "exercises": [
@@ -224,7 +225,7 @@ an addition in the same response.
 ### Add a non-gym workout
 
 Required fields are `action: "add"`, `sport_id`, `time_slot`, `description`,
-`metrics`, and `parts`. The sport must have `kind: "non_gym"` in the supplied
+`metrics`, and `parts`. The sport must have `is_gym: 0` in the supplied
 catalog. `metrics` contains only the catalog's keys with valid scalar values;
 all required metrics must appear. Optional metrics may be omitted. When the
 catalog has no metrics, supply `{}`.
@@ -237,7 +238,7 @@ able to finish the entire workout from these instructions.
 ### Add a gym workout
 
 Required fields are `action: "add"`, `sport_id`, `time_slot`, `description`,
-and an ordered non-empty `exercises` list. The sport must have `kind: "gym"`.
+and an ordered non-empty `exercises` list. The sport must have `is_gym: 1`.
 Each exercise requires non-blank `name` and `description`, plus positive
 integer `sets` and `repetitions`. Repetitions are uniform across the sets of
 that exercise. `exercise_id` is required when a catalog exists and prohibited
@@ -365,7 +366,7 @@ Request:
   "sports": [
     {
       "id": "walking",
-      "kind": "non_gym",
+      "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
       "metrics": [
@@ -394,7 +395,7 @@ Request:
     },
     {
       "id": "strength",
-      "kind": "gym",
+      "is_gym": 1,
       "name": "Gym",
       "description": "Gentle beginner gym exercises",
       "exercises": [
@@ -519,7 +520,7 @@ Request:
   "sports": [
     {
       "id": "walking",
-      "kind": "non_gym",
+      "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
       "metrics": [
@@ -548,7 +549,7 @@ Request:
     },
     {
       "id": "strength",
-      "kind": "gym",
+      "is_gym": 1,
       "name": "Gym",
       "description": "Gentle beginner gym exercises",
       "exercises": [

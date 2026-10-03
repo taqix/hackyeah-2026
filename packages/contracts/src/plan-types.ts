@@ -7,7 +7,8 @@ export interface TimeSlot {
 export interface PlanPreferences {
   timezone: string;
   starting_comfort: 'starting_out' | 'occasionally_active' | 'some_routine';
-  sessions_per_week: 1 | 2 | 3;
+  /** Any integer; creation treats this as the per-week session limit. */
+  sessions_per_week: number;
   preferred_duration: number;
   /** Database sport IDs, not a fixed list of activity names. */
   activity_interests: string[];
@@ -58,7 +59,7 @@ interface SportBase {
 }
 
 export type SportDefinition = SportBase &
-  ({ kind: 'non_gym'; metrics: SportMetric[] } | { kind: 'gym'; exercises?: ExerciseDefinition[] });
+  ({ is_gym: 0; metrics: SportMetric[] } | { is_gym: 1; exercises?: ExerciseDefinition[] });
 
 export interface GymExercise {
   name: string;

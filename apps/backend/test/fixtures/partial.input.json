@@ -29,7 +29,7 @@
   "sports": [
     {
       "id": "walking",
-      "kind": "non_gym",
+      "is_gym": 0,
       "name": "Walking",
       "description": "Easy outdoor walking",
       "metrics": [
@@ -58,7 +58,7 @@
     },
     {
       "id": "strength",
-      "kind": "gym",
+      "is_gym": 1,
       "name": "Gym",
       "description": "Gentle beginner gym exercises",
       "exercises": [

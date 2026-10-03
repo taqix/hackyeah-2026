@@ -40,7 +40,8 @@ export type CardProps = {
 /** Surface card: radius 24, hairline border, near-invisible warm shadow. Never nest default cards. */
 export function Card({ children, variant = 'default', padding = 20, onPress, accessibilityLabel, accessibilityHint, style }: CardProps) {
   const theme = useTheme();
-  const base: ViewStyle = { borderRadius: theme.radius.card, borderWidth: 1, padding };
+  // Padding 0 adds nothing: on web the shorthand goes inline and would beat a style's own paddings.
+  const base: ViewStyle = { borderRadius: theme.radius.card, borderWidth: 1, ...(padding ? { padding } : null) };
 
   if (!onPress) {
     return <View style={[base, surface(variant, theme), style]}>{children}</View>;

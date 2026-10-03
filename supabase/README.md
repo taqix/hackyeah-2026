@@ -16,8 +16,18 @@ npm run lint:supabase
 
 The tests create disposable PGlite databases with synthetic Auth accounts.
 They never connect to hosted Supabase or load real credential files. There is no
-seed SQL or real user data. AI success examples are synthetic; the runtime AI
-adapter returns `AI_NOT_CONFIGURED` until the provider collaborator connects it.
+seed SQL or real user data. AI success examples are synthetic, and the Gemini
+adapter tests use a fake fetcher, never the real API.
+
+The function uses Gemini when both secrets are set, and answers 501
+`AI_NOT_CONFIGURED` otherwise:
+
+```sh
+supabase secrets set GEMINI_API_KEY=<GEMINI_API_KEY> GEMINI_MODEL=<MODEL_ID>
+```
+
+`GEMINI_MODEL` has no default; use a model ID from Google AI Studio. Details are
+in [the product API doc](../docs/features/supabase-product-api.md#ai-provider-gemini).
 
 The owner handles remote migrations, deployment, and Auth provider configuration.
 Actual local Supabase/Deno runtime verification remains pending because those

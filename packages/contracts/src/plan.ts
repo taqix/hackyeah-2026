@@ -138,6 +138,13 @@ export function parsePlanInput(value: unknown): PlanInput {
           schema.minimum > schema.maximum
         )
           reject('Metric minimum must not exceed maximum.');
+        if (
+          schema.type === 'integer' &&
+          schema.minimum !== undefined &&
+          schema.maximum !== undefined &&
+          Math.ceil(schema.minimum) > Math.floor(schema.maximum)
+        )
+          reject('Integer metric bounds must allow at least one integer.');
       } else if (schema.type === 'string') {
         if (
           schema.minLength !== undefined &&

@@ -44,7 +44,7 @@ function existing(start?: string, id = 'retained'): ExistingWorkout {
 const plan = (...events: PlanOutput['events']): PlanOutput => ({ events, message: null });
 
 for (const name of ['initial', 'partial', 'empty', 'modify']) {
-  test(`${name} fixtures conform to the runtime contract`, () => {
+  void test(`${name} fixtures conform to the runtime contract`, () => {
     const request = parsePlanInput(fixture(`${name}.input`));
     assert.deepEqual(
       parsePlanOutput(fixture(`${name}.expected-output`), request, now),
@@ -53,7 +53,7 @@ for (const name of ['initial', 'partial', 'empty', 'modify']) {
   });
 }
 
-test('sends both modes, whole conversation and catalog with a compatible response schema', async () => {
+void test('sends both modes, whole conversation and catalog with a compatible response schema', async () => {
   for (const request of [input(), modify()]) {
     const expected = request.mode === 'create' ? output() : modified();
     await generatePlan(request, {
@@ -89,7 +89,7 @@ test('sends both modes, whole conversation and catalog with a compatible respons
   assert.equal(createPlan, generatePlan);
 });
 
-test('empty creation availability needs no credentials or provider call', async () => {
+void test('empty creation availability needs no credentials or provider call', async () => {
   assert.deepEqual(
     await generatePlan(
       { ...input(), available_slots: [] },
@@ -105,7 +105,7 @@ test('empty creation availability needs no credentials or provider call', async 
   );
 });
 
-test('empty modification availability still calls Gemini for deletions and replies', async () => {
+void test('empty modification availability still calls Gemini for deletions and replies', async () => {
   for (const events of [[{ action: 'delete', id: 'walk-1' }], []]) {
     const expected = { events, message: 'Here is the update.' };
     const result = await generatePlan(
@@ -128,7 +128,7 @@ test('empty modification availability still calls Gemini for deletions and repli
   );
 });
 
-test('rejects invalid input before a provider call', async () => {
+void test('rejects invalid input before a provider call', async () => {
   for (const patch of [
     { timezone: 'Invalid/Zone' },
     { preferred_duration: 0 },
@@ -160,7 +160,7 @@ test('rejects invalid input before a provider call', async () => {
     assert.throws(() => parsePlanInput(request));
 });
 
-test('catalog definitions reject duplicate IDs, keys, contradictory bounds and unsupported schemas', () => {
+void test('catalog definitions reject duplicate IDs, keys, contradictory bounds and unsupported schemas', () => {
   const request = input();
   const sport = request.sports[0];
   if (!sport || sport.is_gym !== 0) throw Error('Missing sport fixture');
@@ -212,7 +212,7 @@ test('catalog definitions reject duplicate IDs, keys, contradictory bounds and u
   );
 });
 
-test('history deduplicates matching IDs regardless of object key order and rejects conflicting copies', () => {
+void test('history deduplicates matching IDs regardless of object key order and rejects conflicting copies', () => {
   const request = modify();
   const event = request.target_window_events[0];
   if (!event) throw Error('Missing history');
@@ -224,7 +224,7 @@ test('history deduplicates matching IDs regardless of object key order and rejec
   assert.throws(() => parsePlanInput(request), /consistent/);
 });
 
-test('accepts DB sport IDs, open durations and an unordered list of additions', () => {
+void test('accepts DB sport IDs, open durations and an unordered list of additions', () => {
   const request = input();
   request.preferences.preferred_duration = 720;
   request.preferences.activity_interests = ['db-sport-42', 'strength'];
@@ -237,7 +237,7 @@ test('accepts DB sport IDs, open durations and an unordered list of additions', 
   );
 });
 
-test('enforces catalog metric formats, required keys, workout shapes and session-duration consistency', () => {
+void test('enforces catalog metric formats, required keys, workout shapes and session-duration consistency', () => {
   const cases: Record<string, string | number | boolean>[] = [
     {},
     { duration: '600' },
@@ -265,7 +265,7 @@ test('enforces catalog metric formats, required keys, workout shapes and session
   assert.throws(() => parsePlanOutput(plan({ ...walk(), parts: [] }), input(), now), /schema/);
 });
 
-test('supports string/boolean metric values and preserves schema-like metric names', () => {
+void test('supports string/boolean metric values and preserves schema-like metric names', () => {
   const request = input();
   const sport = request.sports[0];
   if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
@@ -292,7 +292,7 @@ test('supports string/boolean metric values and preserves schema-like metric nam
   assert.throws(() => parsePlanOutput(plan(event), request, now), /catalog/);
 });
 
-test('Gemini discriminators have explicit types and duration format stays local', () => {
+void test('Gemini discriminators have explicit types and duration format stays local', () => {
   const request = input();
   const sport = request.sports[0];
   if (!sport || sport.is_gym !== 0) throw Error('Missing sport');
@@ -318,7 +318,7 @@ test('Gemini discriminators have explicit types and duration format stays local'
   assert.throws(() => parsePlanOutput(plan(event), request, now), /catalog/);
 });
 
-test('gym workouts validate sets, repetitions, gym access and optional exercise catalogs', () => {
+void test('gym workouts validate sets, repetitions, gym access and optional exercise catalogs', () => {
   const gym = output().events[1];
   if (!gym || gym.action !== 'add' || !('exercises' in gym)) throw Error('Missing gym');
   for (const patch of [
@@ -357,7 +357,7 @@ test('gym workouts validate sets, repetitions, gym access and optional exercise 
   assert.throws(() => parsePlanOutput(plan(gym), request, now), /catalog/);
 });
 
-test('deletions reject unknown, repeated, completed, skipped, past and non-editable activities', () => {
+void test('deletions reject unknown, repeated, completed, skipped, past and non-editable activities', () => {
   const request = modify();
   assert.throws(
     () =>
@@ -413,7 +413,7 @@ test('deletions reject unknown, repeated, completed, skipped, past and non-edita
   );
 });
 
-test('requires modification replies and keeps operation objects minimal', () => {
+void test('requires modification replies and keeps operation objects minimal', () => {
   for (const message of [null, '', '  '])
     assert.throws(() => parsePlanOutput({ events: [], message }, modify(), now));
   assert.throws(() => parsePlanOutput({ events: [], message: 'Hi' }, input(), now), /null/);
@@ -437,7 +437,7 @@ test('requires modification replies and keeps operation objects minimal', () => 
   );
 });
 
-test('validates actual durations, future grid, explicit offsets, buffers and planning window', () => {
+void test('validates actual durations, future grid, explicit offsets, buffers and planning window', () => {
   for (const start of [
     '2026-09-01T12:05:00+02:00',
     '2026-10-05T12:00:00+02:00',
@@ -465,7 +465,7 @@ test('validates actual durations, future grid, explicit offsets, buffers and pla
   );
 });
 
-test('final schedule includes retained workouts, counts completions and ignores skipped sessions', () => {
+void test('final schedule includes retained workouts, counts completions and ignores skipped sessions', () => {
   const request = input();
   request.preferences.sessions_per_week = 1;
   request.target_window_events = [
@@ -482,13 +482,13 @@ test('final schedule includes retained workouts, counts completions and ignores 
   assert.throws(() => parsePlanOutput(plan(walk()), request, now), /overlap/);
 });
 
-test('replacement validation applies deletions first regardless of operation order', () => {
+void test('replacement validation applies deletions first regardless of operation order', () => {
   const request = modify();
   const replacement = { events: [walk(), { action: 'delete', id: 'walk-1' }], message: 'Replace' };
   assert.deepEqual(parsePlanOutput(replacement, request, now), replacement);
 });
 
-test('chat can override duration and frequency without mutating saved preferences', () => {
+void test('chat can override duration and frequency without mutating saved preferences', () => {
   const request = modify();
   request.preferences.sessions_per_week = 1;
   request.user_prompt = 'Keep both workouts and make the Tuesday walk 15 minutes.';
@@ -506,7 +506,7 @@ test('chat can override duration and frequency without mutating saved preference
   assert.throws(() => parsePlanOutput(plan(addition), creation, now), /duration/);
 });
 
-test('creation retains frequency limits while chat still respects sport exclusions', () => {
+void test('creation retains frequency limits while chat still respects sport exclusions', () => {
   assert.throws(
     () =>
       parsePlanOutput(
@@ -530,7 +530,7 @@ test('creation retains frequency limits while chat still respects sport exclusio
   );
 });
 
-test('uses local Monday boundaries across UTC midnight and daylight-saving transitions', () => {
+void test('uses local Monday boundaries across UTC midnight and daylight-saving transitions', () => {
   const request = input();
   request.preferences.sessions_per_week = 1;
   request.planning_window = { start: '2026-10-04T00:00:00+02:00', duration: 172800 };
@@ -554,7 +554,7 @@ test('uses local Monday boundaries across UTC midnight and daylight-saving trans
   );
 });
 
-test('empty sport catalog still supports modification deletions', () => {
+void test('empty sport catalog still supports modification deletions', () => {
   const request = {
     ...modify(),
     sports: [],
@@ -579,7 +579,7 @@ test('empty sport catalog still supports modification deletions', () => {
   );
 });
 
-test('rejects oversized complete conversations without truncating or calling the provider', async () => {
+void test('rejects oversized complete conversations without truncating or calling the provider', async () => {
   let called = false;
   await assert.rejects(
     generatePlan(
@@ -602,7 +602,7 @@ test('rejects oversized complete conversations without truncating or calling the
   assert.equal(called, false);
 });
 
-test('rejects missing credentials, invalid models and invalid current time', async () => {
+void test('rejects missing credentials, invalid models and invalid current time', async () => {
   await assert.rejects(generatePlan(input(), { ...options, apiKey: '' }), {
     code: 'CONFIGURATION',
   });
@@ -619,7 +619,7 @@ for (const [status, code] of [
   [429, 'RATE_LIMIT'],
   [500, 'PROVIDER'],
 ] as const) {
-  test(`handles HTTP ${status} without exposing provider content`, async () => {
+  void test(`handles HTTP ${status} without exposing provider content`, async () => {
     await assert.rejects(
       generatePlan(input(), {
         ...options,
@@ -634,7 +634,7 @@ for (const [status, code] of [
   });
 }
 
-test('handles network errors and timeouts', async () => {
+void test('handles network errors and timeouts', async () => {
   await assert.rejects(
     generatePlan(input(), {
       ...options,
@@ -655,7 +655,7 @@ test('handles network errors and timeouts', async () => {
   );
 });
 
-test('rejects blocked, incomplete, malformed and wrong-shaped responses', async () => {
+void test('rejects blocked, incomplete, malformed and wrong-shaped responses', async () => {
   for (const makeResponse of [
     () => Response.json({ promptFeedback: { blockReason: 'SAFETY' } }),
     () => response(output(), 'MAX_TOKENS'),
@@ -676,7 +676,7 @@ test('rejects blocked, incomplete, malformed and wrong-shaped responses', async 
     );
 });
 
-test('application content review can reject before a result is returned', async () => {
+void test('application content review can reject before a result is returned', async () => {
   await assert.rejects(
     generatePlan(input(), {
       ...options,
@@ -687,4 +687,23 @@ test('application content review can reject before a result is returned', async 
     }),
     /Unsuitable content/,
   );
+});
+
+void test('rejects malformed provider envelopes with explicit errors', async () => {
+  for (const payload of [null, 1, [], { candidates: {} }, { candidates: [null] }]) {
+    await assert.rejects(
+      generatePlan(input(), { ...options, fetchImpl: async () => Response.json(payload) }),
+      { code: 'INVALID_RESPONSE' },
+    );
+  }
+  for (const parts of [null, {}, [null, 1, { thought: true, text: 'hidden' }]]) {
+    await assert.rejects(
+      generatePlan(input(), {
+        ...options,
+        fetchImpl: async () =>
+          Response.json({ candidates: [{ finishReason: 'STOP', content: { parts } }] }),
+      }),
+      { code: 'INVALID_RESPONSE' },
+    );
+  }
 });

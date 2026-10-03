@@ -81,7 +81,8 @@ Non-gym sports have a `metrics` array. Each metric defines `key`, `description`,
   `format: date | date-time | time | duration`.
 - `boolean`.
 
-Unknown schema keywords and inconsistent bounds/enums are rejected. Metric keys
+Unknown schema keywords and inconsistent bounds/enums are rejected. Integer
+metric intervals must contain at least one integer. Metric keys
 begin with a letter and contain letters, digits or underscores. A metric marked
 `represents_session_duration: true` is numeric, uses seconds, and must equal the
 returned slot duration if present. Other time metrics may use their documented
@@ -173,15 +174,29 @@ Run from the repository root:
 
 ```sh
 npm run test:plans
-npm run typecheck:plans
-node_modules/.bin/eslint --config packages/eslint.config.cjs packages/contracts/src/plan*.ts apps/backend/src/*.ts apps/backend/test/plan.test.ts
-node_modules/.bin/prettier --config packages/.prettierrc.json --check 'packages/contracts/src/plan*.ts' 'packages/contracts/src/schemas/*.json' 'apps/backend/src/*.ts' 'apps/backend/test/**/*.ts' 'apps/backend/test/fixtures/*.json' docs/features/gemini-plan-exchange.md
+npm run typecheck
+npm run lint
+npm run format:check
+node_modules/.bin/prettier --config packages/.prettierrc.json --check 'packages/contracts/src/plan*.ts' 'packages/contracts/src/schemas/*.json' 'apps/backend/src/*.ts' 'apps/backend/test/**/*.ts' 'apps/backend/test/fixtures/*.json' 'apps/backend/scripts/*.mjs' docs/features/gemini-plan-exchange.md
+git diff --check
 ```
 
-The contract/backend builds, TypeScript checks and ESLint passed. The mocked
-Gemini suite covers 34 passing tests. Prettier and `git diff --check` passed.
-Tests do not prove configured-model schema acceptance. No live smoke check was
-run because `GEMINI_API_KEY` and `GEMINI_MODEL` were not configured in this session.
+After rebasing onto the NestJS backend bootstrap, the backend builds with Nest
+and runs its tests from TypeScript-emitted JavaScript so decorator metadata is
+preserved. The test runner copies fixture and prompt assets into ignored
+`.test-dist/`. Backend build/dev/test/typecheck scripts build contracts first.
+
+The backend/contract builds, full workspace TypeScript checks and ESLint passed.
+All 39 backend tests passed under Node 22.23.3, including `/health`, integer metric
+range regressions and malformed provider envelopes. The shared wearable suite
+also passed (38 tests). Backend/shared-plan Prettier and `git diff --check` passed.
+A production-entry smoke check served `/health` and loaded the compiled Gemini
+adapter, shared contracts and prompt with a mocked provider response on Node 22.
+
+No live Gemini request was made; mocked tests do not prove a configured model
+accepts every generated schema. Docker is unavailable in the review environment,
+so the revised image has not been built or exercised. See the
+[review and fix report](../reviews/gemini-plan-contract-review-2026-10-03.md).
 
 Gemini schema conversion uses its documented subset, translates exclusive local
 branches to `anyOf`, and retains authoritative local bounds/string validation.
@@ -189,7 +204,8 @@ See [Gemini structured output documentation](https://ai.google.dev/gemini-api/do
 
 ## Deployment, rollback and review
 
-No database migration or new dependencies. Coordinate all future callers on this
+No database migration. Shared contracts use Ajv and ajv-formats for runtime
+validation. Coordinate all future callers on this
 breaking JSON contract before releasing. Roll back the adapter, contracts and
 prompt together; do not mix old requests with new schemas.
 

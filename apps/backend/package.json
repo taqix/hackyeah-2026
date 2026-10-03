@@ -6,10 +6,14 @@
     "dev": "node --env-file-if-exists=.env ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
     "start:prod": "node dist/main.js",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint src test",
-    "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts'",
-    "test": "node --import tsx --test test/*.test.ts"
+    "format:check": "prettier --config ../../packages/.prettierrc.json --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/*.mjs\"",
+    "test": "node scripts/test.mjs",
+    "prebuild": "npm run build --workspace=@hackyeah/contracts",
+    "predev": "npm run build --workspace=@hackyeah/contracts",
+    "pretest": "npm run build --workspace=@hackyeah/contracts",
+    "pretypecheck": "npm run build --workspace=@hackyeah/contracts"
   },
   "engines": {
     "node": ">=22.9.0 <25"

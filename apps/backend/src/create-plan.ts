@@ -23,6 +23,10 @@ function fail(code: string, message: string): never {
   throw new PlanGenerationError(code, message);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 export interface PlanOptions {
   apiKey?: string;
   model?: string;
@@ -114,15 +118,7 @@ export async function generatePlan(
     );
 
   let response;
-  let payload:
-    | {
-        promptFeedback?: { blockReason?: string };
-        candidates?: {
-          finishReason?: string;
-          content?: { parts?: { text?: string; thought?: boolean }[] };
-        }[];
-      }
-    | undefined;
+  let payload: unknown;
   const signal = AbortSignal.timeout(PLAN_GENERATION_CONFIG.timeoutMs);
   try {
     response = await fetchImpl(
@@ -161,15 +157,20 @@ export async function generatePlan(
       `Gemini request failed (HTTP ${response.status}). Check the model and project configuration.`,
     );
   }
-  if (payload?.promptFeedback?.blockReason) fail('BLOCKED', 'Gemini blocked this plan request.');
-  const candidate = payload?.candidates?.[0];
-  if (!candidate) fail('INVALID_RESPONSE', 'Gemini did not return a plan.');
+  const envelope = isRecord(payload) ? payload : undefined;
+  if (isRecord(envelope?.promptFeedback) && envelope.promptFeedback.blockReason)
+    fail('BLOCKED', 'Gemini blocked this plan request.');
+  const candidate = Array.isArray(envelope?.candidates) ? envelope.candidates[0] : undefined;
+  if (!isRecord(candidate)) fail('INVALID_RESPONSE', 'Gemini did not return a plan.');
   if (candidate.finishReason !== 'STOP')
     fail('INCOMPLETE', 'Gemini did not complete the plan. Try again or simplify the preferences.');
-  const parts = candidate.content?.parts;
+  const parts = isRecord(candidate.content) ? candidate.content.parts : undefined;
   if (!Array.isArray(parts)) fail('INVALID_RESPONSE', 'Gemini returned no plan content.');
   const text = parts
-    .filter((part) => part && !part.thought && typeof part.text === 'string')
+    .filter(
+      (part): part is Record<string, unknown> =>
+        isRecord(part) && !part.thought && typeof part.text === 'string',
+    )
     .map((part) => part.text)
     .join('');
   let plan;

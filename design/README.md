@@ -391,7 +391,10 @@ Rules:
   message: **Try again** resends it, **Edit message** puts it back in the box.
 - Requests outside the plan's rules get a reason and a nearby option, never a
   silent workaround: done days, sports outside the catalog, the 7:00–21:00
-  window, one session a day, 5, 10 or 20 minutes, beginner scope. The valid part
+  window, 5, 10 or 20 minutes, beginner scope. One session per local date is the
+  default; an explicit chat request can authorize multiple sessions for that
+  modification, while free slots, buffers and protected workouts still apply
+  (see the [Gemini contract](../docs/features/gemini-json-contract.md)). The valid part
   of a request still applies (8.7); an asked-for length snaps to the nearest
   allowed one below.
 - A missed session (8.15): free slots inside the preferred window come first as

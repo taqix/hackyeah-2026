@@ -1,0 +1,57 @@
+{
+  "events": [
+    {
+      "action": "add",
+      "sport_id": 1,
+      "time_slot": {
+        "start": "2026-10-05T12:05:00+02:00",
+        "duration": 600
+      },
+      "description": "An easy ten-minute outdoor walk.",
+      "metrics": {
+        "duration": 600,
+        "distance": 800
+      },
+      "parts": [
+        {
+          "description": "Walk slowly for 2 minutes to warm up.",
+          "metrics": {
+            "duration": 120.0,
+            "distance": 160.0
+          }
+        },
+        {
+          "description": "Walk comfortably for 6 minutes, then slow down for 2 minutes.",
+          "metrics": {
+            "duration": 480.0,
+            "distance": 640.0
+          }
+        }
+      ]
+    },
+    {
+      "action": "add",
+      "sport_id": 2,
+      "time_slot": {
+        "start": "2026-10-07T18:05:00+02:00",
+        "duration": 600
+      },
+      "description": "Warm up with 2 minutes of gentle marching. Complete the exercises, then walk slowly for 2 minutes to cool down.",
+      "exercises": [
+        {
+          "name": "Chair squat",
+          "sets": 2,
+          "repetitions": 5,
+          "description": "Sit back toward a stable chair and stand slowly. Rest 30 seconds between sets. Allow 3 minutes including rest."
+        },
+        {
+          "name": "Wall push-up",
+          "sets": 2,
+          "repetitions": 5,
+          "description": "Keep your body straight and bend the elbows toward the wall. Rest 30 seconds between sets. Allow 3 minutes including rest."
+        }
+      ]
+    }
+  ],
+  "message": null
+}

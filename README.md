@@ -46,3 +46,8 @@ Installation is not available yet.
 - Keep setup instructions up to date as the application takes shape.
 - Commit environment variable templates (e.g. `.env.example`) when needed.
 - Keep credentials in ignored local environment files — never commit secrets.
+
+## Project documentation
+
+- [AI plan generation](docs/features/ai-plan-generation.md) — feature flow, setup, prompts, validation, errors, testing, and provider replacement.
+- [AI JSON contract](docs/features/ai-json-contract.md) — request/response fields, sport metrics, scheduling rules, and complete examples.

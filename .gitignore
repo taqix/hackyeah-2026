@@ -69,3 +69,6 @@ web-build/
 *.key
 *.mobileprovision
 *.pem
+
+# Compiled backend review tests
+.test-dist/

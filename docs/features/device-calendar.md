@@ -14,7 +14,9 @@ mobile abstraction without exposing Expo shared objects to callers.
 - Included: full calendar permissions, calendar discovery, range reads, and adding
   one-time timed or all-day events on iOS and Android.
 - Deferred: calendar UI, automatic plan export, recurring event creation,
-  edits/deletions, background sync, free-slot calculation, and backend upload.
+  edits/deletions, background sync, and backend upload.
+- Free-slot calculation builds on this API in the separate
+  [calendar availability service](calendar-availability.md).
 - Affected area: mobile only. No API contracts or database changes.
 
 ## Acceptance criteria

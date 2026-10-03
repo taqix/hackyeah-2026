@@ -36,6 +36,26 @@ export type CalendarEventQuery = {
   calendarIds?: readonly string[];
 };
 
+/** A maximal free interval [startDate, endDate), clipped to the query. */
+export type CalendarFreeSlot = {
+  startDate: Date;
+  endDate: Date;
+};
+
+export type CalendarAvailabilityQuery = CalendarEventQuery & {
+  /** Defaults to false: all-day entries such as holidays do not block time. */
+  blockAllDayEvents?: boolean;
+};
+
+export interface CalendarAvailabilityService {
+  /**
+   * Returns free intervals in chronological order. Canceled, free, and zero-length
+   * events do not block time. All-day events block only when blockAllDayEvents is true.
+   * Requires existing calendar access; never prompts or suppresses read errors.
+   */
+  getFreeSlots(query: CalendarAvailabilityQuery): Promise<CalendarFreeSlot[]>;
+}
+
 export type NewCalendarEvent = {
   calendarId: string;
   title: string;

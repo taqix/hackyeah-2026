@@ -6,6 +6,7 @@ import type {
   DeviceCalendar,
   NewCalendarEvent,
 } from './types';
+import { validateRange } from './validate-range';
 
 /** Internal boundary; keeps OS objects and Expo imports out of consumers/tests. */
 export interface CalendarDriver {
@@ -14,18 +15,6 @@ export interface CalendarDriver {
   listCalendars(): Promise<DeviceCalendar[]>;
   getEvents(ids: string[], startDate: Date, endDate: Date): Promise<CalendarEvent[]>;
   createEvent(event: NewCalendarEvent): Promise<CalendarEvent>;
-}
-
-function validateRange(startDate: Date, endDate: Date) {
-  if (
-    !(startDate instanceof Date) ||
-    !(endDate instanceof Date) ||
-    !Number.isFinite(startDate.getTime()) ||
-    !Number.isFinite(endDate.getTime()) ||
-    startDate >= endDate
-  ) {
-    throw new CalendarError('invalid-input', 'Provide valid Dates with startDate before endDate.');
-  }
 }
 
 function isMidnight(date: Date) {

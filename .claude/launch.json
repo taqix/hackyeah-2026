@@ -13,6 +13,12 @@
       "runtimeArgs": ["-c", "exec python3 -m http.server \"$PORT\" --directory design"],
       "port": 4801,
       "autoPort": true
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd apps/mobile && exec npx expo start --web --port 8081"],
+      "port": 8081
     }
   ]
 }

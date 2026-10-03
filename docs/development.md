@@ -21,7 +21,8 @@ planned interfaces.
 ```text
 apps/
   backend/             # NestJS application API and AI integration
-  web/                 # React marketing pages and dashboard
+  web/                 # React dashboard
+  website/             # React marketing site and demo (GitHub Pages)
   mobile/              # React Native / Expo; setup owned by mobile collaborator
 packages/
   contracts/           # Request/response types and runtime validation schemas

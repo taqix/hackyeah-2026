@@ -37,15 +37,10 @@ as the source of truth for look, copy, and tokens.
 - `icons.html` — app icon concepts for Movo (the app's name), each in default,
   dark and tinted versions. No icon is chosen yet; nothing is exported to
   `apps/mobile`.
-- `website.html` — Movo's product website: a landing page that presents the app
-  as shipped, and a clickable demo (questions, sport choice, plan creation,
-  marking a session done, a chat change with Undo). It reuses `system/` only,
-  not `prototype/`; its phone mockups redraw Home 5, onboarding 2 and chat 8.3,
-  so update them when those screens change. Plan and chat logic are fixed
-  front-end rules standing in for the API and AI step. The page never mentions
-  plan versions or what the demo leaves out. Open
-  http://localhost:4800/website.html (`#/try/sample` jumps straight to a seeded
-  guest plan).
+- Movo's product website now lives in [`apps/website`](../apps/website/README.md)
+  as a React app. It started here as `website.html` and keeps a copy of
+  `system/`; its phone mockups redraw Home 5, onboarding 2 and chat 8.3, so
+  update them there when those screens or `system/` change.
 
 ## Preview
 

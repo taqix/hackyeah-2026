@@ -13,6 +13,12 @@
       "runtimeArgs": ["-c", "exec python3 -m http.server \"$PORT\" --directory design"],
       "port": 4801,
       "autoPort": true
+    },
+    {
+      "name": "website",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:website"],
+      "port": 4810
     }
   ]
 }

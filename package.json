@@ -11,6 +11,8 @@
     "android": "npm run android --workspace=@hackyeah/mobile",
     "ios": "npm run ios --workspace=@hackyeah/mobile",
     "web": "npm run web --workspace=@hackyeah/mobile",
+    "dev:website": "npm run dev --workspace=@hackyeah/website",
+    "build:website": "npm run build --workspace=@hackyeah/website",
     "dev:backend": "npm run dev --workspace=@hackyeah/backend",
     "build:backend": "npm run build --workspace=@hackyeah/backend",
     "test:backend": "npm run test --workspace=@hackyeah/backend",

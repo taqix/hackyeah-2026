@@ -4,7 +4,8 @@ Build a beginner sport app for inactive adults: preferences, sport suggestions,
 AI-generated multi-day plans, completion, and feedback. Read the relevant docs
 below before changing a feature.
 
-- Monorepo: `apps/backend` (NestJS), `apps/web` (React), `apps/mobile` (Expo).
+- Monorepo: `apps/backend` (NestJS), `apps/web` (React), `apps/mobile` (Expo),
+  `apps/website` (React marketing site and demo, deployed to GitHub Pages).
 - Use TypeScript and shared lint/format rules. Current setup uses npm workspaces;
   pnpm is the agreed target. Follow the migration plan in `docs/development.md`.
 - Share API contracts in `packages/contracts`; keep client UI separate.

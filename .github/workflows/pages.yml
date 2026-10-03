@@ -3,7 +3,7 @@ name: Deploy website to GitHub Pages
 on:
   push:
     branches: [main, develop]
-    paths: [website/**, .github/workflows/pages.yml]
+    paths: [apps/website/**, package-lock.json, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -23,9 +23,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --workspace @hackyeah/website
+      - run: npm run typecheck --workspace @hackyeah/website
+      - run: npm run build --workspace @hackyeah/website
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: website
+          path: apps/website/dist
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -19,6 +19,9 @@ npm start
 
 Use a current Node.js LTS release (Node 22.6+ for the step-counter tests). Expo Go can preview the starter UI, but Android step reading requires a native build because Health Connect is not included in Expo Go. Use Android Studio / the Android SDK for Android builds, or Xcode on macOS for iOS builds.
 
+Device calendar access requires a native development build; Expo Go and web return
+an explicit unavailable state. See [device calendar setup and API](docs/features/device-calendar.md).
+
 ```sh
 npm run android    # Build and open the native Android app
 npm run ios        # Build and open the native iOS app
@@ -74,5 +77,6 @@ Start feature/documentation branches from `develop` and open PRs against it. Pro
 - [Development and implementation plan](docs/development.md)
 - [Deployment plan](docs/deployment.md)
 - [Feature template](docs/features/TEMPLATE.md)
+- [Device calendar access](docs/features/device-calendar.md)
 
 Keep setup instructions up to date as the application takes shape. Commit environment variable templates such as `.env.example` when needed, and keep credentials in ignored local environment files.

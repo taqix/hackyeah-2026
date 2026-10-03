@@ -6,20 +6,21 @@
     "dev": "node --env-file-if-exists=.env ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
     "start:prod": "node dist/main.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "lint": "eslint src test",
     "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts'",
-    "test": "tsc -p tsconfig.json && node --test dist/test/*.test.js"
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "engines": {
-    "node": ">=22 <25"
+    "node": ">=22.9.0 <25"
   },
   "dependencies": {
     "@nestjs/common": "11.2.7",
     "@nestjs/core": "11.2.7",
     "@nestjs/platform-express": "11.2.7",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "@hackyeah/contracts": "1.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.12",
@@ -28,6 +29,14 @@
     "@typescript-eslint/parser": "8.71.0",
     "eslint": "9.39.1",
     "prettier": "3.6.2",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "tsx": "^4.23.15"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/create-plan.d.ts",
+      "default": "./dist/create-plan.js"
+    }
   }
 }

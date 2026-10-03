@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["preferences", "available_slots"],
+  "properties": {
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "starting_comfort",
+        "sessions_per_week",
+        "session_minutes",
+        "activity_interests",
+        "available_locations",
+        "available_equipment",
+        "discovery_preference"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "starting_comfort": {
+          "enum": ["starting_out", "occasionally_active", "some_routine"]
+        },
+        "sessions_per_week": {
+          "type": "integer",
+          "enum": [1, 2, 3]
+        },
+        "session_minutes": {
+          "type": "integer",
+          "enum": [5, 10, 20]
+        },
+        "activity_interests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/activity_type"
+          }
+        },
+        "available_locations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["home", "outdoors", "gym", "pool"]
+          }
+        },
+        "available_equipment": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["mat", "resistance_band", "dumbbells", "bicycle", "stationary_bike"]
+          }
+        },
+        "preferred_times": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["morning", "lunch", "evening"]
+          }
+        },
+        "discovery_preference": {
+          "enum": ["selected_only", "occasional", "explore"]
+        },
+        "avoidances": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["jumping", "floor_exercises", "noisy_activities"]
+          }
+        },
+        "starting_obstacle": {
+          "enum": [null, "time", "low_energy", "boredom", "uncertainty", "discomfort"]
+        },
+        "excluded_activity_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/activity_type"
+          }
+        },
+        "comfortable_swimming": {
+          "type": ["boolean", "null"]
+        }
+      },
+      "if": {
+        "properties": {
+          "activity_interests": {
+            "maxItems": 0
+          }
+        },
+        "required": ["activity_interests"]
+      },
+      "then": {
+        "properties": {
+          "discovery_preference": {
+            "const": "explore"
+          }
+        }
+      }
+    },
+    "available_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start", "end"],
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "activity_type": {
+      "enum": ["walking", "strength", "running", "cycling", "swimming", "mobility"]
+    }
+  }
+}

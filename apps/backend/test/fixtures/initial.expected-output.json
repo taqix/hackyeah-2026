@@ -1,0 +1,25 @@
+{
+  "events": [
+    {
+      "time": "2026-10-05T12:05:00+02:00",
+      "description": "Walk outdoors at an easy, comfortable pace for 10 minutes."
+    },
+    {
+      "time": "2026-10-07T18:05:00+02:00",
+      "series": [
+        {
+          "description": "Warm up in the gym with 2 minutes of easy walking and gentle shoulder movements."
+        },
+        {
+          "description": "For the next 3 minutes, do 2 sets of 5 sit-to-stands from a stable bench. Stand slowly and sit with control; rest between sets and for any remaining time."
+        },
+        {
+          "description": "For the next 3 minutes, do 2 sets of 5 wall push-ups. Keep your body straight and move slowly; rest between sets and for any remaining time."
+        },
+        {
+          "description": "Finish with 2 minutes of easy walking and relaxed breathing."
+        }
+      ]
+    }
+  ]
+}

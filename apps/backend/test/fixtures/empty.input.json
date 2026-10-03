@@ -1,0 +1,18 @@
+{
+  "preferences": {
+    "timezone": "Europe/Warsaw",
+    "starting_comfort": "starting_out",
+    "sessions_per_week": 2,
+    "session_minutes": 10,
+    "activity_interests": ["walking", "strength"],
+    "available_locations": ["outdoors", "gym"],
+    "available_equipment": [],
+    "preferred_times": ["lunch", "evening"],
+    "discovery_preference": "selected_only",
+    "avoidances": ["jumping"],
+    "starting_obstacle": "time",
+    "excluded_activity_types": [],
+    "comfortable_swimming": null
+  },
+  "available_slots": []
+}

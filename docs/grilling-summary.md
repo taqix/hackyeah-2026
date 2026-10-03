@@ -37,6 +37,9 @@ interview. Detailed procedures live in the linked docs rather than agent files.
   CLI trigger that runs the same checked CI deployment workflow.
 - Keep `AGENTS.md` and `CLAUDE.md` compact; use detailed docs and a feature template
   for procedures, acceptance criteria, verification, deployment, and rollback.
+- Both instruction files were explicitly requested. Keep `AGENTS.md` authoritative
+  and `CLAUDE.md` a forwarder; route setup-skill instruction edits to `AGENTS.md`
+  instead of the skill's default `CLAUDE.md` target.
 
 ## Repository facts discovered after the interview
 

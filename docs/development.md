@@ -103,6 +103,21 @@ the corresponding feature. Auth identities remain managed by Supabase Auth.
 
 ## Code conventions
 
+### Agent instruction ownership
+
+The repository owner explicitly requested both `AGENTS.md` and `CLAUDE.md`.
+`AGENTS.md` is the only authoritative instruction file; `CLAUDE.md` forwards to it.
+Keep detailed procedures in these docs and avoid duplicating them in either file.
+
+The installed `setup-matt-pocock-skills` normally chooses `CLAUDE.md` when it exists
+and avoids creating both instruction files. This repository intentionally overrides
+that default at the owner's request: any setup-created `## Agent skills` block
+must be added or updated in `AGENTS.md`, with configuration under `docs/agents/`.
+Both root instruction files state this override. Do not append project configuration
+to the forwarding file, and update an existing block rather than creating a duplicate.
+
+### Application code
+
 - Use the shared ESLint/Prettier rules; avoid app-specific style drift.
 - Prefer descriptive names, small focused modules, and explicit public contracts.
 - Avoid unexplained `any`, casts, silent fallbacks, and duplicated business logic.

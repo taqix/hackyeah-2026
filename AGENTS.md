@@ -17,6 +17,9 @@ below before changing a feature.
   Include acceptance criteria, verification evidence, and one teammate approval.
 - Keep secrets out of clients and Git. Keep mobile compatible with API changes.
 - Hosting and AI provider/model are TBD; illness-specific behavior is deferred.
+- Instruction-file override: the owner requested both files. Keep `AGENTS.md`
+  authoritative and `CLAUDE.md` a forwarder. When running `setup-matt-pocock-skills`,
+  write or update its `## Agent skills` block here, overriding its default file choice.
 
 ## References
 

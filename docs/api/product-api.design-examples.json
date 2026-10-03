@@ -66,5 +66,53 @@
       },
       "completed_at": "2026-10-05T09:20:00+02:00"
     }
+  },
+  "LoggedBeforeFeedback": {
+    "schema": "CompleteActivityDto",
+    "value": {
+      "plan_version_id": "00000000-0000-4000-8000-000000000003",
+      "activity_id": "00000000-0000-4000-8000-000000000004",
+      "request_id": "00000000-0000-4000-8000-000000000005",
+      "metrics": {
+        "duration_minutes": 20
+      },
+      "gym_log": [],
+      "feedback": null,
+      "completed_at": "2026-10-05T09:20:00+02:00"
+    }
+  },
+  "ClearOpinion": {
+    "schema": "PutOpinionDto",
+    "value": {
+      "activity_key": "a-gentle-walk-and-jog",
+      "title": "A gentle walk and jog",
+      "sport_id": "1",
+      "opinion": null,
+      "last_date": "2026-10-05"
+    }
+  },
+  "OpinionCleared": {
+    "schema": "OpinionResponse",
+    "value": {
+      "data": null,
+      "meta": {
+        "contract_version": "1",
+        "request_id": null
+      }
+    }
+  },
+  "NothingToUndo": {
+    "schema": "ErrorResponse",
+    "value": {
+      "error": {
+        "code": "NOTHING_TO_UNDO",
+        "message": "There is no recent change to undo.",
+        "retryable": false
+      },
+      "meta": {
+        "contract_version": "1",
+        "request_id": "00000000-0000-4000-8000-000000000009"
+      }
+    }
   }
 }

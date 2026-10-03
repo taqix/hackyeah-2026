@@ -1,0 +1,155 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Movo — app icon</title>
+<link rel="stylesheet" href="system/styles.css">
+<style>
+body{min-height:100vh}
+main{max-width:1040px;margin:0 auto;padding:72px 24px 96px;display:flex;flex-direction:column;gap:var(--space-12)}
+header{display:flex;flex-direction:column;gap:var(--space-3);max-width:640px}
+.kicker{font:var(--type-label);color:var(--accent-text)}
+h1{font:var(--type-title);letter-spacing:var(--tracking-display)}
+h2{font:var(--type-heading)}
+.lede{color:var(--text-secondary)}
+.pill{position:absolute;top:12px;display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:var(--radius-pill);border:1px solid var(--border-subtle);background:var(--surface-raised);box-shadow:var(--shadow-1);color:var(--text-secondary);font:var(--type-label);text-decoration:none;cursor:pointer}
+.pill:hover{color:var(--text-primary);background:var(--surface-sunken)}
+.pill.back{left:12px}
+.pill.theme{right:12px}
+section{display:flex;flex-direction:column;gap:var(--space-5)}
+.sub{color:var(--text-secondary);max-width:640px}
+
+/* Icon masks: iOS squircle (approximated) and Android adaptive circle */
+.icon{display:block;flex:none;width:var(--s);height:var(--s);border-radius:22.4%;overflow:hidden;box-shadow:0 0 0 1px color-mix(in oklch,var(--text-primary) 8%,transparent),var(--shadow-2)}
+.icon.circle{border-radius:50%}
+.icon svg{display:block;width:100%;height:100%}
+
+.hero{display:grid;grid-template-columns:auto 1fr;gap:var(--space-8);align-items:center;padding:var(--space-8);background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.hero .about{display:flex;flex-direction:column;gap:var(--space-4)}
+.hero p{color:var(--text-secondary)}
+.lockup{display:flex;align-items:center;gap:var(--space-3);font:600 32px/1 var(--font-display);letter-spacing:var(--tracking-display)}
+
+.row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-6)}
+.tile{display:flex;flex-direction:column;align-items:center;gap:var(--space-2)}
+.tile span{font:var(--type-caption);color:var(--text-tertiary)}
+
+.screens{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}
+.screen{display:grid;grid-template-columns:repeat(4,60px);justify-content:space-between;gap:var(--space-5) var(--space-3);padding:var(--space-6);border-radius:var(--radius-card)}
+.screen.day{background:var(--paper-200)}
+.screen.night{background:var(--night-100)}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;font:500 12px/1 var(--font-body)}
+.app .ph{display:block;width:60px;height:60px;border-radius:22.4%}
+.day .app{color:var(--ink-900)}
+.day .app .ph{background:color-mix(in oklch,var(--ink-900) 10%,transparent)}
+.night .app{color:#F3EDE3}
+.night .app .ph{background:color-mix(in oklch,#F3EDE3 9%,transparent)}
+
+.notes ul{margin:0;padding-left:1.1em;color:var(--text-secondary);display:flex;flex-direction:column;gap:var(--space-1)}
+code{font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--surface-sunken);padding:1px 6px;border-radius:6px}
+
+@media (max-width:720px){
+  main{padding:72px 16px 64px}
+  .hero{grid-template-columns:1fr;padding:var(--space-6)}
+  .hero>.icon{--s:160px!important}
+  .screens{grid-template-columns:1fr}
+}
+</style>
+</head><body>
+<a class="pill back" href="index.html">All designs</a>
+<button class="pill theme" id="theme" type="button"></button>
+<main>
+  <header>
+    <span class="kicker">Movo · brand</span>
+    <h1>App icon</h1>
+    <p class="lede">The chosen direction: Monitor. A heartbeat line whose beat is the M of Movo, fading in from the left, with a bright o at its tip as if it is being drawn right now. The line uses the design system's blue.</p>
+  </header>
+
+  <section class="hero">
+    <span class="icon" style="--s:200px" id="hero"></span>
+    <div class="about">
+      <div class="lockup"><span class="icon" style="--s:48px" id="lockup"></span>Movo</div>
+      <p>The beat is an M. The dot is the o, and it is where the line is being drawn, so the mark always reads as "now": you, moving, today. The fade on the left keeps the start quiet; only the effort and the present are bright.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Versions</h2>
+    <p class="sub">Default on warm ink. Dark uses the night background. Tinted is the one-colour version iOS tints and Android uses for its monochrome icon.</p>
+    <div class="row" id="versions"></div>
+  </section>
+
+  <section>
+    <h2>Sizes</h2>
+    <p class="sub">App Store, home screen, Spotlight and Settings sizes, plus the favicon.</p>
+    <div class="row" id="sizes"></div>
+  </section>
+
+  <section>
+    <h2>On a home screen</h2>
+    <div class="screens">
+      <div class="screen day" id="day"></div>
+      <div class="screen night" id="night"></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Export</h2>
+    <ul>
+      <li>Export the default at 1024 × 1024 with no rounded corners; the system applies the mask.</li>
+      <li>iOS: add the dark and tinted versions to <code>apps/mobile/assets/expo.icon</code>.</li>
+      <li>Android adaptive icon: background <code>#1D1914</code> (set <code>adaptiveIcon.backgroundColor</code> in <code>app.json</code>), the line and dot as the foreground inside the centre 66 %, and the tinted glyph as the monochrome layer. Monochrome layers cannot fade, so there the line is solid.</li>
+      <li>Reuse the glyph for the splash screen and the web favicon.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+// Palette values mirror system/tokens/colors.css. Icons are exported as flat assets, so they hold hex values, not variables.
+const T={paper0:"#FFFBF5",cream:"#F3EDE3",ink900:"#1D1914",ink800:"#2A251F",night50:"#1B1815",blue300:"#86AEE3"};
+const PULSE="M8 70H24L36 38L54 76L72 38L84 70H92";
+
+// Draws on a 120 × 120 canvas, full bleed. id is unique per rendered svg (for the gradient).
+// Variants: light (default), dark, mono (iOS tinted / Android monochrome).
+const V={
+  light:{bg:T.ink900,fg:T.blue300,dot:T.paper0,label:"Default"},
+  dark:{bg:T.night50,fg:T.blue300,dot:T.paper0,label:"Dark"},
+  mono:{bg:T.ink800,fg:T.cream,dot:T.cream,label:"Tinted"},
+};
+const draw=(p,id)=>`<rect width="120" height="120" fill="${p.bg}"/>`
+  +`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="8" x2="92" y1="0" y2="0"><stop offset="0" stop-color="${p.fg}" stop-opacity="0"/><stop offset=".55" stop-color="${p.fg}"/></linearGradient>`
+  +`<path d="${PULSE}" fill="none" stroke="url(#${id})" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`
+  +`<circle cx="102" cy="70" r="16" fill="${p.dot}" opacity=".22"/><circle cx="102" cy="70" r="8.5" fill="${p.dot}"/>`;
+
+let uid=0;
+const svg=v=>`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Movo icon, ${V[v].label.toLowerCase()}">${draw(V[v],"g"+(++uid))}</svg>`;
+const icon=(v,s,cls="")=>`<span class="icon ${cls}" style="--s:${s}px">${svg(v)}</span>`;
+const tile=(inner,label)=>`<div class="tile">${inner}<span>${label}</span></div>`;
+
+document.getElementById("hero").innerHTML=svg("light");
+document.getElementById("lockup").innerHTML=svg("light");
+document.getElementById("versions").innerHTML=["light","dark","mono"].map(v=>tile(icon(v,120),V[v].label)).join("")+tile(icon("light",120,"circle"),"Android");
+document.getElementById("sizes").innerHTML=[[120,"App Store"],[60,"60 pt"],[40,"40 pt"],[29,"29 pt"],[16,"16 px"]].map(([s,l])=>tile(icon("light",s),l)).join("");
+
+// Home screens: the icon among neutral placeholders, so it is judged in context.
+const ph='<div class="app"><span class="ph"></span>&nbsp;</div>';
+const screen=v=>[ph,ph,ph,ph,ph,`<div class="app">${icon(v,60)}Movo</div>`,ph,ph].join("");
+document.getElementById("day").innerHTML=screen("light");
+document.getElementById("night").innerHTML=screen("dark");
+
+// ?theme=light|dark sets the page theme; the button toggles it.
+const root=document.documentElement, btn=document.getElementById("theme");
+const setTheme=t=>{root.dataset.theme=t;btn.textContent=t==="dark"?"Light page":"Dark page";};
+setTheme(new URLSearchParams(location.search).get("theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+btn.onclick=()=>setTheme(root.dataset.theme==="dark"?"light":"dark");
+</script>
+<script>
+// Live reload, as on index.html.
+(function(){
+  let seen;
+  setInterval(async()=>{
+    try{
+      const r=await fetch("icons.html",{method:"HEAD",cache:"no-store"});
+      const v=r.headers.get("Last-Modified")+"|"+r.headers.get("Content-Length");
+      if(seen&&seen!==v) location.reload();
+      seen=v;
+    }catch(e){}
+  },1000);
+})();
+</script>
+</body></html>

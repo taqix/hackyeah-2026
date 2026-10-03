@@ -1,0 +1,23 @@
+:root{
+--font-display:"Bricolage Grotesque","Hanken Grotesk",system-ui,sans-serif;
+--font-body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+--font-numeric:"Bricolage Grotesque","Hanken Grotesk",system-ui,sans-serif;
+
+--text-2xs:11px;--text-xs:12px;--text-sm:14px;--text-base:16px;--text-md:18px;--text-lg:22px;--text-xl:28px;--text-2xl:36px;--text-3xl:48px;--text-hero:64px;
+
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+
+--leading-tight:1.08;--leading-snug:1.25;--leading-normal:1.45;--leading-relaxed:1.6;
+--tracking-tight:-0.015em;--tracking-display:-0.025em;--tracking-normal:0;--tracking-label:0.04em;
+
+/* Semantic type roles */
+--type-hero:700 var(--text-hero)/var(--leading-tight) var(--font-display);
+--type-title:700 var(--text-2xl)/var(--leading-tight) var(--font-display);
+--type-heading:700 var(--text-lg)/var(--leading-snug) var(--font-display);
+--type-subheading:600 var(--text-md)/var(--leading-snug) var(--font-body);
+--type-body:400 var(--text-base)/var(--leading-normal) var(--font-body);
+--type-body-sm:400 var(--text-sm)/var(--leading-normal) var(--font-body);
+--type-section:700 var(--text-md)/1.25 var(--font-display);
+--type-label:500 var(--text-sm)/1.2 var(--font-body);
+--type-caption:500 var(--text-xs)/1.35 var(--font-body);
+}

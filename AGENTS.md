@@ -34,6 +34,7 @@ below before changing a feature.
 - [Local runtime status](docs/deployment.md)
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)
+- [Design reference: screens, tokens, preview](design/README.md) — read before building UI
 
 An Expo starter and wearable contracts/extraction packages exist. Backend, dashboard and CI are planned;
 do not claim planned commands or checks are already available.

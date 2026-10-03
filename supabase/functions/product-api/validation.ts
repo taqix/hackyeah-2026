@@ -13,63 +13,80 @@ export function parseInput<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 
-export function validateGeneratedPlan(
+export type PlanCheck =
+  | { ok: true; plan: PlanSnapshotDto }
+  | { ok: false; shape: boolean; problem: string };
+
+/**
+ * Finds the first rule a generated plan breaks. The problem text is written for the AI
+ * adapter's single re-ask; clients only ever see validateGeneratedPlan's generic messages.
+ */
+export function checkGeneratedPlan(
   value: unknown,
   request: GeneratePlanDto | SendChatDto,
   context: GeneratorContext,
-): PlanSnapshotDto {
+): PlanCheck {
   const parsed = planSnapshotSchema.safeParse(value);
   if (!parsed.success)
-    throw new ApiError(
-      'INVALID_AI_OUTPUT',
-      502,
-      'The generated plan was invalid. Try again.',
-      true,
-    );
+    return {
+      ok: false,
+      shape: true,
+      problem: parsed.error.issues
+        .slice(0, 3)
+        .map((issue) => `${issue.path.join('.') || 'plan'}: ${issue.message}`)
+        .join('; '),
+    };
   const plan = parsed.data;
-  const invalid = () => {
-    throw new ApiError(
-      'INVALID_AI_OUTPUT',
-      502,
-      'The generated plan did not fit your preferences or availability.',
-      true,
+  const { preferences } = context;
+  const fail = (problem: string): PlanCheck => ({ ok: false, shape: false, problem });
+  const previousPlan = context.activePlan?.version.plan;
+  const sameWeek = previousPlan?.week_start === plan.week_start;
+  const expectedWeek = 'week_start' in request ? request.week_start : previousPlan?.week_start;
+  if (plan.week_start !== expectedWeek) return fail(`week_start must be ${expectedWeek}.`);
+  if (plan.timezone !== preferences.timezone)
+    return fail(`timezone must be ${preferences.timezone}.`);
+  if (plan.activities.length > preferences.sessions_per_week)
+    return fail(
+      `The week has ${plan.activities.length} sessions; at most ${preferences.sessions_per_week} are allowed.`,
     );
-  };
-  const expectedWeek =
-    'week_start' in request ? request.week_start : context.activePlan?.version.plan.week_start;
-  if (
-    plan.week_start !== expectedWeek ||
-    plan.timezone !== context.preferences.timezone ||
-    plan.activities.length > context.preferences.sessions_per_week
-  )
-    invalid();
   for (const activity of plan.activities) {
-    // A changed preference never rewrites a completed session.
-    const previous = context.activePlan?.version.plan.activities.find(
-      (item) => item.id === activity.id,
-    );
-    const completed = context.completions.some((item) => item.activity_id === activity.id);
-    if (previous && completed && context.activePlan?.version.plan.week_start === plan.week_start) {
-      if (JSON.stringify(activity) !== JSON.stringify(previous)) invalid();
-      continue;
+    const label = `Session "${activity.title}" at ${activity.start_at}`;
+    const previous = sameWeek
+      ? previousPlan?.activities.find((item) => item.id === activity.id)
+      : undefined;
+    if (previous) {
+      const unchanged = JSON.stringify(activity) === JSON.stringify(previous);
+      // A changed preference never rewrites a completed session.
+      if (!unchanged && context.completions.some((item) => item.activity_id === activity.id))
+        return fail(`${label} is completed and must stay exactly as it was.`);
+      // An unchanged session was checked when it was planned. Skipping it lets a mid-week
+      // revision or a same-week regeneration keep past sessions that later answers or
+      // availability no longer cover.
+      if (unchanged) continue;
     }
     const sport = context.sports.find(
       (item) => item.id === activity.sport_id && item.generation_enabled,
     );
     if (
       !sport ||
-      context.preferences.excluded_activity_types.includes(activity.sport_id) ||
+      preferences.excluded_activity_types.includes(activity.sport_id) ||
       ('sport_id' in request &&
         request.sport_id !== null &&
         activity.sport_id !== request.sport_id) ||
       ('sport_id' in request &&
         request.sport_id === null &&
-        context.preferences.discovery_preference === 'selected_only' &&
-        !context.preferences.activity_interests.includes(activity.sport_id)) ||
-      (sport.is_gym ? activity.gym_exercises.length === 0 : activity.gym_exercises.length > 0) ||
-      activity.duration_minutes > context.preferences.session_minutes
+        preferences.discovery_preference === 'selected_only' &&
+        !preferences.activity_interests.includes(activity.sport_id))
     )
-      invalid();
+      return fail(`${label} uses sport ${activity.sport_id}, which is not allowed here.`);
+    if (sport.is_gym && activity.gym_exercises.length === 0)
+      return fail(`${label} is a gym session and needs at least one exercise.`);
+    if (!sport.is_gym && activity.gym_exercises.length > 0)
+      return fail(`${label} is not a gym session, so gym_exercises must be empty.`);
+    if (activity.duration_minutes > preferences.session_minutes)
+      return fail(
+        `${label} lasts ${activity.duration_minutes} minutes; the limit is ${preferences.session_minutes}.`,
+      );
     const start = Date.parse(activity.start_at);
     const end = start + activity.duration_minutes * 60000;
     if (
@@ -77,8 +94,8 @@ export function validateGeneratedPlan(
         (slot) => start >= Date.parse(slot.start_at) && end <= Date.parse(slot.end_at),
       )
     )
-      invalid();
-    const window = context.preferences.preferred_window;
+      return fail(`${label} is not fully inside one free time slot.`);
+    const window = preferences.preferred_window;
     if (window) {
       const formatter = new Intl.DateTimeFormat('en-GB', {
         timeZone: plan.timezone,
@@ -98,19 +115,36 @@ export function validateGeneratedPlan(
         asMinutes(end) > window.end_hour * 60 ||
         asMinutes(end) <= asMinutes(start)
       )
-        invalid();
+        return fail(
+          `${label} is outside the preferred hours ${window.start_hour}:00-${window.end_hour}:00.`,
+        );
     }
   }
-  if (context.activePlan?.version.plan.week_start === plan.week_start) {
+  if (sameWeek) {
     for (const completion of context.completions) {
       if (
-        context.activePlan.version.plan.activities.some(
-          (item) => item.id === completion.activity_id,
-        ) &&
+        previousPlan?.activities.some((item) => item.id === completion.activity_id) &&
         !plan.activities.some((item) => item.id === completion.activity_id)
       )
-        invalid();
+        return fail(`Completed session ${completion.activity_id} is missing; keep it unchanged.`);
     }
   }
-  return plan;
+  return { ok: true, plan };
+}
+
+export function validateGeneratedPlan(
+  value: unknown,
+  request: GeneratePlanDto | SendChatDto,
+  context: GeneratorContext,
+): PlanSnapshotDto {
+  const result = checkGeneratedPlan(value, request, context);
+  if (result.ok) return result.plan;
+  throw new ApiError(
+    'INVALID_AI_OUTPUT',
+    502,
+    result.shape
+      ? 'The generated plan was invalid. Try again.'
+      : 'The generated plan did not fit your preferences or availability.',
+    true,
+  );
 }

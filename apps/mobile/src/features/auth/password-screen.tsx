@@ -76,13 +76,14 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
     else router.replace('/welcome');
   };
 
-  const submit = () => {
-    if (!password || account.isPending) return;
-    if (!signingIn && password.length < MIN_PASSWORD_LENGTH) {
+  /** Return passes the field's own text: fast typing can submit before state catches up. */
+  const submit = (typed: string = password) => {
+    if (!typed || account.isPending) return;
+    if (!signingIn && typed.length < MIN_PASSWORD_LENGTH) {
       setTooShort(true);
       return;
     }
-    account.mutate({ email, password }, { onSuccess: () => router.replace('/') });
+    account.mutate({ email, password: typed }, { onSuccess: () => router.replace('/') });
   };
 
   const sendReset = () => reset.mutate(email);
@@ -118,29 +119,29 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
             autoCorrect={false}
             autoFocus
             returnKeyType="go"
-            onSubmitEditing={submit}
+            onSubmitEditing={(event) => submit(event.nativeEvent.text)}
           />
           {requestError ? (
             isApiError(requestError, 'email_taken') ? (
               <RequestAlert
                 error={requestError}
                 message="An account already uses this email."
-                onRetry={submit}
+                onRetry={() => submit()}
                 action={{ label: 'Sign in instead', onPress: () => router.replace(passwordRoute(email, 'sign-in')) }}
               />
             ) : isApiError(requestError, 'validation') ? (
               <RequestAlert
                 error={requestError}
                 message={EMAIL_FORMAT_ERROR}
-                onRetry={submit}
+                onRetry={() => submit()}
                 action={{ label: 'Change email', onPress: changeEmail }}
               />
             ) : (
-              <RequestAlert error={requestError} onRetry={submit} />
+              <RequestAlert error={requestError} onRetry={() => submit()} />
             )
           ) : null}
           <Col gap={4}>
-            <Button size="lg" fullWidth disabled={!password} loading={account.isPending} onPress={submit}>
+            <Button size="lg" fullWidth disabled={!password} loading={account.isPending} onPress={() => submit()}>
               {signingIn ? 'Sign in' : 'Create account'}
             </Button>
             {signingIn ? (

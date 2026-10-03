@@ -1,21 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 
-import { useOpenChat } from '@/navigation/open-chat';
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { ActivityScreen } from '@/features/workout/activity/activity-screen';
 
+/** Activity (6): the session's plan, with Log it, or Start for a gym session. */
 export default function SessionRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const openChat = useOpenChat();
-  return (
-    <PlaceholderScreen
-      title="Activity"
-      screenId="6"
-      links={[
-        { label: 'Log it', href: routes.log(id) },
-        { label: 'Start (gym)', href: routes.gym(id) },
-        { label: 'Adjust in chat', onPress: () => openChat({ aboutSessionId: id }) },
-      ]}
-    />
-  );
+  return <ActivityScreen key={id} id={id} />;
 }

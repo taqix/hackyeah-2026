@@ -11,7 +11,8 @@ import { dayOfMonth, isInMonth, monthWeeks } from './month';
 /** Most marks one date shows; the day's label still names every session. */
 const MAX_MARKS = 4;
 
-const hidden = { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' } as const;
+/** Decorative: each day's label already says it in words. aria-hidden works on iOS, Android and web. */
+const hidden = { 'aria-hidden': true } as const;
 
 /** One session under its date: done is filled, planned is the accent, skipped is a hollow ring. */
 export function Mark({ state, size = 6 }: { state: MarkState; size?: number }) {

@@ -7,6 +7,10 @@
     "packages/*"
   ],
   "scripts": {
+    "test:supabase": "node --import tsx --test supabase/tests/*.test.mjs supabase/tests/*.test.ts",
+    "typecheck:supabase": "tsc -p supabase/tsconfig.json",
+    "lint:supabase": "eslint --config supabase/eslint.config.mjs supabase/functions supabase/tests supabase/scripts",
+    "schema:product": "npm run build --workspace=@hackyeah/contracts && node --import tsx supabase/scripts/export-schema.ts",
     "start": "npm run start --workspace=@hackyeah/mobile",
     "android": "npm run android --workspace=@hackyeah/mobile",
     "ios": "npm run ios --workspace=@hackyeah/mobile",

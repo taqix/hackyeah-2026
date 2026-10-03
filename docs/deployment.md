@@ -1,5 +1,10 @@
 # Runtime status
 
+The [Supabase product API](features/supabase-product-api.md) now has local migration,
+function, DTO, and schema artifacts. They have not been applied/deployed remotely.
+Local CPU tests validate database rules and the HTTP handler; actual Supabase CLI,
+Deno, Auth provider, and device/browser integration checks remain owner work.
+
 The current backend milestone is local only. There is no cloud infrastructure,
 registry, deployment workflow, or hosted API.
 

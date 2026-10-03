@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./product": {
+      "types": "./dist/product.d.ts",
+      "default": "./dist/product.js"
+    },
     "./wearables": {
       "types": "./dist/wearables.d.ts",
       "default": "./dist/wearables.js"

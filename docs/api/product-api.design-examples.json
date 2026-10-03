@@ -1,0 +1,70 @@
+{
+  "ExploreFromPreferences": {
+    "schema": "GeneratePlanDto",
+    "value": {
+      "request_id": "00000000-0000-4000-8000-000000000005",
+      "expected_version": 0,
+      "sport_id": null,
+      "week_start": "2026-10-05",
+      "availability": {
+        "source": "manual",
+        "captured_at": "2026-10-03T12:00:00Z",
+        "slots": [
+          {
+            "start_at": "2026-10-05T07:00:00+02:00",
+            "end_at": "2026-10-05T21:00:00+02:00"
+          }
+        ]
+      }
+    }
+  },
+  "QuietWeek": {
+    "schema": "GeneratePlanResponse",
+    "value": {
+      "data": {
+        "plan": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "profile_id": "00000000-0000-4000-8000-000000000001",
+          "active_version_id": "00000000-0000-4000-8000-000000000003",
+          "created_at": "2026-10-03T12:00:00Z"
+        },
+        "version": {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "plan_id": "00000000-0000-4000-8000-000000000002",
+          "profile_id": "00000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "origin": "generate",
+          "plan": {
+            "week_start": "2026-10-05",
+            "timezone": "Europe/Warsaw",
+            "activities": []
+          },
+          "summary": "No session fits this week.",
+          "created_at": "2026-10-03T12:00:00Z"
+        }
+      },
+      "meta": {
+        "contract_version": "1",
+        "request_id": "00000000-0000-4000-8000-000000000005"
+      }
+    }
+  },
+  "EndedEarlyWithoutOpinion": {
+    "schema": "CompleteActivityDto",
+    "value": {
+      "plan_version_id": "00000000-0000-4000-8000-000000000003",
+      "activity_id": "00000000-0000-4000-8000-000000000004",
+      "request_id": "00000000-0000-4000-8000-000000000005",
+      "metrics": {
+        "duration_minutes": 20
+      },
+      "gym_log": [],
+      "feedback": {
+        "effort": "too_much",
+        "enjoyment": null,
+        "notes": "Stopped early."
+      },
+      "completed_at": "2026-10-05T09:20:00+02:00"
+    }
+  }
+}

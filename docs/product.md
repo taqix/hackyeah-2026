@@ -40,7 +40,8 @@ previews without implying that their activity generation is available.
   on collaborators' machines for judging.
 - **Web:** React marketing pages plus a dashboard supporting the same core journey.
   Provide fast guest entry for demonstrations.
-- **Backend:** NestJS with TypeScript, shared by both clients.
+- **Proof-of-concept backend:** Supabase Auth, PostgreSQL/RLS, and a shared Edge
+  Function API. NestJS remains in the repository for future backend work.
 
 ## Accounts and guest demo
 
@@ -59,8 +60,10 @@ not required for the first MVP.
 
 ## Plan generation and revisions
 
-NestJS owns AI provider integration. The provider and model are TBD; clients
-consume a stable application API rather than provider-specific responses.
+The proof of concept uses the prepared [Supabase product API](features/supabase-product-api.md).
+Its Edge Function owns AI orchestration and validated persistence. The provider
+and model remain unconnected in this scaffold; clients consume shared contracts
+and synthetic examples while the AI collaborator adds the adapter.
 
 Return structured plans and validate them against the application contract before
 saving. The server checks supported sport, plan shape, activity identifiers,

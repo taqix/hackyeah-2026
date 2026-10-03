@@ -1,0 +1,5 @@
+project_id = "hackyeah-2026"
+
+[functions.product-api]
+verify_jwt = true
+entrypoint = "./functions/product-api/index.ts"

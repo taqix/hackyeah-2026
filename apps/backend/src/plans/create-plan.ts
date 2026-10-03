@@ -47,14 +47,9 @@ export async function generatePlan(
     reviewContent,
   }: PlanOptions = {},
 ): Promise<PlanOutput> {
-  const preferences = parsePlanInput(value);
-  if (!Number.isFinite(new Date(now).getTime()))
-    fail("CONFIGURATION", "now must be a valid timestamp.");
-  if (preferences.mode === "create" && !preferences.available_slots.length)
-    return { events: [], message: null };
   let serialized;
   try {
-    serialized = JSON.stringify(preferences, (_key, value) => {
+    serialized = JSON.stringify(value, (_key, value) => {
       if (
         value === undefined ||
         typeof value === "function" ||
@@ -80,6 +75,11 @@ export async function generatePlan(
       "INPUT_TOO_LARGE",
       "The complete planning context exceeds the request size limit. Conversation was not truncated.",
     );
+  const preferences = parsePlanInput(value);
+  if (!Number.isFinite(new Date(now).getTime()))
+    fail("CONFIGURATION", "now must be a valid timestamp.");
+  if (preferences.mode === "create" && !preferences.available_slots.length)
+    return { events: [], message: null };
   if (typeof apiKey !== "string" || !apiKey.trim())
     fail("CONFIGURATION", "Set GEMINI_API_KEY on the server.");
   if (typeof model !== "string" || !/^[a-zA-Z0-9._-]+$/.test(model))

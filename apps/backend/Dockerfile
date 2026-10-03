@@ -10,8 +10,7 @@ COPY packages/contracts/tsconfig.json packages/contracts/tsconfig.json
 COPY packages/contracts/src packages/contracts/src
 COPY apps/backend/nest-cli.json apps/backend/tsconfig*.json apps/backend/
 COPY apps/backend/src apps/backend/src
-RUN npm run build --workspace=@hackyeah/contracts \
-    && npm run build --workspace=@hackyeah/backend
+RUN npm run build --workspace=@hackyeah/backend
 
 FROM node:22-bookworm-slim AS runtime
 

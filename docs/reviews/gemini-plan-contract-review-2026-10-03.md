@@ -56,7 +56,7 @@ at `/Users/piotrgdanski/.codex/worktrees/gemini-plan-contract/hackyeah-2026`.
   [health test](../../apps/backend/test/health.test.ts),
   [plan tests](../../apps/backend/test/plan.test.ts),
   [ignored generated output](../../.gitignore).
-- F4: [provider parsing and errors](../../apps/backend/src/create-plan.ts),
+- F4: [provider parsing and errors](../../apps/backend/src/plans/create-plan.ts),
   with malformed-envelope regressions in the plan test suite.
 - F5: [metric validation](../../packages/contracts/src/plan.ts),
   [catalog regression tests](../../apps/backend/test/catalog-validation.test.ts).

@@ -49,4 +49,4 @@ Installation is not available yet.
 
 ## Project documentation
 
-- [Gemini workout planning exchange](docs/features/gemini-plan-exchange.md) — creation, chat changes and [JSON contract](docs/features/gemini-json-contract.md).
+- [Gemini JSON contract](docs/features/gemini-json-contract.md) — workout creation, chat changes, validation, and integration.

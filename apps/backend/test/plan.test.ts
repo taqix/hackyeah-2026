@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { generatePlan, createPlan } from "../src/create-plan.js";
+import { generatePlan, createPlan } from "../src/plans/create-plan.js";
 import {
   parsePlanInput,
   parsePlanOutput,
@@ -11,7 +11,7 @@ import {
   type PlanInput,
   type PlanOutput,
 } from "@hackyeah/contracts/plan";
-import { PLAN_GENERATION_CONFIG } from "../src/plan-config.js";
+import { PLAN_GENERATION_CONFIG } from "../src/plans/plan-config.js";
 
 const fixture = <T>(name: string): T =>
   JSON.parse(
@@ -1073,4 +1073,62 @@ void test("optional part durations are complete when present; an empty metric ca
     parsePlanOutput(plan(noMetrics), request, now),
     plan(noMetrics),
   );
+});
+
+void test("rejects oversized requests before schema validation or empty availability shortcuts", async () => {
+  for (const request of [
+    { ...input(), available_slots: [] },
+    { ...input(), sports: "invalid catalog" },
+  ]) {
+    await assert.rejects(
+      generatePlan(
+        {
+          ...request,
+          user_description: "x".repeat(PLAN_GENERATION_CONFIG.maxRequestBytes),
+        },
+        {
+          ...options,
+          fetchImpl: async () => {
+            throw Error("Provider must not be called");
+          },
+        },
+      ),
+      { code: "INPUT_TOO_LARGE" },
+    );
+  }
+});
+
+void test("optional duration metrics ignore inherited properties but validate supplied values", () => {
+  for (const key of ["constructor", "toString"]) {
+    const request = input();
+    const sport = request.sports[0];
+    if (!sport || sport.is_gym !== 0) throw Error("Missing sport");
+    sport.metrics = [
+      {
+        key,
+        description: "Part duration",
+        required: false,
+        represents_session_duration: true,
+        unit: "seconds",
+        value_schema: { type: "number" },
+      },
+    ];
+    const event = walk();
+    event.metrics = {};
+    event.parts = event.parts.map((part) => ({ ...part, metrics: {} }));
+    const validated = parsePlanInput(request);
+    assert.deepEqual(parsePlanOutput(plan(event), validated, now), plan(event));
+    event.parts[0]!.metrics[key] = 120;
+    assert.throws(
+      () => parsePlanOutput(plan(event), validated, now),
+      /Every workout part/,
+    );
+    event.parts[1]!.metrics[key] = 480;
+    assert.deepEqual(parsePlanOutput(plan(event), validated, now), plan(event));
+    event.parts[1]!.metrics[key] = 481;
+    assert.throws(
+      () => parsePlanOutput(plan(event), validated, now),
+      /must sum/,
+    );
+  }
 });

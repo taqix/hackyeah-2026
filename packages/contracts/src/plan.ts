@@ -267,7 +267,9 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
         )
           reject('Whole-session duration metric must equal the time slot duration in seconds.');
         if (metric.represents_session_duration) {
-          const durations = event.parts.map((part) => part.metrics[metric.key]);
+          const durations = event.parts.map((part) =>
+            Object.hasOwn(part.metrics, metric.key) ? part.metrics[metric.key] : undefined,
+          );
           if (durations.some((duration) => duration !== undefined)) {
             if (durations.some((duration) => typeof duration !== 'number' || duration <= 0))
               reject(

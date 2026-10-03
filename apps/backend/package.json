@@ -33,14 +33,13 @@
     "@typescript-eslint/parser": "8.71.0",
     "eslint": "9.39.1",
     "prettier": "3.6.2",
-    "typescript": "6.0.3",
-    "tsx": "^4.23.15"
+    "typescript": "6.0.3"
   },
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/create-plan.d.ts",
-      "default": "./dist/create-plan.js"
+      "types": "./dist/plans/create-plan.d.ts",
+      "default": "./dist/plans/create-plan.js"
     }
   }
 }

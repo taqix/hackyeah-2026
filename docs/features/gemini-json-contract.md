@@ -333,7 +333,9 @@ authenticate a caller.
 
 Input/output contract failures throw `PlanValidationError`. Provider/configuration
 failures throw `PlanGenerationError`, including `INPUT_TOO_LARGE` when the
-complete request exceeds 2,000,000 UTF-8 bytes. The provider request limit includes
+complete request exceeds 2,000,000 UTF-8 bytes. The serialized input size is checked
+before schema/catalog validation, including creation with empty availability.
+The provider request limit includes
 the prompt and generated sport-specific response schema; conversation is never
 silently shortened. Provider context limits can still reject a smaller request.
 
@@ -681,5 +683,4 @@ Response:
 - [Shared types](../../packages/contracts/src/plan-types.ts).
 - [Input schema](../../packages/contracts/src/schemas/input.schema.json) and [base output schema](../../packages/contracts/src/schemas/output.schema.json).
 - [Catalog-specific output schema](../../packages/contracts/src/plan-schema.ts) and [runtime validation](../../packages/contracts/src/plan.ts).
-- [Provider adapter](../../apps/backend/src/create-plan.ts) and [system prompt](../../apps/backend/prompts/plan-system.txt).
-- [Feature and integration guide](gemini-plan-exchange.md).
+- [Provider adapter](../../apps/backend/src/plans/create-plan.ts) and [system prompt](../../apps/backend/prompts/plan-system.txt).

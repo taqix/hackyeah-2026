@@ -832,6 +832,55 @@ for (const status of [408, 429, 500, 502, 503, 504]) {
   });
 }
 
+for (const retryAfter of [
+  "60",
+  "2592000",
+  "1e308",
+  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString(),
+]) {
+  void test(`does not retry when Retry-After exceeds the remaining deadline: ${retryAfter}`, async () => {
+    let attempts = 0;
+    await assert.rejects(
+      generatePlan(input(), {
+        ...options,
+        fetchImpl: async () => {
+          attempts++;
+          // A success on a second attempt makes an accidental early retry visible.
+          if (attempts > 1) return response(output());
+          return new Response("private provider content", {
+            status: 429,
+            headers: { "Retry-After": retryAfter },
+          });
+        },
+      }),
+      { code: "TIMEOUT" },
+    );
+    assert.equal(attempts, 1);
+  });
+}
+
+void test("honors a Retry-After cooldown that fits the deadline", async () => {
+  let attempts = 0;
+  let failedAt = 0;
+  const result = await generatePlan(input(), {
+    ...options,
+    fetchImpl: async () => {
+      attempts++;
+      if (attempts === 1) {
+        failedAt = performance.now();
+        return new Response("private provider content", {
+          status: 503,
+          headers: { "Retry-After": "1" },
+        });
+      }
+      assert.ok(performance.now() - failedAt >= 990);
+      return response(output());
+    },
+  });
+  assert.equal(attempts, 2);
+  assert.deepEqual(result, output());
+});
+
 void test("handles network errors and timeouts", async () => {
   await assert.rejects(
     generatePlan(input(), {

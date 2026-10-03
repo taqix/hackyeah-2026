@@ -104,7 +104,11 @@ executes these steps in order:
 
 The adapter retries HTTP 408, 429, 500, 502, 503, and 504 up to three times
 with exponential backoff and jitter (1, 2, and 4 second ceilings), honoring
-Retry-After when supplied. All attempts and waits share the 60-second deadline.
+Retry-After when supplied. Jitter spreads concurrent retries after a shared
+provider failure. All attempts and waits share the 60-second deadline. If the
+required wait reaches or exceeds the remaining budget, the adapter returns
+`TIMEOUT` immediately without another provider request or scheduling the delay;
+this also prevents oversized Retry-After values from overflowing Node's timer.
 Other HTTP errors, network failures, and invalid output are not retried.
 Conversation is never silently truncated,
 and there is no fallback provider, JSON repair, streamed output, or partial-plan

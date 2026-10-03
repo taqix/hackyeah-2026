@@ -133,6 +133,7 @@ export async function generatePlan(
 
   let response;
   let payload: unknown;
+  const deadline = performance.now() + PLAN_GENERATION_CONFIG.timeoutMs;
   const signal = AbortSignal.timeout(PLAN_GENERATION_CONFIG.timeoutMs);
   try {
     for (let attempt = 0; ; attempt++) {
@@ -161,11 +162,18 @@ export async function generatePlan(
       const requestedDelay = Number.isFinite(seconds)
         ? Math.max(0, seconds * 1000)
         : Math.max(0, Date.parse(retryAfter ?? "") - Date.now()) || 0;
-      await delay(
-        Math.max(backoff * (0.5 + Math.random() * 0.5), requestedDelay),
-        undefined,
-        { signal },
+      // Jitter spreads concurrent retries after a shared provider failure.
+      const waitMs = Math.max(
+        backoff * (0.5 + Math.random() * 0.5),
+        requestedDelay,
       );
+      // A retry cannot fit; reject before a large delay can overflow Node's timer.
+      if (waitMs >= deadline - performance.now())
+        throw new DOMException(
+          "Retry exceeds generation deadline",
+          "TimeoutError",
+        );
+      await delay(waitMs, undefined, { signal });
     }
     if (response.ok) payload = await response.json();
   } catch (error) {

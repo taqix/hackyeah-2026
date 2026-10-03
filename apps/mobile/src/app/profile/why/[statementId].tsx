@@ -1,14 +1,8 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
-import { routes } from '@/navigation/routes';
+import { useLocalSearchParams } from 'expo-router';
+
+import { WhyScreen } from '@/features/profile/why-screen';
 
 export default function WhyRoute() {
-  return (
-    <PlaceholderScreen
-      title="Why we think this"
-      screenId="9.3"
-      links={[
-        { label: 'Change this answer', href: routes.profileEdit('time') },
-      ]}
-    />
-  );
+  const { statementId } = useLocalSearchParams<{ statementId: string }>();
+  return <WhyScreen statementId={statementId} />;
 }

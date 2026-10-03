@@ -24,7 +24,7 @@ export { Skeleton, type SkeletonProps } from './skeleton';
 export { Slider, type SliderProps } from './slider';
 export type { SliderRange } from './slider-parts';
 export { Spin, Spinner, type SpinnerProps } from './spinner';
-export { SuggestionCard, type SuggestionCardProps, type SuggestionTone } from './suggestion-card';
+export { SuggestionCard, type SuggestionCardProps, suggestionInk, type SuggestionTone } from './suggestion-card';
 export { Tag, type TagProps } from './tag';
 export { Text, type TextProps, type TextTone } from './text';
 export { TextLink, type TextLinkProps } from './text-link';

@@ -82,6 +82,14 @@ void test("sends both modes, whole conversation and catalog with a compatible re
           body.systemInstruction.parts[0].text,
           /beginner movement plan/,
         );
+        assert.match(
+          body.systemInstruction.parts[0].text,
+          /empty available_equipment list, select only freestanding\nbodyweight movements/,
+        );
+        assert.match(
+          body.systemInstruction.parts[0].text,
+          /State warm-up and cool-down guidance explicitly in the overall description/,
+        );
         const text: string = body.contents[0].parts[0].text;
         const serialized = JSON.parse(text.slice(text.indexOf("\n") + 1));
         assert.deepEqual(serialized, request);

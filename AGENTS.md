@@ -31,7 +31,7 @@ below before changing a feature.
 
 - [Product scope](docs/product.md)
 - [Development, code conventions, and checks](docs/development.md)
-- [Deployment and rollback](docs/deployment.md)
+- [Local runtime status](docs/deployment.md)
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)
 

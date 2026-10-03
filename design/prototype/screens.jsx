@@ -48,57 +48,108 @@ function Steps({step,total=4}){
   return <Row gap={6}>{Array.from({length:total},(_,i)=><span key={i} style={{height:4,flex:1,borderRadius:99,background:i<step?"var(--accent)":"var(--border-subtle)"}}></span>)}</Row>;
 }
 
-/* 1 — Welcome: create an account or sign in with email and password, or look around as a
-   guest in one tap (docs/product.md › Accounts and guest demo). The guest button creates a
-   separate anonymous account with a seeded sample week (Home 5.15). */
-function Welcome({mode="create",error}){
-  const create=mode==="create";
+/* "Good morning" until noon, "Good afternoon" until 18:00, then "Good evening". */
+const greeting=(hour=9)=>hour>=5&&hour<12?"Good morning":hour>=12&&hour<18?"Good afternoon":"Good evening";
+
+/* 1 — Welcome: Continue with Google, or with an email address (review, 3 October). One email
+   field for everyone: the app checks for an account, then asks for its password (1.1) or for
+   a new one (1.2). Supabase Auth covers both. Mobile has no guest entry; the web demo keeps it.
+   The Google mark is the one brand asset on the screen, as Google's sign-in rules require. */
+function GoogleMark({size=20}){
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" style={{flex:"none",display:"block"}}>
+      <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/>
+    </svg>
+  );
+}
+const Brand = () => <span style={{font:"600 22px/1 var(--font-display)",letterSpacing:"var(--tracking-display)",padding:"10px 0 2px"}}>Adaptive</span>;
+const Legal = ({children}) => <span style={{font:"var(--type-caption)",color:"var(--text-secondary)",textAlign:"center",textWrap:"pretty"}}>{children}</span>;
+function Welcome(){
   return (
     <Content gap={16} pb={34}>
-      <span style={{font:"600 22px/1 var(--font-display)",letterSpacing:"var(--tracking-display)",padding:"10px 0 2px"}}>Adaptive</span>
-      <SuggestionCard tone="dawn" style={{minHeight:188}} kicker={create?"New here?":"Welcome back"} title={create?"Find a way to move you'll keep.":"Good to see you again."} body={create?"A few questions, then a gentle first week. Everyone starts somewhere.":"Sign in to see your week."}/>
-      <Col gap={12}>
-        <Input label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" defaultValue={error?"ana@example.com":undefined}/>
-        <Input label="Password" type="password" autoComplete={create?"new-password":"current-password"} defaultValue={error?"walkrun01":undefined}
-          hint={create?"At least 8 characters.":undefined} error={error}
-          suffix={<button type="button" aria-label="Show password" style={{width:44,height:44,marginRight:-12,border:0,background:"transparent",color:"var(--text-secondary)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Icon name="eye" size={20}/></button>}/>
-      </Col>
-      <Col gap={4}>
-        <Button size="lg" fullWidth>{create?"Create account":"Sign in"}</Button>
-        <Row gap={4} style={{justifyContent:"center",flexWrap:"wrap"}}>
-          <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>{create?"Have an account?":"New here?"}</span>
-          <Button variant="ghost" size="sm" style={{height:44,padding:"0 8px"}}>{create?"Sign in":"Create an account"}</Button>
-          {create?null:<><span aria-hidden="true" style={{color:"var(--text-tertiary)"}}>·</span><Button variant="ghost" size="sm" style={{height:44,padding:"0 8px"}}>Forgot password?</Button></>}
-        </Row>
-      </Col>
+      <Brand/>
+      <SuggestionCard tone="dawn" style={{minHeight:216}} kicker="Welcome" title="Find a way to move you'll keep." body="A few questions, then a gentle first week. Everyone starts somewhere."/>
+      <Button size="lg" fullWidth variant="secondary"><GoogleMark/>Continue with Google</Button>
       <Row gap={12}><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span><span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>or</span><span style={{flex:1,height:1,background:"var(--border-subtle)"}}></span></Row>
-      <Col gap={8}>
-        <Button size="lg" fullWidth variant="secondary" icon="compass">Look around as a guest</Button>
-        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)",textAlign:"center",textWrap:"pretty"}}>A sample week that's yours alone. No email needed. By continuing you agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>.</span>
+      <Col gap={12}>
+        <Input label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com"/>
+        <Button size="lg" fullWidth iconRight="arrow-right">Continue with email</Button>
       </Col>
+      <Legal>We'll sign you in, or set up your account if you're new. By continuing you agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>.</Legal>
     </Content>
   );
 }
-const SignInError = () => <Welcome mode="signin" error="That email and password don't match. Try again, or reset your password."/>;
+/* 1.1–1.3 — The password step after an email. `known`: an account exists (sign in) or not
+   (create one). The email is shown with a way back to change it. */
+function PasswordStep({known,error}){
+  return (
+    <>
+      <TopBar left={<IconButton icon="arrow-left" label="Back"/>}/>
+      <Content gap={20} pb={34}>
+        <Col gap={8}>
+          <H1>{known?"Welcome back":"Create your account"}</H1>
+          <Body>{known?"Enter the password for this account.":"No account uses this email yet. Pick a password to set one up."}</Body>
+        </Col>
+        <Row gap={12} style={{padding:"8px 8px 8px 14px",borderRadius:"var(--radius-md)",background:"var(--surface-sunken)"}}>
+          <Icon name="mail" size={18} color="var(--text-secondary)"/>
+          <span style={{flex:1,minWidth:0,font:"500 var(--text-base)/1.3 var(--font-body)"}}>ana@example.com</span>
+          <Button variant="ghost" size="sm" style={{height:44}}>Change</Button>
+        </Row>
+        <Input label={known?"Password":"New password"} type="password" autoComplete={known?"current-password":"new-password"} defaultValue={error?"walkrun01":undefined}
+          hint={known?undefined:"At least 8 characters."} error={error}
+          suffix={<button type="button" aria-label="Show password" style={{width:44,height:44,marginRight:-12,border:0,background:"transparent",color:"var(--text-secondary)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Icon name="eye" size={20}/></button>}/>
+        <Col gap={4}>
+          <Button size="lg" fullWidth>{known?"Sign in":"Create account"}</Button>
+          {known?<Button variant="ghost" size="sm" style={{height:44,alignSelf:"center"}}>Forgot password?</Button>:null}
+        </Col>
+        {known?null:<Legal>By creating an account you agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>.</Legal>}
+      </Content>
+    </>
+  );
+}
+const SignIn = () => <PasswordStep known/>;
+const SignUp = () => <PasswordStep/>;
+const SignInError = () => <PasswordStep known error="That password doesn't match. Try again, or reset it."/>;
 
 /* 2–4 — Questionnaire, preferences and review: onboarding.jsx */
 
-/* 5 — Home, the Today tab, and its states 5.1–5.15: home.jsx */
+/* 5 — Home, the Today tab, and its states: home.jsx */
 
-/* Floating glass pill nav: the active tab widens and shows its label. */
-const NAV_ITEMS=[{value:"today",label:"Today",icon:"sun"},{value:"plan",label:"Plan",icon:"calendar"},{value:"you",label:"You",icon:"user-round"}];
+/* Floating glass pill nav: the active tab widens and shows its label. Today · Calendar · You,
+   with chat as a dark round button beside the bar (review, 3 October, decided after
+   comparing it with a Chat tab). Chat opens full screen over the current tab; its back
+   arrow returns there. */
+const NAV_ITEMS=[{value:"today",label:"Today",icon:"sun"},{value:"calendar",label:"Calendar",icon:"calendar"},{value:"you",label:"You",icon:"user-round"}];
 function NavBar({value}){
   return (
-    <nav aria-label="Main" style={{position:"absolute",left:20,right:20,bottom:24,height:64,borderRadius:99,background:"color-mix(in oklch, var(--surface-raised) 72%, transparent)",backdropFilter:"var(--blur-bar)",WebkitBackdropFilter:"var(--blur-bar)",border:"1px solid color-mix(in oklch, var(--border-subtle) 80%, transparent)",display:"flex",alignItems:"center",padding:6,gap:4,boxShadow:"var(--shadow-2), inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 60%, transparent)"}}>
-      {NAV_ITEMS.map(it=>{const a=it.value===value;return (
-        <button key={it.value} aria-label={it.label} title={it.label} aria-current={a?"page":undefined} style={{flex:a?1.5:1,height:52,background:a?"color-mix(in oklch, var(--text-primary) 7%, transparent)":"transparent",border:0,borderRadius:99,padding:"0 12px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:a?"var(--text-primary)":"var(--text-tertiary)",boxShadow:a?"inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 70%, transparent), inset 0 0 0 1px color-mix(in oklch, var(--text-primary) 5%, transparent)":"none",transition:"all var(--dur-base) var(--ease-out)"}}>
-          <Icon name={it.icon} size={22} strokeWidth={a?2:1.75}/>
-          {a?<span style={{font:"600 14px/1 var(--font-body)"}}>{it.label}</span>:null}
-        </button>);})}
-    </nav>
+    <>
+      <nav aria-label="Main" style={{position:"absolute",left:20,right:94,bottom:24,height:64,borderRadius:99,background:"color-mix(in oklch, var(--surface-raised) 72%, transparent)",backdropFilter:"var(--blur-bar)",WebkitBackdropFilter:"var(--blur-bar)",border:"1px solid color-mix(in oklch, var(--border-subtle) 80%, transparent)",display:"flex",alignItems:"center",padding:6,gap:4,boxShadow:"var(--shadow-2), inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 60%, transparent)",zIndex:4}}>
+        {NAV_ITEMS.map(it=>{const a=it.value===value;return (
+          <button key={it.value} aria-label={it.label} title={it.label} aria-current={a?"page":undefined} style={{flex:a?2:1,minWidth:0,height:52,background:a?"color-mix(in oklch, var(--text-primary) 7%, transparent)":"transparent",border:0,borderRadius:99,padding:"0 12px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:a?"var(--text-primary)":"var(--text-tertiary)",boxShadow:a?"inset 0 1px 0 color-mix(in oklch, var(--surface-raised) 70%, transparent), inset 0 0 0 1px color-mix(in oklch, var(--text-primary) 5%, transparent)":"none",transition:"all var(--dur-base) var(--ease-out)"}}>
+            <Icon name={it.icon} size={22} strokeWidth={a?2:1.75}/>
+            {a?<span style={{font:"600 14px/1 var(--font-body)"}}>{it.label}</span>:null}
+          </button>);})}
+      </nav>
+      <ChatButton/>
+    </>
   );
 }
-/* 6 — Activity detail */
+/* The chat button sits level with the bar, solid and darker so it reads as the main way
+   to change anything. */
+function ChatButton(){
+  return (
+    <button type="button" aria-label="Chat" title="Chat" style={{position:"absolute",right:20,bottom:24,width:64,height:64,zIndex:4,borderRadius:99,border:0,background:"var(--surface-inverse)",color:"var(--text-inverse)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"var(--shadow-2)",cursor:"pointer",padding:0}}>
+      <Icon name="message-circle" size={24} strokeWidth={2}/>
+    </button>
+  );
+}
+
+/* 6 — Activity: what the session holds, from the plan. Only gym sessions are tracked live
+   (6.3–6.8, Start). Everything else is done the person's own way, with a watch or without,
+   and logged afterwards (6.2, Log it). */
 function Activity(){
   return (
     <>
@@ -114,16 +165,21 @@ function Activity(){
           <ExerciseRow media mediaIcon="wind" name="Run, then walk" detail="6 × 1 min run · 1 min walk" meta="12 min" divider/>
           <ExerciseRow media mediaIcon="footprints" name="Slow walk" detail="4 min" meta="cool-down"/>
         </Col>
+        <Row gap={10} style={{alignItems:"flex-start"}}>
+          <Icon name="watch" size={16} color="var(--text-secondary)" style={{marginTop:2}}/>
+          <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)",textWrap:"pretty"}}>Go with a watch, a timer or nothing at all. Log it when you're back.</span>
+        </Row>
       </Content>
       <BottomBar>
         <Button variant="secondary" size="lg">Adjust</Button>
-        <Button size="lg" fullWidth iconRight="arrow-right" style={{flex:1}}>Start</Button>
+        <Button size="lg" fullWidth iconRight="check" style={{flex:1}}>Log it</Button>
       </BottomBar>
     </>
   );
 }
 
-/* 7 — Completion & feedback */
+/* 7 — Completion & feedback. Notes go into the description our assistant keeps of the
+   person, which the planner reads (review, 3 October). */
 function Feedback(){
   return (
     <>
@@ -142,26 +198,27 @@ function Feedback(){
             <Radio variant="card" label="Too much" description="Had to stop early"/>
           </div>
         </Col>
-        <Input label="Anything to note (optional)" placeholder="Shoes, weather, how your legs feel…"/>
+        <Input label="Anything to note (optional)" placeholder="Shoes, weather, how your legs feel…" hint="Our assistant reads notes when it plans your next weeks."/>
       </Content>
       <BottomBar><Button size="lg" fullWidth iconRight="check">Save</Button></BottomBar>
     </>
   );
 }
 
-/* 8 — Chat plan revision and its states 8.1–8.16: chat.jsx */
+/* 8 — Chat and its states: chat.jsx */
 
 const SCREENS=[
-  {id:"welcome",label:"1 · Welcome",C:Welcome,note:"Email and password, or a guest demo in one tap."},
-  {id:"sign-in-error",label:"1.1 · Sign in: no match",C:SignInError},
+  {id:"welcome",label:"1 · Welcome",C:Welcome,note:"Google in one tap, or one email field: we sign you in or set the account up. No guest entry on mobile."},
+  {id:"sign-in",label:"1.1 · Email: account found",C:SignIn},
+  {id:"sign-up",label:"1.2 · Email: new account",C:SignUp},
+  {id:"sign-in-error",label:"1.3 · Sign in: wrong password",C:SignInError},
   ...ONBOARDING_SCREENS, // 2–4, questionnaire, preferences and review (onboarding.jsx)
-  ...HOME_SCREENS, // 5–5.15, the Today tab in every state (home.jsx)
-  {id:"activity",label:"6 · Activity",C:Activity},
-  ...WORKOUT_SCREENS, // 6.1–6.9, in-workout tracking (workout.jsx)
+  ...HOME_SCREENS, // 5–5.12, the Today tab in every state (home.jsx)
+  {id:"activity",label:"6 · Activity",C:Activity,note:"Not a gym session, so nothing runs live: Log it opens 6.2 when you're back."},
+  ...WORKOUT_SCREENS, // 6.2–6.8, logging afterwards and guided gym sessions (workout.jsx)
   {id:"feedback",label:"7 · Completion & feedback",C:Feedback},
-  ...CHAT_SCREENS, // 8–8.16, chat plan revision in every state (chat.jsx)
-  ...PROFILE_SCREENS, // 9–9.6, the You tab: answers, summary, feedback, privacy (profile.jsx)
-  ...PLAN_SCREENS, // 10–10.1, the Plan tab: the week in full and its versions (plan.jsx)
-  ...(window.LOG_SCREENS||[]), // 11–11B.6, add a workout: form (A) and chat (B) variants (log.jsx)
+  ...CHAT_SCREENS, // 8–8.16, chat: plan changes, missed sessions, workouts done (chat.jsx)
+  ...PROFILE_SCREENS, // 9–9.7, the You tab: answers, summary, feedback, settings, privacy (profile.jsx)
+  ...CALENDAR_SCREENS, // 10–10.1, the Calendar tab: sessions by day and the plan's versions (calendar.jsx)
 ];
-Object.assign(window,{Phone,SCREENS});
+Object.assign(window,{Phone,SCREENS,NavBar,greeting});

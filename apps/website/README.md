@@ -33,7 +33,8 @@ npm run typecheck --workspace=@hackyeah/website
 
 The phone mockups on the landing page redraw the app's Home 5, onboarding 2 and
 chat 8.3 screens from `design/prototype`; update them when those screens change.
-The page never mentions plan versions or what the demo leaves out.
+The page never mentions plan versions or what the demo leaves out. The website
+keeps its guest demo; the mobile app has none.
 
 ## Deployment
 

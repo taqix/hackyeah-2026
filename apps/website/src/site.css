@@ -129,9 +129,10 @@ noscript{display:block;padding:24px 20px;text-align:center;font:var(--type-body)
 .m-num{font:600 18px/1 var(--font-numeric);font-variant-numeric:tabular-nums;letter-spacing:var(--tracking-tight);color:var(--text-primary)}
 .m-srow{display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 0}
 .m-srow+.m-srow{border-top:1px solid var(--border-subtle)}
-.m-nav{position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:var(--radius-pill);padding:6px;display:flex;gap:4px;background:color-mix(in oklch,var(--surface-raised) 72%,transparent);backdrop-filter:var(--blur-bar);-webkit-backdrop-filter:var(--blur-bar);border:1px solid color-mix(in oklch,var(--border-subtle) 80%,transparent);box-shadow:var(--shadow-2)}
+.m-nav{position:absolute;left:20px;right:94px;bottom:24px;height:64px;border-radius:var(--radius-pill);padding:6px;display:flex;gap:4px;background:color-mix(in oklch,var(--surface-raised) 72%,transparent);backdrop-filter:var(--blur-bar);-webkit-backdrop-filter:var(--blur-bar);border:1px solid color-mix(in oklch,var(--border-subtle) 80%,transparent);box-shadow:var(--shadow-2)}
+.m-chat{position:absolute;right:20px;bottom:24px;width:64px;height:64px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;background:var(--surface-inverse);color:var(--text-inverse);box-shadow:var(--shadow-2)}
 .m-tab{flex:1;height:52px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-tertiary)}
-.m-tab.is-on{flex:1.5;color:var(--text-primary);font:600 14px/1 var(--font-body);background:color-mix(in oklch,var(--text-primary) 7%,transparent)}
+.m-tab.is-on{flex:2;color:var(--text-primary);font:600 14px/1 var(--font-body);background:color-mix(in oklch,var(--text-primary) 7%,transparent)}
 .m-compose{position:absolute;left:0;right:0;bottom:0;padding:8px 20px 30px;display:flex;flex-direction:column;gap:10px;background:var(--bg-app)}
 .m-input{flex:1;min-width:0;height:52px;padding:0 18px;display:flex;align-items:center;border-radius:26px;border:1px solid var(--border-strong);background:var(--surface-card);font:var(--type-body);color:var(--text-tertiary)}
 

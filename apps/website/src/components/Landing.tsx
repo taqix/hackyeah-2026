@@ -74,13 +74,15 @@ const MOCK_CHANGE = {
     diffs: [{ icon: "clock", from: "18:00", to: "7:00" }, { icon: "timer", from: "20 min", to: "10 min" }] }],
   kept: "Monday to Wednesday stay as you did them.",
 };
-const MockNav = () => (
+/* The app's tab bar with the chat button beside it (design/README.md › Chat placement). */
+const MockNav = () => <>
   <div className="m-nav">
     <span className="m-tab is-on"><Icon name="sun" size={22} strokeWidth={2} />Today</span>
     <span className="m-tab"><Icon name="calendar" size={22} /></span>
     <span className="m-tab"><Icon name="user-round" size={22} /></span>
   </div>
-);
+  <span className="m-chat"><Icon name="message-circle" size={24} strokeWidth={2} /></span>
+</>;
 function MockAsk() {
   return <>
     <div className="m-top"><IconButton icon="arrow-left" label="Back" /><span className="s-kicker">1 of 5</span></div>
@@ -98,9 +100,10 @@ function MockAsk() {
 function MockPlan() {
   return <>
     <div className="m-content" style={{ gap: 20 }}>
-      <div className="s-row" style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div className="s-col" style={{ gap: 4 }}><Kicker>Wednesday, 7 October · Week 1</Kicker><div className="m-h1">Good morning, Ana</div></div>
-        <IconButton icon="message-circle" label="Change plan" variant="secondary" />
+      <div className="s-col" style={{ gap: 4 }}><Kicker>Wednesday, 7 October · Week 1</Kicker><div className="m-h1">Good morning, Ana</div></div>
+      <div className="s-row" style={{ justifyContent: "space-between", marginBottom: -12 }}>
+        <span className="s-label" style={{ color: "var(--text-secondary)" }}>5–11 Oct · this week</span>
+        <span className="s-row" style={{ gap: 14, color: "var(--text-tertiary)", opacity: 0.4 }}><Icon name="chevron-left" size={18} /><Icon name="chevron-right" size={18} /></span>
       </div>
       <div className="m-strip">
         {MOCK_WEEK.map((w, i) => (
@@ -143,18 +146,18 @@ function MockChange() {
   return <>
     <div className="m-top" style={{ minHeight: 52 }}>
       <IconButton icon="arrow-left" label="Back" />
-      <span className="s-col" style={{ alignItems: "center", gap: 2 }}><span className="s-sub">Change your plan</span><span className="s-cap" style={{ color: "var(--text-secondary)" }}>Running · week 1</span></span>
+      <span className="s-col" style={{ alignItems: "center", gap: 2 }}><span className="s-sub">Coach</span><span className="s-cap" style={{ color: "var(--text-secondary)" }}>Running · week 1</span></span>
       <span style={{ width: 44 }}></span>
     </div>
     <div className="m-content" style={{ gap: 12 }}>
-      <DemoBubble>Tell us what to change. Your plan updates straight away, and you can always undo.</DemoBubble>
+      <DemoBubble>Tell us what to change, or a workout you did. Your plan updates straight away, and you can always undo.</DemoBubble>
       <DemoBubble me>Can we keep everything to mornings this week, and make Friday shorter?</DemoBubble>
       <ChangeCard {...MOCK_CHANGE} onUndo={() => {}} onSeePlan={() => {}} seeLabel="See week" />
     </div>
     <div className="m-compose">
       <span className="s-cap" style={{ textAlign: "center", color: "var(--text-secondary)" }}>Changes apply straight away. You can undo.</span>
       <div className="s-row" style={{ gap: 8 }}>
-        <span className="m-input">Ask for a change…</span>
+        <span className="m-input">Message your coach…</span>
         <IconButton icon="arrow-up" label="Send" variant="primary" disabled />
       </div>
     </div>

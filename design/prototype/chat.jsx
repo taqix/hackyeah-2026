@@ -1,5 +1,7 @@
-/* Chat plan revision — screen 8 and states 8.1–8.16 (see README › Chat revision).
-   Product rules (docs/product.md, step 6 and "Plan generation and revisions"):
+/* Chat — screen 8 and states 8.1–8.16 (see README › Chat).
+   Chat is where most things change, so a chat button sits beside the tab bar on every
+   tab (screens.jsx NavBar) and opens chat full screen over it. Product rules
+   (docs/product.md, step 6 and "Plan generation and revisions"):
      - A valid change becomes the active plan straight away. There is no confirm step;
        Undo on the newest change is the safety net.
      - Every reply says whether the plan changed: a change card when it did,
@@ -8,6 +10,9 @@
        the new value. The day column always shows where the session is now.
      - Done sessions never change. One request runs at a time. Anything that fails
        (offline, an error, a newer plan from elsewhere) leaves the plan exactly as it was.
+   3 October review: a missed session's Move it lands here (8.15), with skipping offered
+   last; and a workout done outside the plan is added here in a sentence (8.16), since
+   the separate logging form was dropped. No guest demo on mobile.
    Data follows Home (home.jsx): on Wednesday evening Ana asks for mornings and a shorter
    Friday; Home 5.4 shows the result with Updated tags.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
@@ -70,12 +75,14 @@ function Disc({icon, tone = "accent", size = 32, spin = false}){
   );
 }
 
+/* "Coach": one conversation for changing the plan and for adding workouts done outside it.
+   It opens over the tab you were on, and back returns there. */
 function ChatHeader({sub = "Running · week 1"}){
   return (
     <div style={{flex:"none",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 12px 4px",minHeight:52}}>
       <div style={{width:44}}><IconButton icon="arrow-left" label="Back"/></div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-        <span style={{font:"var(--type-subheading)"}}>Change your plan</span>
+        <span style={{font:"var(--type-subheading)"}}>Coach</span>
         {sub ? <span style={LEGIBLE}>{sub}</span> : null}
       </div>
       <div style={{width:44}}></div>
@@ -143,12 +150,22 @@ function Option({onClick, children}){
   );
 }
 
-/* A coach reply that leaves the plan as it is. */
-function Reply({options, onPick, children}){
+/* A coach reply that leaves the plan as it is. A question about a workout to add says
+   "Nothing saved yet" instead. */
+function Reply({options, onPick, foot = "Plan unchanged", footIcon = "lock", children}){
   return (
     <div style={{alignSelf:"stretch",display:"flex",flexDirection:"column",gap:10}}>
-      <Bubble foot={<Fine icon="lock">Plan unchanged</Fine>}>{children}</Bubble>
+      <Bubble foot={<Fine icon={footIcon}>{foot}</Fine>}>{children}</Bubble>
       {options ? <Options items={options} onPick={onPick}/> : null}
+    </div>
+  );
+}
+/* The last, quietest answer: an underlined text button, never a chip. Used for skipping. */
+function QuietOption({note, onClick, children}){
+  return (
+    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:"0 10px"}}>
+      <button type="button" onClick={onClick} style={{height:44,padding:0,border:0,background:"transparent",color:"var(--text-secondary)",font:"600 15px/1 var(--font-body)",textDecoration:"underline",textUnderlineOffset:3,cursor:"pointer"}}>{children}</button>
+      {note ? <span style={LEGIBLE}>{note}</span> : null}
     </div>
   );
 }
@@ -328,7 +345,7 @@ function Composer({value, state, about, focused, top, hint = "Changes apply stra
   /* A disabled input loses focus without a blur event, so busy clears the ring. */
   const ring = focused || (hasFocus && !busy);
   const canSend = !!(value && value.trim()) && !busy && !offline;
-  const placeholder = busy ? "Updating your plan…" : "Ask for a change…";
+  const placeholder = busy ? "Updating your plan…" : "Message your coach…";
   return (
     <div style={{flex:"none",padding:"8px var(--gutter-screen) 30px",display:"flex",flexDirection:"column",gap:10,background:"var(--bg-app)"}}>
       {offline ? <OfflineNote/> : top ? top : <Fine align="center">{busy ? "One change at a time." : hint}</Fine>}
@@ -390,6 +407,7 @@ const EXAMPLES = [
   {icon:"timer",label:"Shorter or longer",text:"Make Friday 10 minutes"},
   {icon:"shuffle",label:"Swap an activity",text:"Something easier on Friday"},
   {icon:"dumbbell",label:"Change sport",text:"Can I try the gym instead?"},
+  {icon:"circle-plus",label:"Add a workout you did",text:"I played football yesterday for an hour"},
 ];
 function Examples({onPick}){
   return (
@@ -413,27 +431,87 @@ function Example({icon, label, text, divider, onClick}){
   );
 }
 
-/* Guest demo at its limit: the message box gives way to the next step. */
-function DemoLimit(){
-  return (
-    <div style={{flex:"none",padding:"4px var(--gutter-screen) 30px",background:"var(--bg-app)"}}>
-      <Surface label="Demo changes used">
-        <div style={{padding:18,display:"flex",flexDirection:"column",gap:12}}>
-          <Head icon="user-round-plus" tone="accent" title="That was the last demo change"/>
-          <p style={SMALL}>The guest demo includes 3 plan changes. Sign up to keep adjusting a plan of your own.</p>
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
-            <Button size="lg" fullWidth>Sign up</Button>
-            <Button fullWidth variant="ghost">Back to my plan</Button>
-          </div>
-        </div>
-      </Surface>
-    </div>
+/* ---------- Workouts done outside the plan ----------
+   There is no logging form: a workout the plan didn't have is added here, in a sentence.
+   The card shows every field as saved, in the sport's catalog metrics (time, distance), so
+   a misreading is easy to spot. How long is the only thing ever asked for. An added
+   workout is history: the plan stays as it is, it isn't counted in "2 of 3 done", and the
+   Calendar shows it on its day with an Extra tag. Undo removes it; Edit opens the Log it
+   form (6.1) filled in. */
+const minText = m => m >= 60 && m % 30 === 0 ? m / 60 + " h" : m + " min";
+function LogCard({log, latest = true, removed, time = "Just now", onUndo}){
+  if (removed) return (
+    <Surface label="Workout removed">
+      <div style={{padding:"16px 18px",display:"flex",flexDirection:"column",gap:8}}>
+        <Head icon="undo-2" tone="neutral" title="Workout removed" time={time}/>
+        <p style={SMALL}>Nothing from this message is saved.</p>
+      </div>
+    </Surface>
   );
+  const facts = [["Time", minText(log.minutes)], log.km ? ["Distance", log.km + " km"] : null].filter(Boolean);
+  return (
+    <Surface label="Workout added">
+      <div style={{padding:"16px 18px 14px",display:"flex",flexDirection:"column",gap:12}}>
+        <Head icon="check" tone="accent" title="Workout added" time={time}/>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Disc icon={log.icon} tone="neutral" size={40}/>
+          <span style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:2}}>
+            <span style={STRONG}>{log.name}</span>
+            <span style={CAPTION}>{log.when}</span>
+          </span>
+        </div>
+      </div>
+      <dl style={{margin:0,padding:"12px 18px 14px",borderTop:HAIRLINE,display:"grid",gridTemplateColumns:"repeat(" + facts.length + ",minmax(0,1fr))",gap:10}}>
+        {facts.map(([k, v]) => (
+          <div key={k} style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
+            <dt style={CAPTION}>{k}</dt>
+            <dd style={{margin:0,font:"600 18px/1.1 var(--font-numeric)",fontVariantNumeric:"tabular-nums",letterSpacing:"var(--tracking-tight)"}}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div style={{padding:"12px 18px 14px",borderTop:HAIRLINE,display:"flex",flexDirection:"column",gap:12}}>
+        <Fine icon="lock">Your plan stays as it is.</Fine>
+        {latest ? (
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <Button size="sm" variant="secondary" icon="undo-2" onClick={onUndo}>Undo</Button>
+            <span style={{flex:1}}></span>
+            <Button size="sm" variant="ghost" icon="pencil">Edit</Button>
+          </div>
+        ) : null}
+      </div>
+    </Surface>
+  );
+}
+/* Reads "played football yesterday for an hour" into a workout. The app gets the same fields
+   from the backend, checked against the sport's catalog metrics before anything is saved. */
+const DONE_WORDS = /\b(played|ran|swam|walked|cycled|biked|rode|hiked|jogged|did|went for|went to)\b/;
+const SPORT_WORDS = [
+  ["Football", "goal", /football|soccer/], ["Swim", "waves", /\bsw[ia]m|\bpool\b/], ["Bike ride", "bike", /\bbik(e|ed)\b|\bcycl|\brode\b/],
+  ["Run", "wind", /\bran\b|\bruns?\b|\bjog/], ["Walk", "footprints", /\bwalk|\bhik(e|ed)\b/], ["Yoga", "person-standing", /yoga|stretch/],
+  ["Tennis", "activity", /tennis/], ["Gym", "dumbbell", /\bgym\b|weights|dumbbell/],
+];
+function minutesIn(s){
+  if (/half an hour|half hour/.test(s)) return 30;
+  let m = s.match(/(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?)\b/);
+  if (m) return Math.round(+m[1] * 60);
+  if (/\ban hour\b|\bone hour\b/.test(s)) return 60;
+  m = s.match(/(\d+)\s*(?:min|mins|minutes?)\b/);
+  return m ? +m[1] : null;
+}
+function readWorkout(s, pending){
+  const sport = SPORT_WORDS.find(([, , re]) => re.test(s));
+  const km = s.match(/(\d+(?:\.\d+)?)\s*(?:km|kilomet\w*)\b/);
+  const base = pending || {name:"Workout", icon:"activity", when:"Today · Wed 7 Oct", minutes:null, km:null};
+  return {...base,
+    ...(sport ? {name:sport[0], icon:sport[1]} : {}),
+    when:/yesterday/.test(s) ? "Yesterday · Tue 6 Oct" : base.when,
+    minutes:minutesIn(s) || base.minutes,
+    km:km ? km[1] : base.km};
 }
 
 /* ---------- Data ---------- */
 
-const INTRO = "Tell us what to change. Your plan updates straight away, and you can always undo.";
+const INTRO = "Tell us what to change, or a workout you did. Your plan updates straight away, and you can always undo.";
 const ASK = "Can we keep everything to mornings this week, and make Friday shorter?";
 const TODAY = {icon:"footprints",label:"Today · Walk-run intervals"};
 /* Week 1 (home.jsx): Mon 5 brisk walk 7:00 · 20 min, Wed 7 walk-run 7:00 · 20 min,
@@ -457,9 +535,10 @@ const MOVE_TO = {thursday:["Thu","8 Oct"],tomorrow:["Thu","8 Oct"],saturday:["Sa
 const INTERVALS = {10:"Three runs instead of six.",5:"One run, with walks either side."};
 const LENGTHS = [5, 10, 20]; /* session_minutes options */
 const HEALTH = "Sorry to hear that. Plans can't take pain or health conditions into account yet. If it keeps hurting, check with a doctor or physio. Resting is always okay.";
-const OTHER_SPORT = name => name + " isn't one of the sports we plan. Running, gym, fitness and football are.";
+/* Sports come from the database catalog; one outside it gets a plain no and a nearby option. */
+const OTHER_SPORT = name => name + " isn't in our list of sports yet, so we can't plan it.";
 
-function coach(text, plan, attempt){
+function coach(text, plan, attempt, pending){
   const s = text.toLowerCase();
   const has = re => re.test(s);
   const n = plan.next, day = n ? LONG[n.day] : null;
@@ -469,7 +548,13 @@ function coach(text, plan, attempt){
   if (has(/\bfail|error/) && !attempt) return {problem:true};
   if (has(/knee|hurt|pain|injur|sick|\bill\b|ache|sore|doctor|physio/)) return say(HEALTH, ["Pause this week","Keep my plan"]);
   if (has(/keep my plan|keep running|never ?mind|no thanks|leave it/)) return say("Okay. Nothing changes.");
-  const other = s.match(/climbing|basketball|volleyball|tennis|yoga|boxing/);
+  /* A workout done outside the plan. How long is the one thing asked; then it's saved. */
+  if (pending && minutesIn(s)) return {log:readWorkout(s, pending)};
+  if (has(DONE_WORDS)) {
+    const log = readWorkout(s);
+    return log.minutes ? {log} : say("Nice. How long was it, roughly?", ["15 min","30 min","45 min","1 hour"], {pending:log, foot:"Nothing saved yet"});
+  }
+  const other = s.match(/kitesurf\w*|skydiv\w*|surfing|fencing|polo/);
   if (other) return say(OTHER_SPORT(other[0][0].toUpperCase() + other[0].slice(1)), ["Switch to gym","Keep running"]);
   if (has(/monday|wednesday|today|yesterday/)) return say("Monday and Wednesday are done, so they stay as you did them." + (n ? " Want to change " + day + "?" : ""), n ? ["Make " + day + " shorter","Move " + day] : null);
   if (has(/gym|(switch|back|go) (to )?running/)) {
@@ -530,13 +615,14 @@ function coach(text, plan, attempt){
   return say("Tell us a little more: which day, and what should change?", ["Make " + day + " shorter","Move " + day + " to the morning"]);
 }
 
-/* 8 — First open, from the Home header or "Something else". Clickable: tap an example
-   or type, send, then Undo. */
+/* 8 — First open, from the chat button. Clickable: tap an example or
+   type, send, then Undo. A sentence about a workout you did adds it instead. */
 function Start(){
   const [plan, setPlan] = React.useState(LIVE_PLAN);
   const [msgs, setMsgs] = React.useState([]);
   const [text, setText] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [pending, setPending] = React.useState(null); // a workout waiting for how long
   const input = React.useRef(null), timer = React.useRef(null), ids = React.useRef(1);
   React.useEffect(() => () => clearTimeout(timer.current), []);
   /* The box is locked while a change runs; hand focus back when it's done. */
@@ -551,11 +637,13 @@ function Start(){
     typing.current = document.activeElement === input.current;
     setText(""); setBusy(true); push({k:"working"});
     timer.current = setTimeout(() => {
-      const r = coach(t, plan, attempt);
+      const r = coach(t, plan, attempt, pending);
       setMsgs(list => list.filter(m => m.k !== "working"));
       if (r.problem) push({k:"problem", text:t});
       else if (r.card) { push({k:"change", card:r.card, before:plan}); setPlan(r.next); }
-      else push({k:"reply", text:r.reply, options:r.options});
+      else if (r.log) push({k:"log", log:r.log});
+      else push({k:"reply", text:r.reply, options:r.options, foot:r.foot});
+      if (!r.problem) setPending(r.pending || null);
       setBusy(false);
     }, 1200);
   };
@@ -564,17 +652,21 @@ function Start(){
   const undo = m => { setPlan(m.before); setMsgs(list => list.map(x => x.id === m.id ? {...x, undone:true} : x)); };
   const pick = t => { if (!busy) send(t); };
   const last = [...msgs].reverse().find(m => m.k === "change");
+  const lastLog = [...msgs].reverse().find(m => m.k === "log" && !m.removed);
 
   const item = m => {
     if (m.k === "me") return <Bubble me>{m.text}</Bubble>;
     if (m.k === "working") return <Working/>;
+    if (m.k === "log") return <LogCard log={m.log} removed={m.removed} latest={m === lastLog} onUndo={() => setMsgs(list => list.map(x => x.id === m.id ? {...x, removed:true} : x))}/>;
     if (m.k === "problem") return (
       <Problem icon="circle-alert" tone="danger" title="Couldn't update your plan" actions={<>
         <Button size="sm" variant="secondary" icon="refresh-cw" onClick={() => retry(m)}>Try again</Button>
         <Button size="sm" variant="ghost" icon="pencil" onClick={() => edit(m)}>Edit message</Button>
       </>}>Something went wrong on our side. <b style={{fontWeight:600,color:"var(--text-primary)"}}>Your plan hasn't changed.</b></Problem>
     );
-    if (m.k === "reply") return <Reply options={m.options} onPick={pick}>{m.text}</Reply>;
+    if (m.k === "reply") return m.foot
+      ? <Reply options={m.options} onPick={pick} foot={m.foot} footIcon="circle-dashed">{m.text}</Reply>
+      : <Reply options={m.options} onPick={pick}>{m.text}</Reply>;
     return m.undone
       ? <ChangeCard undone summary="Your plan is back to how it was before this change."/>
       : <ChangeCard {...m.card} latest={m === last} onUndo={() => undo(m)}/>;
@@ -732,7 +824,7 @@ const NeedsDetail = () => (
   </>
 );
 
-/* 8.10 — Done days and sports we don't plan can't change. */
+/* 8.10 — Done days and sports outside the catalog can't change. */
 const CantChange = () => (
   <>
     <ChatHeader/>
@@ -740,8 +832,8 @@ const CantChange = () => (
       <Bubble>{INTRO}</Bubble>
       <Bubble me>Can Monday be a run instead?</Bubble>
       <Reply options={["Today","Friday"]}>Monday is done, so it stays as you did it. Want to change an upcoming day?</Reply>
-      <Bubble me>Could I try climbing?</Bubble>
-      <Reply options={["Switch to gym","Keep running"]}>{OTHER_SPORT("Climbing")}</Reply>
+      <Bubble me>Could I try kitesurfing?</Bubble>
+      <Reply options={["Switch to gym","Keep running"]}>{OTHER_SPORT("Kitesurfing")}</Reply>
     </Thread>
     <Composer/>
   </>
@@ -804,35 +896,38 @@ const Offline = () => (
   </>
 );
 
-/* 8.15 — Guest demo: the visitor's own seeded plan, a few AI changes. Matches Home 5.15. */
-const Guest = () => (
+/* 8.15 — Move it, from a missed session (Home 5.5), Saturday morning. Friday rides along.
+   Free slots inside the preferred window come first, as quick replies; skipping is the last
+   and quietest answer, so moving reads as the normal thing to do. Nothing changes until
+   one is picked. */
+const MoveMissed = () => (
   <>
-    <ChatHeader sub="Guest demo"/>
+    <ChatHeader/>
     <Thread>
-      <Bubble>This is your own demo plan, so try anything. Changes here don't affect anyone else.</Bubble>
-      <Bubble me>Make Friday shorter.</Bubble>
-      <ChangeCard summary="Friday is 10 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"20 min",to:"10 min"}],note:"Three runs instead of six."}]}/>
+      <Bubble>Friday's walk-run didn't happen. Want to fit it in another time this week?</Bubble>
+      <Options items={["Today at 10:00","Sunday at 7:00","Another day"]}/>
+      <QuietOption note="Nothing to make up.">Skip it this time</QuietOption>
     </Thread>
-    <Composer top={<Fine icon="info" align="center">Guest demo · 2 of 3 changes left</Fine>}/>
+    <Composer about={{icon:"footprints",label:"Fri 9 · Walk-run intervals"}}/>
   </>
 );
 
-/* 8.16 — Guest demo limit reached. */
-const GuestLimit = () => (
+/* 8.16 — A workout done outside the plan, added in a sentence on Thursday evening (Ana's
+   rest day). Saved straight away and shown field by field; the plan stays as it is. */
+const WorkoutAdded = () => (
   <>
-    <ChatHeader sub="Guest demo"/>
+    <ChatHeader/>
     <Thread anchor="end">
-      <Bubble me>Make Friday shorter.</Bubble>
-      <ChangeCard latest={false} time="9:20" kept={null} summary="Friday is 10 minutes now." rows={[{...FRIDAY,diffs:[{icon:"timer",what:"Length",from:"20 min",to:"10 min"}]}]}/>
-      <Bubble me>And move it to the morning.</Bubble>
-      <ChangeCard summary="Friday is a morning session now." rows={[{...FRIDAY,diffs:[{icon:"clock",what:"Time",from:"18:00",to:"7:00"}]}]}/>
+      <Bubble>{INTRO}</Bubble>
+      <Bubble me>Played football with friends tonight, about an hour</Bubble>
+      <LogCard log={{name:"Football",icon:"goal",when:"Today · Thu 8 Oct",minutes:60}}/>
     </Thread>
-    <DemoLimit/>
+    <Composer/>
   </>
 );
 
 window.CHAT_SCREENS = [
-  {id:"chat",label:"8 · Chat: start",C:Start,note:"Clickable: tap an example or type, then send. Try “mornings”, “shorter”, “gym”, “climbing”, “my knee hurts” or “fail”, and Undo."},
+  {id:"chat",label:"8 · Chat: start",C:Start,note:"Clickable: tap an example or type, then send. Try “mornings”, “shorter”, “gym”, “kitesurfing”, “my knee hurts”, “I ran 3 km yesterday” or “fail”, and Undo."},
   {id:"chat-activity",label:"8.1 · Chat: from an activity",C:FromActivity,note:"From Adjust (6) or “Ask in chat” on Not today (5.2). The session rides along; quick replies send at once."},
   {id:"chat-updating",label:"8.2 · Chat: updating",C:Updating,note:"One change at a time. The plan in use stays active until the new one passes validation."},
   {id:"chat-updated",label:"8.3 · Chat: plan updated",C:Updated,note:"Applied at once, no confirm step. Old values struck through, new ones bold. See week opens Home 5.4."},
@@ -842,12 +937,12 @@ window.CHAT_SCREENS = [
   {id:"chat-partly",label:"8.7 · Chat: partly possible",C:Partly,note:"The day column shows where a session is now. What couldn't change is listed with a reason, never dropped silently."},
   {id:"chat-nothing",label:"8.8 · Chat: nothing to change",C:NothingToChange,note:"Earlier changes fold by day. A request that changes nothing says so."},
   {id:"chat-detail",label:"8.9 · Chat: needs a detail",C:NeedsDetail,note:"Vague asks get one question with quick answers. The plan stays as it is until one is picked."},
-  {id:"chat-cant",label:"8.10 · Chat: can't change that",C:CantChange,note:"Done days are locked. Sports we don't plan get a plain no, with the four we do offered instead."},
+  {id:"chat-cant",label:"8.10 · Chat: can't change that",C:CantChange,note:"Done days are locked. A sport outside the catalog gets a plain no and a nearby option."},
   {id:"chat-health",label:"8.11 · Chat: health and pain",C:Health,note:"Illness-specific changes are deferred: no plan change and no advice beyond seeing a doctor."},
   {id:"chat-failed",label:"8.12 · Chat: didn't work",C:Failed,note:"Timeouts and invalid results leave the plan untouched. Try again resends the same message."},
   {id:"chat-stale",label:"8.13 · Chat: changed elsewhere",C:ChangedElsewhere,note:"A stale request never overwrites a newer plan. Try again runs on the latest version."},
   {id:"chat-offline",label:"8.14 · Chat: offline",C:Offline,note:"The message stays in the thread with Retry. Nothing is lost or half-applied."},
-  {id:"chat-guest",label:"8.15 · Chat: guest demo",C:Guest,note:"Guests change only their own seeded demo plan. A counter shows what's left; Undo doesn't count."},
-  {id:"chat-guest-limit",label:"8.16 · Chat: demo limit reached",C:GuestLimit,note:"At the limit the message box gives way to a clear next step."},
+  {id:"chat-move",label:"8.15 · Chat: move a missed session",C:MoveMissed,note:"From Move it on Home 5.5. Free slots first; skipping is offered last, as a quiet link, never as the first choice."},
+  {id:"chat-workout",label:"8.16 · Chat: a workout you did",C:WorkoutAdded,note:"There's no logging form: a workout outside the plan is added in a sentence. It never changes the plan or counts toward 2 of 3."},
 ];
 })();

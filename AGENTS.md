@@ -13,7 +13,8 @@ below before changing a feature.
 - Validate requests and AI output; enforce authenticated user ownership.
 - Validated chat revisions replace the active plan immediately. Preserve prior
   versions and completed activities.
-- Guest entry creates an isolated anonymous identity with seeded demo data.
+- Guest entry (web only; mobile has none) creates an isolated anonymous identity
+  with seeded demo data.
 - Branch from `develop`; target feature PRs to `develop` and release PRs to `main`.
   Include acceptance criteria, verification evidence, and one teammate approval.
 - Keep secrets out of clients and Git. Keep mobile compatible with API changes.
@@ -35,6 +36,7 @@ below before changing a feature.
 - [Local runtime status](docs/deployment.md)
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)
+- [Mobile review decisions, 3 October](docs/mobile-review-2026-10-03.md) — newer where they differ
 - [Design reference: screens, tokens, preview](design/README.md) — read before building UI
 
 An Expo starter and wearable contracts/extraction packages exist. Backend, dashboard and CI are planned;

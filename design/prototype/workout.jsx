@@ -1,21 +1,106 @@
-/* In-workout tracking — screens 6.1–6.9 (see README › In-workout tracking).
-   Every plan step is tracked one of three ways:
-     reps      sets × reps, optional weight      Goblet squat 3 × 10 · 8 kg
-     time      a duration, optionally in rounds  Knee plank 3 × 20 s, Brisk walk 5 min
-     distance  time + distance, optional climb   Walk-run 20 min · 2.05 km, Swim 12 × 25 m
-   The plan contract only has free-text descriptions (or a gym series of them); these
-   tracking fields are a proposal that needs a shape in packages/contracts (README).
+/* Workouts — screens 6.1–6.10 (see README › Workouts and logging).
+   3 October review (docs/mobile-review-2026-10-03.md): only gym sessions are tracked live,
+   set by set. Every other sport is done the person's own way and logged afterwards, with one
+   form for all of them: its fields are the sport's metrics from the database catalog
+   (codex/gemini-plan-contract › Sport catalog), so a new sport needs a catalog row, not a
+   screen. A .fit or .gpx file from a watch app can fill the form instead. No GPS, maps,
+   calories or exercise videos.
+   Gym steps are tracked one of two ways:
+     reps   sets × reps from the plan; weight typed by the person, pre-filled from last time
+     time   a hold in rounds                    Knee plank 3 × 20 s, Brisk walk 5 min
+   The plan gives sets and reps; it never sets a weight (the contract's gym exercises have
+   sets and repetitions only).
    Loaded before screens.jsx. The layout helpers used here (TopBar, Content, BottomBar,
    Col, Row, H1, Kicker, Body, Section) and the DS components that screens.jsx
    destructures resolve at render time. */
-const { ExerciseMedia } = window.DS;
 
 const TABULAR = {fontFamily:"var(--font-numeric)",fontVariantNumeric:"tabular-nums",letterSpacing:"var(--tracking-tight)"};
 const KIND_ICON = {reps:"dumbbell",time:"timer",distance:"route"};
 const H2 = ({children,style}) => <h2 style={{font:"700 var(--text-xl)/var(--leading-tight) var(--font-display)",letterSpacing:"var(--tracking-display)",margin:0,textWrap:"balance",...style}}>{children}</h2>;
 const Caption = ({children,style}) => <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)",textWrap:"pretty",...style}}>{children}</span>;
 
-/* ---------- Tracking components (candidates for the design system) ---------- */
+/* ---------- Log afterwards: one form for every sport but the gym ---------- */
+
+/* A few catalog rows in the contract's shape. Each non-gym sport lists up to five metrics:
+   key, description (the field label), required, value_schema and unit. The metric that
+   represents the session is stored in seconds and typed in minutes. The real list lives
+   in the database; these are samples for the frames. */
+const DURATION = (label = "Time") => ({key:"duration",description:label,required:true,unit:"min",represents_session_duration:true,value_schema:{type:"integer",minimum:1}});
+const CATALOG = {
+  running:{name:"Running",metrics:[DURATION(),{key:"distance",description:"Distance",required:false,unit:"km",value_schema:{type:"number",minimum:0}}]},
+  swimming:{name:"Swimming",metrics:[DURATION("Time in the water"),{key:"distance",description:"Distance",required:false,unit:"m",value_schema:{type:"integer",minimum:0}}]},
+  football:{name:"Football",metrics:[DURATION()]},
+};
+
+/* One metric as a field. Numbers get the keypad (decimal when the schema allows fractions);
+   a boolean is yes/no and a string enum is chips, so any catalog row can be drawn. */
+function MetricField({m, value}){
+  const s = m.value_schema, label = m.description + (m.required ? "" : " (optional)");
+  if (s.type === "boolean") return <Col gap={8}><span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>{label}</span><Segmented label={label} value={value} onChange={()=>{}} options={[{value:true,label:"Yes"},{value:false,label:"No"}]}/></Col>;
+  if (s.type === "string" && s.enum) return <Col gap={8}><span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>{label}</span><Row gap={8} style={{flexWrap:"wrap"}}>{s.enum.map(v => <Tag key={v} selected={value === v}>{v}</Tag>)}</Row></Col>;
+  return <Input label={label} defaultValue={value} placeholder={m.required ? undefined : "–"} suffix={m.unit} inputMode={s.type === "integer" ? "numeric" : "decimal"}/>;
+}
+
+/* Import a workout file instead of typing (docs/features/activity-file-import.md on
+   develop): the system file picker, one .fit or .gpx file, parsed on the phone. The file's
+   numbers fill the form; the person still saves. The same row on every form, swims too.
+   Shared on window. */
+function FileImport({title = "Did it with a watch?", detail = "Import its .fit or .gpx file."}){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 10px 10px 12px",borderRadius:"var(--radius-md)",border:"1px solid var(--border-subtle)"}}>
+      <span style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--info-soft)",color:"var(--info)"}}><Icon name="file-up" size={18}/></span>
+      <Col gap={2} style={{flex:1,minWidth:0}}>
+        <span style={{font:"600 15px/1.3 var(--font-body)"}}>{title}</span>
+        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>{detail}</span>
+      </Col>
+      <Button variant="secondary" size="sm" style={{height:44}}>Choose file</Button>
+    </div>
+  );
+}
+function FileImported({name}){
+  return (
+    <div role="status" style={{display:"flex",alignItems:"center",gap:12,padding:"10px 10px 10px 12px",borderRadius:"var(--radius-md)",background:"var(--success-soft)"}}>
+      <span style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface-card)",color:"var(--success)"}}><Icon name="check" size={18} strokeWidth={2.25}/></span>
+      <Col gap={2} style={{flex:1,minWidth:0}}>
+        <span style={{font:"600 15px/1.3 var(--font-body)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>Read on your phone</span>
+      </Col>
+      <Button variant="ghost" size="sm" style={{height:44}}>Remove</Button>
+    </div>
+  );
+}
+
+/* The form: the file row where a map used to be, then one field per metric. The session
+   length is pre-filled from the plan, so a session done as planned is one tap; nothing
+   else is made up. Continue goes to Completion & feedback (7). */
+function LogIt({sport, kicker, values = {}, file, hint}){
+  const s = CATALOG[sport];
+  const needed = s.metrics.filter(m => m.required).map(m => m.description.toLowerCase());
+  return (
+    <>
+      <TopBar left={<IconButton icon="arrow-left" label="Back"/>}/>
+      <Content gap={20}>
+        <Col gap={6}><Kicker>{kicker}</Kicker><H1>How did it go?</H1></Col>
+        {file ? <FileImported name={file}/> : <FileImport/>}
+        <div role="group" aria-label={s.name} style={{display:"grid",gridTemplateColumns:s.metrics.length > 1 ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)",gap:12}}>
+          {s.metrics.map(m => <MetricField key={m.key} m={m} value={values[m.key]}/>)}
+        </div>
+        <Caption>{file ? "Filled from your file. Change anything that looks off." : hint || "Only the " + needed.join(" and ") + " is needed. A rough number is fine."}</Caption>
+      </Content>
+      <BottomBar><Button size="lg" fullWidth iconRight="arrow-right">Continue</Button></BottomBar>
+    </>
+  );
+}
+/* 6.1 — Ana's walk-run, typed: 20 min from the plan, distance left empty. */
+const LogWalkRun = () => <LogIt sport="running" kicker="Wednesday · walk-run intervals" values={{duration:20}}/>;
+/* 6.2 — The same form filled from a watch file. */
+const LogFromFile = () => <LogIt sport="running" kicker="Wednesday · walk-run intervals" file="Morning_Run.fit" values={{duration:21,distance:"2.14"}}/>;
+/* 6.9 — A swim: the same form with swimming's metrics. */
+const LogSwim = () => <LogIt sport="swimming" kicker="Saturday · easy lengths · 20 min" values={{duration:20}} hint="Only the time is needed. Rests at the wall count too."/>;
+/* 6.10 — Football: one metric, one field. */
+const LogFootball = () => <LogIt sport="football" kicker="Thursday · football with friends · 45 min" values={{duration:45}}/>;
+
+/* ---------- Gym: tracked live, set by set ---------- */
 
 /* Session clock in the top bar. */
 function Elapsed({time}){
@@ -82,8 +167,9 @@ function SetLine({n,kg,reps,state}){
   );
 }
 
-/* The set being done: planned values pre-filled, so one tap on the bottom button logs it as planned. */
-function CurrentSet({n,kg,reps,kgStep}){
+/* The set being done: reps from the plan, weight from the person's last time (or the set
+   before), so one tap on the bottom button logs it. With no history the weight starts empty. */
+function CurrentSet({n,kg,reps,kgStep,last}){
   return (
     <div style={{background:"var(--accent-soft)",borderRadius:"var(--radius-md)",padding:12,display:"flex",flexDirection:"column",gap:12}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -95,15 +181,16 @@ function CurrentSet({n,kg,reps,kgStep}){
         {kg!=null?<NumberStepper label="Weight" value={kg} unit="kg" step={kgStep}/>:null}
         <NumberStepper label="Reps" value={reps} unit="reps"/>
       </div>
+      {last?<span style={{display:"flex",alignItems:"center",gap:6,font:"var(--type-caption)",color:"var(--text-secondary)",fontVariantNumeric:"tabular-nums"}}><Icon name="history" size={14}/>{last}</span>:null}
     </div>
   );
 }
 
-function SetList({sets,current,kgStep=2}){
+function SetList({sets,current,kgStep=2,last}){
   return (
     <div style={{background:"var(--surface-card)",border:"1px solid var(--border-subtle)",borderRadius:"var(--radius-card)",boxShadow:"var(--shadow-card)",padding:6}}>
       {sets.map((s,i)=>i===current
-        ?<CurrentSet key={i} n={i+1} kg={s.kg} reps={s.reps} kgStep={kgStep}/>
+        ?<CurrentSet key={i} n={i+1} kg={s.kg} reps={s.reps} kgStep={kgStep} last={last}/>
         :<SetLine key={i} n={i+1} kg={s.kg} reps={s.reps} state={i<current?"done":"next"}/>)}
       <button type="button" style={{display:"flex",alignItems:"center",gap:8,height:44,width:"100%",padding:"0 12px",border:0,borderTop:"1px solid var(--border-subtle)",background:"transparent",color:"var(--accent-text)",font:"var(--type-label)",cursor:"pointer"}}>
         <Icon name="plus" size={16} strokeWidth={2}/>Add a set
@@ -116,8 +203,8 @@ function SetList({sets,current,kgStep=2}){
 function Sheet({label,children}){
   return (
     <>
-      <div aria-hidden="true" style={{position:"absolute",inset:0,background:"var(--overlay)"}}></div>
-      <section role="dialog" aria-modal="true" aria-label={label} style={{position:"absolute",left:0,right:0,bottom:0,background:"var(--surface-raised)",borderRadius:"var(--radius-sheet) var(--radius-sheet) 0 0",boxShadow:"var(--shadow-sheet)",padding:"10px var(--gutter-screen) 34px",display:"flex",flexDirection:"column",gap:16}}>
+      <div aria-hidden="true" style={{position:"absolute",inset:0,background:"var(--overlay)",zIndex:5}}></div>
+      <section role="dialog" aria-modal="true" aria-label={label} style={{position:"absolute",left:0,right:0,bottom:0,zIndex:6,background:"var(--surface-raised)",borderRadius:"var(--radius-sheet) var(--radius-sheet) 0 0",boxShadow:"var(--shadow-sheet)",padding:"10px var(--gutter-screen) 34px",display:"flex",flexDirection:"column",gap:16}}>
         <span aria-hidden="true" style={{alignSelf:"center",width:36,height:5,borderRadius:99,background:"var(--border-strong)"}}></span>
         {children}
       </section>
@@ -125,133 +212,27 @@ function Sheet({label,children}){
   );
 }
 
-function MetricTile({label,value,unit}){
-  return (
-    <div style={{background:"var(--surface-sunken)",borderRadius:"var(--radius-md)",padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
-      <span style={{font:"var(--type-caption)",color:"var(--text-tertiary)"}}>{label}</span>
-      <span style={{display:"flex",alignItems:"baseline",gap:4}}>
-        <span style={{font:"600 30px/1 var(--font-numeric)",...TABULAR}}>{value}</span>
-        {unit?<span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>{unit}</span>:null}
-      </span>
-    </div>
-  );
-}
-
-/* Rest and walking use the recovery colour; effort uses the accent. Text always names the segment too. */
-/* Ana's 20-minute walk-run: 4 min walk, 6 × (1 min run + 1 min walk), 4 min walk. */
-const RUN_PLAN=[{k:"walk",min:4},...Array.from({length:6},()=>[{k:"run",min:1},{k:"walk",min:1}]).flat(),{k:"walk",min:4}];
-function IntervalStrip({done,frac}){
-  return (
-    <Col gap={8}>
-      <div aria-hidden="true" style={{display:"flex",gap:3}}>
-        {RUN_PLAN.map((s,i)=>{
-          const c=s.k==="run"?"var(--accent)":"var(--recovery)";
-          const faint="color-mix(in oklch, "+c+" 26%, transparent)";
-          const bg=i<done?c:i===done?"linear-gradient(to right, "+c+" "+frac*100+"%, "+faint+" "+frac*100+"%)":faint;
-          return <span key={i} style={{flex:s.min,height:10,borderRadius:99,background:bg}}></span>;
-        })}
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",font:"var(--type-caption)",color:"var(--text-tertiary)"}}>
-        <span>Warm-up</span><span>6 runs, walks between</span><span>Cool-down</span>
-      </div>
-    </Col>
-  );
-}
-
-/* Route from GPS, drawn without map tiles. */
-function RouteCard(){
-  return (
-    <figure style={{margin:0,position:"relative",height:148,borderRadius:"var(--radius-card)",background:"var(--surface-sunken)",overflow:"hidden"}}>
-      <svg viewBox="0 0 350 148" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Your route, a loop that starts and ends in the same place">
-        <g fill="none" stroke="var(--border-subtle)" strokeWidth="9" strokeLinecap="round">
-          <path d="M-10 96 L360 68"></path>
-          <path d="M116 -10 L144 160"></path>
-          <path d="M266 -10 L240 160"></path>
-          <path d="M-10 28 C90 40 170 16 360 24"></path>
-        </g>
-        <path d="M60 114 C52 86 64 60 98 52 S158 34 188 40 C216 46 240 30 266 32 C296 34 314 56 308 82 C302 106 272 116 242 112 C210 108 192 126 160 128 C126 130 102 120 78 124 C66 126 62 122 60 114 Z" fill="none" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"></path>
-        <circle cx="60" cy="114" r="7" fill="var(--surface-card)" stroke="var(--accent)" strokeWidth="3"></circle>
-      </svg>
-      <figcaption style={{position:"absolute",left:12,top:12,height:26,padding:"0 10px",display:"flex",alignItems:"center",gap:6,borderRadius:99,background:"var(--surface-card)",font:"var(--type-caption)",color:"var(--text-secondary)"}}>
-        <Icon name="map-pin" size={12}/>Start and finish
-      </figcaption>
-    </figure>
-  );
-}
-
-/* ---------- Screens ---------- */
-
-/* 6.1 — Run, live: one continuous screen; the segment and its countdown read at arm's length. */
-function RunLive(){
-  return (
-    <>
-      <TopBar left={<IconButton icon="volume-2" label="Voice cues on"/>} title="Walk-run intervals" right={<IconButton icon="x" label="End session"/>}/>
-      <Content gap={24} pb={140}>
-        <section aria-label="Current interval" style={{background:"var(--accent-soft)",borderRadius:"var(--radius-xl)",padding:"26px 24px 28px",display:"flex",flexDirection:"column",gap:18}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between"}}>
-            <span style={{font:"700 var(--text-2xl)/1 var(--font-display)",letterSpacing:"var(--tracking-display)",color:"var(--accent-text)"}}>Run</span>
-            <span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>Interval 3 of 6</span>
-          </div>
-          <Col gap={8}>
-            <span role="timer" style={{font:"700 136px/0.9 var(--font-numeric)",...TABULAR,letterSpacing:"-0.045em"}}>0:35</span>
-            <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>left of this one-minute run</span>
-          </Col>
-          <div aria-hidden="true" style={{height:8,borderRadius:99,background:"var(--accent-soft-strong)"}}><div style={{width:"42%",height:"100%",borderRadius:99,background:"var(--accent)"}}></div></div>
-          <Row gap={10}><Icon name="footprints" size={18} color="var(--recovery)"/><span style={{font:"var(--type-body)"}}>Then walk for 1 min</span></Row>
-        </section>
-        <IntervalStrip done={5} frac={0.42}/>
-        <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:8}}>
-          <MetricTile label="Time" value="8:25"/>
-          <MetricTile label="Distance" value="0.86" unit="km"/>
-        </div>
-        <Caption style={{textAlign:"center"}}>Voice cues say when to switch, so your phone can stay in your pocket.</Caption>
-      </Content>
-      <BottomBar><Button size="lg" fullWidth icon="pause">Pause</Button></BottomBar>
-    </>
-  );
-}
-
-/* 6.2 — Run, after: numbers come from the timer and GPS; every one stays editable. */
-function RunReview(){
-  return (
-    <>
-      <TopBar left={<span></span>} right={<IconButton icon="x" label="Close"/>}/>
-      <Content gap={20}>
-        <Col gap={6}><Kicker>Wednesday · walk-run intervals</Kicker><H1>All six runs done.</H1></Col>
-        <RouteCard/>
-        <Col gap={14}>
-          <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:12}}>
-            <Input label="Time" defaultValue="20" suffix="min" inputMode="numeric"/>
-            <Input label="Distance" defaultValue="2.05" suffix="km" inputMode="decimal"/>
-          </div>
-          <Input label="Climb (optional)" defaultValue="12" suffix="m" inputMode="numeric" hint="Total uphill. Watches call it elevation gain."/>
-        </Col>
-        <Caption>Distance and climb come from your phone's GPS. Change anything that looks off.</Caption>
-      </Content>
-      <BottomBar><Button size="lg" fullWidth iconRight="arrow-right">Continue</Button></BottomBar>
-    </>
-  );
-}
-
+/* Goblet squat, 3 × 10 in the plan. Ana did it at 8 kg on Monday 12 October, so 8 kg is
+   pre-filled; set 1 is done, set 2 is current. */
 const SQUAT_SETS=[{kg:8,reps:10},{kg:8,reps:10},{kg:8,reps:10}];
+const SQUAT_LAST="Last time, Mon 12 Oct: 3 × 10 · 8 kg";
 function SetLogBody({current,time}){
   return (
     <>
       <SessionTop time={time}/>
       <Content gap={16} pb={140}>
-        <ExerciseMedia shape="rect" ratio="16 / 9" label="Goblet squat demo"/>
         <Col gap={6}>
-          <Kicker>Exercise 2 of 5 · 3 × 10 · 8 kg</Kicker>
+          <Kicker>Exercise 2 of 5 · 3 × 10</Kicker>
           <H2>Goblet squat</H2>
           <Body style={{font:"var(--type-body-sm)"}}>Hold the weight at your chest. Sit back as if into a chair, then stand.</Body>
         </Col>
-        <SetList sets={SQUAT_SETS} current={current}/>
+        <SetList sets={SQUAT_SETS} current={current} last={SQUAT_LAST}/>
       </Content>
     </>
   );
 }
 
-/* 6.3 — Strength: log a set. Change a number only if you did something different. */
+/* 6.3 — Gym: log a set. Change a number only if you did something different. */
 function SetLog(){
   return (
     <>
@@ -261,7 +242,7 @@ function SetLog(){
   );
 }
 
-/* 6.4 — Strength: rest starts by itself after a set. Recovery colour, gentle default. */
+/* 6.4 — Gym: rest starts by itself after a set. Recovery colour, gentle default. */
 function SetRest(){
   return (
     <>
@@ -293,7 +274,7 @@ function SetRest(){
   );
 }
 
-/* 6.5 — Time only: the demo loops inside the countdown ring. */
+/* 6.5 — Time only: the countdown fills the ring. */
 function Rounds({items}){
   return (
     <div style={{display:"grid",gridTemplateColumns:"repeat("+items.length+",minmax(0,1fr))",gap:8}}>
@@ -318,16 +299,18 @@ function TimedHold(){
           <H2>Knee plank</H2>
           <Body style={{font:"var(--type-body-sm)"}}>Knees down, body in one line from knees to head. Keep breathing.</Body>
         </Col>
-        <div style={{display:"flex",justifyContent:"center"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"12px 0"}}>
           <ProgressRing value={0.6} size={236} stroke={8}>
-            <ExerciseMedia size={204} alt="Knee plank demo"/>
+            <Col gap={8} style={{alignItems:"center"}}>
+              <span role="timer" style={{font:"700 64px/1 var(--font-numeric)",...TABULAR}}>0:12</span>
+              <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>left of 20 s</span>
+            </Col>
           </ProgressRing>
         </div>
-        <Col gap={6} style={{alignItems:"center"}}>
-          <span role="timer" style={{font:"700 64px/1 var(--font-numeric)",...TABULAR}}>0:12</span>
-          <span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>left of 20 s · round 2 of 3</span>
+        <Col gap={10}>
+          <span style={{font:"var(--type-label)",color:"var(--text-secondary)",textAlign:"center"}}>Round 2 of 3</span>
+          <Rounds items={[{state:"done",label:"20 s"},{state:"current",label:"Now"},{state:"next",label:"20 s"}]}/>
         </Col>
-        <Rounds items={[{state:"done",label:"20 s"},{state:"current",label:"Now"},{state:"next",label:"20 s"}]}/>
       </Content>
       <BottomBar>
         <Button variant="secondary" size="lg" icon="pause">Pause</Button>
@@ -406,13 +389,13 @@ function EndEarly(){
   );
 }
 
-/* 6.8 — Strength, after: what was done, as logged. No plan-versus-actual comparison. */
+/* 6.8 — Gym, after: what was done, as logged. No plan-versus-actual comparison. */
 const LOGGED=[
-  {name:"Brisk walk",detail:"5 min",done:true},
-  {name:"Goblet squat",detail:"3 × 10 · 8 kg",done:true},
-  {name:"Wall push-up",detail:"8, 6 reps",done:true},
-  {name:"Knee plank",detail:"20 s, 20 s, 14 s",done:true},
-  {name:"Easy stretch",detail:"Not today",done:false},
+  {name:"Brisk walk",detail:"5 min",kind:"time",done:true},
+  {name:"Goblet squat",detail:"3 × 10 · 8 kg",kind:"reps",done:true},
+  {name:"Wall push-up",detail:"8, 6 reps",kind:"reps",done:true},
+  {name:"Knee plank",detail:"20 s, 20 s, 14 s",kind:"time",done:true},
+  {name:"Easy stretch",detail:"Not today",kind:"time",done:false},
 ];
 function StrengthReview(){
   return (
@@ -426,8 +409,8 @@ function StrengthReview(){
         </Col>
         <Card padding="4px 16px">
           {LOGGED.map((l,i)=>(
-            <button key={i} type="button" style={{...ROW_BUTTON,gap:14,minHeight:68,padding:0,borderTop:i?"1px solid var(--border-subtle)":"none"}}>
-              <ExerciseMedia size={44} alt={l.name} style={{opacity:l.done?1:.5}}/>
+            <button key={i} type="button" style={{...ROW_BUTTON,gap:14,minHeight:64,padding:0,borderTop:i?"1px solid var(--border-subtle)":"none"}}>
+              <span aria-hidden="true" style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface-sunken)",color:l.done?"var(--text-secondary)":"var(--text-tertiary)"}}><Icon name={KIND_ICON[l.kind]} size={18}/></span>
               <Col gap={2} style={{flex:1,minWidth:0}}>
                 <span style={{font:"600 var(--text-base)/1.3 var(--font-body)",color:l.done?"var(--text-primary)":"var(--text-tertiary)"}}>{l.name}</span>
                 <span style={{font:"var(--type-body-sm)",color:l.done?"var(--text-secondary)":"var(--text-tertiary)",fontVariantNumeric:"tabular-nums"}}>{l.detail}</span>
@@ -442,67 +425,16 @@ function StrengthReview(){
   );
 }
 
-/* Import a workout file instead of typing (docs/features/activity-file-import.md on
-   develop): the system file picker, one FIT or GPX file, parsed on the phone, nothing
-   uploaded. The file's numbers fill the form; the user still saves. Shared on window. */
-function FileImport({title="Did it with a watch?",detail="Import its FIT or GPX file instead."}){
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 10px 10px 12px",borderRadius:"var(--radius-md)",border:"1px solid var(--border-subtle)"}}>
-      <span style={{width:36,height:36,flex:"none",borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--info-soft)",color:"var(--info)"}}><Icon name="file-up" size={18}/></span>
-      <Col gap={2} style={{flex:1,minWidth:0}}>
-        <span style={{font:"600 15px/1.3 var(--font-body)"}}>{title}</span>
-        <span style={{font:"var(--type-caption)",color:"var(--text-secondary)"}}>{detail}</span>
-      </Col>
-      <Button variant="secondary" size="sm" style={{height:44}}>Choose file</Button>
-    </div>
-  );
-}
-
-/* 6.9 — Swim, logged afterwards: the phone stays in the locker. Lengths × pool length = distance.
-   A FIT or GPX file from a watch app can fill the fields instead (activity-file-import on
-   develop: the system file picker, parsed on the phone, nothing uploaded). */
-const POOLS=[25,33,50];
-function SwimLog(){
-  const [lengths,setLengths]=React.useState(12);
-  const [pool,setPool]=React.useState(25);
-  return (
-    <>
-      <TopBar left={<IconButton icon="arrow-left" label="Back"/>} right={null}/>
-      <Content gap={20}>
-        <Col gap={6}>
-          <Kicker>Saturday · easy lengths · 20 min</Kicker>
-          <H1>How many lengths?</H1>
-          <Body>One length is one end of the pool to the other. A rough count is fine.</Body>
-        </Col>
-        <NumberStepper size="lg" label="Lengths" value={lengths} unit="lengths" onChange={setLengths}/>
-        <Col gap={10}>
-          <span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>Pool length</span>
-          <Row gap={8} style={{flexWrap:"wrap"}}>
-            {POOLS.map(p=><Tag key={p} selected={pool===p} onClick={()=>setPool(p)}>{p} m</Tag>)}
-            <Tag>Other</Tag>
-          </Row>
-        </Col>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderRadius:"var(--radius-md)",background:"var(--surface-sunken)"}}>
-          <span style={{font:"var(--type-label)",color:"var(--text-secondary)"}}>Distance</span>
-          <span aria-live="polite" style={{font:"600 24px/1 var(--font-numeric)",...TABULAR}}>{lengths*pool} m</span>
-        </div>
-        <Input label="Time in the water" defaultValue="20" suffix="min" inputMode="numeric" hint="Rests at the wall count too."/>
-        <FileImport title="Swam with a watch?"/>
-      </Content>
-      <BottomBar><Button size="lg" fullWidth iconRight="check">Save</Button></BottomBar>
-    </>
-  );
-}
-
 const WORKOUT_SCREENS=[
-  {id:"run-live",label:"6.1 · Run: live intervals",C:RunLive},
-  {id:"run-review",label:"6.2 · Run: check the numbers",C:RunReview},
-  {id:"set-log",label:"6.3 · Strength: log a set",C:SetLog,note:"6.3–6.8 show another sample plan: a 20-minute gym session with dumbbells. Ana's plan has no strength."},
-  {id:"set-rest",label:"6.4 · Strength: rest",C:SetRest},
-  {id:"timed",label:"6.5 · Strength: timed hold",C:TimedHold},
-  {id:"session-plan",label:"6.6 · Strength: session plan",C:SessionPlan},
-  {id:"end-early",label:"6.7 · Strength: end early",C:EndEarly},
-  {id:"strength-review",label:"6.8 · Strength: what you did",C:StrengthReview},
-  {id:"swim-log",label:"6.9 · Swim: log afterwards",C:SwimLog,note:"Another sample plan: a pool swim, logged after the session or imported from a watch file."},
+  {id:"log-it",label:"6.1 · Log it: walk-run",C:LogWalkRun,note:"Every sport but the gym is logged afterwards, on this one form. Its fields are the sport's metrics from the catalog; the length comes from the plan."},
+  {id:"log-it-file",label:"6.2 · Log it: from a .fit file",C:LogFromFile,note:"Choose file opens the system picker. A .fit or .gpx file fills the fields; the person still checks and continues."},
+  {id:"set-log",label:"6.3 · Gym: log a set",C:SetLog,note:"6.3–6.8 show another sample plan: a 20-minute gym session with dumbbells. Reps come from the plan; the weight from last time."},
+  {id:"set-rest",label:"6.4 · Gym: rest",C:SetRest},
+  {id:"timed",label:"6.5 · Gym: timed hold",C:TimedHold},
+  {id:"session-plan",label:"6.6 · Gym: session plan",C:SessionPlan},
+  {id:"end-early",label:"6.7 · Gym: end early",C:EndEarly},
+  {id:"strength-review",label:"6.8 · Gym: what you did",C:StrengthReview},
+  {id:"swim-log",label:"6.9 · Log it: swim",C:LogSwim,note:"The same form with swimming's metrics: time in the water and distance in metres."},
+  {id:"log-it-football",label:"6.10 · Log it: football",C:LogFootball,note:"A catalog sport with one metric gets one field. No screen of its own."},
 ];
-Object.assign(window,{FileImport});
+Object.assign(window,{FileImport,FileImported,MetricField,CATALOG});

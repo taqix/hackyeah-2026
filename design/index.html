@@ -32,21 +32,20 @@ nav.flows i{width:1px;margin:6px 4px;background:var(--border-subtle)}
 <script type="text/babel" src="prototype/home.jsx"></script>
 <script type="text/babel" src="prototype/chat.jsx"></script>
 <script type="text/babel" src="prototype/profile.jsx"></script>
-<script type="text/babel" src="prototype/plan.jsx"></script>
-<script type="text/babel" src="prototype/log.jsx"></script>
+<script type="text/babel" src="prototype/calendar.jsx"></script>
 <script type="text/babel" src="prototype/screens.jsx"></script>
 </head><body><div id="root"></div>
 <script type="text/babel">
-// ?flow=onboarding|home|workout|chat|profile|plan|log narrows the board; ?theme=light|dark shows one theme.
+// ?flow=onboarding|home|workout|chat|profile|calendar narrows the board; ?theme=light|dark shows
+// one theme.
 const FLOWS={
   all:null,
-  onboarding:["welcome","sign-in-error",...ONBOARDING_SCREENS.map(s=>s.id)],
+  onboarding:["welcome","sign-in","sign-up","sign-in-error",...ONBOARDING_SCREENS.map(s=>s.id)],
   home:HOME_SCREENS.map(s=>s.id),
   workout:["activity",...WORKOUT_SCREENS.map(s=>s.id),"feedback"],
   chat:CHAT_SCREENS.map(s=>s.id),
   profile:PROFILE_SCREENS.map(s=>s.id),
-  plan:PLAN_SCREENS.map(s=>s.id),
-  log:(window.LOG_SCREENS||[]).map(s=>s.id),
+  calendar:CALENDAR_SCREENS.map(s=>s.id),
 };
 // Standalone pages in design/. The nav opens them; the "all" board also shows each as a live preview.
 const PAGES=[
@@ -55,6 +54,7 @@ const PAGES=[
 const params=new URLSearchParams(location.search);
 const flow=FLOWS.hasOwnProperty(params.get("flow"))?params.get("flow"):"all";
 const themes=params.get("theme")?[params.get("theme")]:["light","dark"];
+const link=f=>"?flow="+f+(params.get("theme")?"&theme="+params.get("theme"):"");
 const list=FLOWS[flow]?FLOWS[flow].map(id=>SCREENS.find(s=>s.id===id)):SCREENS;
 const MIN_Z=0.1, MAX_Z=4;
 const KEY="design-view:"+flow+":"+themes.join(",");
@@ -166,7 +166,7 @@ function Page({p,theme}){
 function Board(){
   return <>
     <nav className="flows">{Object.keys(FLOWS).map(f=>(
-      <a key={f} href={"?flow="+f+(params.get("theme")?"&theme="+params.get("theme"):"")} aria-current={f===flow?"page":undefined}>{f}</a>
+      <a key={f} href={link(f)} aria-current={f===flow?"page":undefined}>{f}</a>
     ))}<i></i>{PAGES.map(p=><a key={p.id} href={p.src}>{p.id}</a>)}</nav>
     <Canvas>
       {themes.map(t=>(
@@ -192,7 +192,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<Board/>);
 <script>
 // Live reload: poll the design files and reload when any of them changes.
 (function(){
-  const files=["index.html","prototype/workout.jsx","prototype/onboarding.jsx","prototype/home.jsx","prototype/chat.jsx","prototype/profile.jsx","prototype/plan.jsx","prototype/log.jsx","prototype/screens.jsx","system/components.js","system/styles.css",
+  const files=["index.html","prototype/workout.jsx","prototype/onboarding.jsx","prototype/home.jsx","prototype/chat.jsx","prototype/profile.jsx","prototype/calendar.jsx","prototype/screens.jsx","system/components.js","system/styles.css",
     ...["fonts","colors","typography","spacing","effects","base"].map(f=>"system/tokens/"+f+".css")];
   const seen={};
   async function check(){

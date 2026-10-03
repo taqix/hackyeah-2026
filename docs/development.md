@@ -116,6 +116,19 @@ must be added or updated in `AGENTS.md`, with configuration under `docs/agents/`
 Both root instruction files state this override. Do not append project configuration
 to the forwarding file, and update an existing block rather than creating a duplicate.
 
+### React Native / Expo skill
+
+Before writing, reviewing, or debugging code in `apps/mobile` or another React
+Native / Expo app, read and follow the repository's
+[react-native-best-practices skill](../.agents/skills/react-native-best-practices/SKILL.md).
+Open the relevant sub-skills linked from its `references/` table for the task.
+
+The skill and its references are committed under `.agents/skills/` so every
+checkout has the same guidance without a global installation. Claude Code uses
+`.claude/skills/react-native-best-practices`, a relative symlink to that directory.
+Keep the bundled upstream files intact; update the skill and its references together.
+The source is [Software Mansion's skills repository](https://github.com/software-mansion-labs/skills/tree/main/skills/react-native-best-practices).
+
 ### Application code
 
 - Use the shared ESLint/Prettier rules; avoid app-specific style drift.

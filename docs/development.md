@@ -96,6 +96,10 @@ the mobile scaffold lands. Test that URL on the actual judging device.
   can be retried without duplicating demo plans.
 - Keep AI credentials and prompts on the backend. Validate AI output as untrusted
   input and apply changes in a database transaction.
+  Backend AI communication, configuration, and prompts live together under
+  `apps/backend/src/ai/`. Nest copies `ai/prompts/**/*.txt` into the compiled
+  output for production and watch mode; the test runner copies the same assets
+  beside its compiled AI modules. Docker includes them through the backend build.
 - Keep controllers thin; put use-case behavior in services and persistence behind
   an explicit boundary. Do not introduce abstraction layers without a concrete need.
 

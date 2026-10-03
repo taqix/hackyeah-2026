@@ -98,6 +98,8 @@ export function parsePlanInput(value: unknown): PlanInput {
     if (value.user_prompt === null) reject('Modification requires a user prompt.');
     nonBlank(value.user_prompt, 'User prompt');
   } else if (value.user_prompt !== null) reject('Creation must use a null user prompt.');
+  if (value.allow_multiple_sessions_per_day && value.mode !== 'modify')
+    reject('Multiple sessions per local date can only be authorized for modification.');
   interval(value.planning_window);
   for (const slot of value.available_slots) interval(slot);
   for (const message of value.conversation) nonBlank(message.content, 'Conversation message');
@@ -309,6 +311,7 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
       const local = localDateParts(addition.start, input.preferences.timezone);
       const otherLocal = localDateParts(other.start, input.preferences.timezone);
       if (
+        !(input.mode === 'modify' && input.allow_multiple_sessions_per_day === true) &&
         local.year === otherLocal.year &&
         local.month === otherLocal.month &&
         local.day === otherLocal.day

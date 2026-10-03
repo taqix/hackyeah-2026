@@ -12,10 +12,13 @@ export interface PlanPreferences {
   preferred_duration: number;
   /** Positive safe integer database sport IDs. */
   activity_interests: number[];
+  /** Non-empty unique list of non-blank location identifiers or descriptions; no fixed catalog. */
   available_locations: string[];
+  /** Unique non-blank equipment identifiers or descriptions; empty means none available. */
   available_equipment: string[];
   discovery_preference: 'selected_only' | 'occasional' | 'explore';
   preferred_times?: string[];
+  /** Unique non-blank activity constraints or descriptions; no fixed catalog. */
   avoidances?: string[];
   starting_obstacle?: string | null;
   excluded_activity_types?: number[];
@@ -89,6 +92,8 @@ export type ExistingWorkout = Workout & {
 
 export interface PlanInput {
   mode: 'create' | 'modify';
+  /** Backend-owned authorization for an explicit modify request to add sessions on one day. */
+  allow_multiple_sessions_per_day?: boolean;
   planning_window: TimeSlot;
   preferences: PlanPreferences;
   available_slots: TimeSlot[];

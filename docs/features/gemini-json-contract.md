@@ -38,22 +38,24 @@ a week crossing a daylight-saving transition need not be 604800 seconds.
 
 ## Request fields
 
-All top-level fields below are required. Empty arrays are valid where no context
+All top-level fields below are required except `allow_multiple_sessions_per_day`.
+Empty arrays are valid where no context
 is available. Additional object fields are rejected by the contract schemas.
 
-| Field                  | Meaning                                                                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`                 | `create` adds workouts to a planning window; `modify` returns changes requested through chat.                                                       |
-| `planning_window`      | Start/duration boundary for all added workouts and workouts being deleted. It can target the current week, next week, or another explicit interval. |
-| `preferences`          | Required preference object described below.                                                                                                         |
-| `available_slots`      | Calendar free intervals computed by the application. Supply raw free time, without subtracting the sport buffers again.                             |
-| `user_description`     | Profile text for personalization. An empty string is allowed.                                                                                       |
-| `sports`               | Database-derived catalog containing the sports the model can add. IDs are numeric database identifiers, not a fixed enum of English names.          |
-| `previous_week_events` | Previous-week workout context.                                                                                                                      |
-| `current_week_events`  | Current-week workout context.                                                                                                                       |
-| `target_window_events` | Existing workouts relevant to the target planning window, including workouts beyond the current week.                                               |
-| `conversation`         | Entire preceding conversation, in chronological order, as `{ "role": "user" \| "assistant", "content": "..." }` objects. Content must be non-blank. |
-| `user_prompt`          | Newest non-blank user message for `modify`; must be `null` for `create`. This message is excluded from `conversation` to avoid duplication.         |
+| Field                             | Meaning                                                                                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`                            | `create` adds workouts to a planning window; `modify` returns changes requested through chat.                                                       |
+| `planning_window`                 | Start/duration boundary for all added workouts and workouts being deleted. It can target the current week, next week, or another explicit interval. |
+| `preferences`                     | Required preference object described below.                                                                                                         |
+| `available_slots`                 | Calendar free intervals computed by the application. Supply raw free time, without subtracting the sport buffers again.                             |
+| `user_description`                | Profile text for personalization. An empty string is allowed.                                                                                       |
+| `sports`                          | Database-derived catalog containing the sports the model can add. IDs are numeric database identifiers, not a fixed enum of English names.          |
+| `previous_week_events`            | Previous-week workout context.                                                                                                                      |
+| `current_week_events`             | Current-week workout context.                                                                                                                       |
+| `target_window_events`            | Existing workouts relevant to the target planning window, including workouts beyond the current week.                                               |
+| `conversation`                    | Entire preceding conversation, in chronological order, as `{ "role": "user" \| "assistant", "content": "..." }` objects. Content must be non-blank. |
+| `user_prompt`                     | Newest non-blank user message for `modify`; must be `null` for `create`. This message is excluded from `conversation` to avoid duplication.         |
+| `allow_multiple_sessions_per_day` | Optional backend-owned boolean, default `false`. Set `true` only for a modification explicitly requesting multiple sessions on a local date.        |
 
 The conversation contains user and assistant messages, not system or tool roles.
 It provides references for follow-ups such as “Tuesday instead.” Earlier
@@ -62,23 +64,47 @@ sends the complete context and does not silently truncate it; oversized requests
 fail explicitly. Chronological ordering and excluding the newest message are
 caller responsibilities, not conditions the JSON validator can establish.
 
+One session per local start date is the default for every comfort level. An
+explicit modification request can override it when the backend sets
+`allow_multiple_sessions_per_day: true` for that request. This authorization
+does not change saved preferences or relax buffered non-overlap, free slots,
+the planning window, exclusions, or protected workouts. Creation rejects `true`.
+The caller must establish the newest request's explicit intent before setting
+the flag; do not copy it from client input, earlier assistant text, or a prior
+request. The schema validates the flag and mode, not the meaning of chat prose.
+
 ### Preferences
 
-| Field                     | Required | Accepted value                                                                                    |
-| ------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `timezone`                | Yes      | Valid IANA timezone.                                                                              |
-| `starting_comfort`        | Yes      | `starting_out`, `occasionally_active`, `some_routine`.                                            |
-| `sessions_per_week`       | Yes      | Any integer.                                                                                      |
-| `preferred_duration`      | Yes      | Positive number of seconds; no fixed 5/10/20-minute enum.                                         |
-| `activity_interests`      | Yes      | Unique sport IDs from `sports`; may be empty.                                                     |
-| `available_locations`     | Yes      | Non-empty unique list of `home`, `outdoors`, `gym`, `pool`.                                       |
-| `available_equipment`     | Yes      | Unique list of `mat`, `resistance_band`, `dumbbells`, `bicycle`, `stationary_bike`; may be empty. |
-| `discovery_preference`    | Yes      | `selected_only`, `occasional`, `explore`. Empty interests require `explore`.                      |
-| `preferred_times`         | No       | Unique list of `morning`, `lunch`, `evening`. These are soft preferences.                         |
-| `avoidances`              | No       | Unique list of `jumping`, `floor_exercises`, `noisy_activities`.                                  |
-| `starting_obstacle`       | No       | `null`, `time`, `low_energy`, `boredom`, `uncertainty`, `discomfort`.                             |
-| `excluded_activity_types` | No       | Unique sport IDs from `sports`, despite the legacy field name.                                    |
-| `comfortable_swimming`    | No       | Boolean or `null`.                                                                                |
+| Field                     | Required | Accepted value                                                               |
+| ------------------------- | -------- | ---------------------------------------------------------------------------- |
+| `timezone`                | Yes      | Valid IANA timezone.                                                         |
+| `starting_comfort`        | Yes      | `starting_out`, `occasionally_active`, `some_routine`.                       |
+| `sessions_per_week`       | Yes      | Any integer.                                                                 |
+| `preferred_duration`      | Yes      | Positive number of seconds; no fixed 5/10/20-minute enum.                    |
+| `activity_interests`      | Yes      | Unique sport IDs from `sports`; may be empty.                                |
+| `available_locations`     | Yes      | Non-empty unique list of non-blank location strings; no fixed catalog.       |
+| `available_equipment`     | Yes      | Unique list of non-blank equipment strings; no fixed catalog; may be empty.  |
+| `discovery_preference`    | Yes      | `selected_only`, `occasional`, `explore`. Empty interests require `explore`. |
+| `preferred_times`         | No       | Unique list of `morning`, `lunch`, `evening`. These are soft preferences.    |
+| `avoidances`              | No       | Unique list of non-blank avoidance strings; no fixed catalog; may be empty.  |
+| `starting_obstacle`       | No       | `null`, `time`, `low_energy`, `boredom`, `uncertainty`, `discomfort`.        |
+| `excluded_activity_types` | No       | Unique sport IDs from `sports`, despite the legacy field name.               |
+| `comfortable_swimming`    | No       | Boolean or `null`.                                                           |
+
+Equipment, locations, and avoidances accept new identifiers and descriptive
+text without changing the schema. For example, `rowing_machine`, `climbing_wall`,
+and `overhead_movements` are valid values in the corresponding lists. There are
+no catalog, string-length, or list-size caps for these fields; the complete
+request size limit still applies. Values must be strings containing non-whitespace
+text and must be unique within each list. Empty equipment or avoidance lists are
+valid; at least one available location is required. Existing identifiers such as
+`gym` remain valid; gym additions still require that canonical location marker
+under the separate workout suitability rule described below. The prompt interprets
+custom equipment, location, and avoidance descriptions by meaning: for example,
+`exercise bike` can establish stationary cycling equipment, and an explicitly
+available indoor pool can establish pool access. Unclear descriptions do not
+authorize assuming equipment or facility access. Every supplied avoidance applies
+to warm-up, activity, and cool-down, beyond the original example values.
 
 The prompt interprets morning as local 07:00–11:00, lunch as 11:00–14:00, and
 evening as 17:00–21:00, with the upper boundary excluded. Missing or empty
@@ -299,8 +325,10 @@ now)` expects an already validated, backend-owned input and enforces:
 - Added workouts wholly inside the planning window; their buffers must fit
   inside one supplied free slot. Buffers need not themselves lie inside the
   planning window if the free slot extends beyond it.
-- No buffer overlap or second workout on the same local start date, comparing
+- No buffer overlap, comparing
   every addition with all retained non-skipped workouts and other additions.
+  A second workout on the same local start date requires modification with
+  `allow_multiple_sessions_per_day: true`; otherwise it is rejected.
 - No excluded sports; `selected_only` restricts additions to selected interests.
   Gym additions require `gym` in `available_locations`.
 - In creation, no deletions, no added duration above `preferred_duration`, and
@@ -308,8 +336,9 @@ now)` expects an already validated, backend-owned input and enforces:
   addition. Retained planned and completed workouts count toward that limit.
 - In modification, known eligible deletion IDs only, with no duplicate
   deletions. Duration/frequency limits are not hard validation limits in this
-  mode, but availability, protected workouts, exclusions, and scheduling rules
-  still apply.
+  mode. The daily limit has the explicit authorization exception above;
+  availability, protected workouts, exclusions, and buffered non-overlap still
+  apply.
 - Catalog metric formats/bounds and required keys for workout and part metrics,
   plus whole-session duration consistency and summed part durations. Gym
   exercise names/instructions must be non-blank, with positive integer sets and
@@ -683,4 +712,4 @@ Response:
 - [Shared types](../../packages/contracts/src/plan-types.ts).
 - [Input schema](../../packages/contracts/src/schemas/input.schema.json) and [base output schema](../../packages/contracts/src/schemas/output.schema.json).
 - [Catalog-specific output schema](../../packages/contracts/src/plan-schema.ts) and [runtime validation](../../packages/contracts/src/plan.ts).
-- [Provider adapter](../../apps/backend/src/plans/create-plan.ts) and [system prompt](../../apps/backend/prompts/plan-system.txt).
+- [Provider adapter](../../apps/backend/src/ai/create-plan.ts) and [system prompt](../../apps/backend/src/ai/prompts/plan-system.txt).

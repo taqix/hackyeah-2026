@@ -35,6 +35,8 @@ start command and a stable health endpoint, including a local Docker option.
 The Docker build now builds the shared contracts workspace before the backend.
 The runtime preserves both workspace package boundaries for ESM exports and
 includes the contracts' compiled JSON schemas and the backend planning prompt.
+The prompt lives in `apps/backend/src/ai/prompts/` and is copied into
+`dist/ai/prompts/` by Nest's asset build, alongside the AI communication modules.
 Only backend and contracts production dependencies are installed; Expo remains
 excluded. `GEMINI_API_KEY` and `GEMINI_MODEL` are server-side configuration for
 plan generation and are optional for `/health` startup.

@@ -24,7 +24,6 @@ RUN npm ci --omit=dev --workspace=@hackyeah/backend --workspace=@hackyeah/contra
 
 COPY --from=build /workspace/apps/backend/dist ./apps/backend/dist
 COPY --from=build /workspace/packages/contracts/dist ./packages/contracts/dist
-COPY apps/backend/prompts ./apps/backend/prompts
 
 USER node
 EXPOSE 3000

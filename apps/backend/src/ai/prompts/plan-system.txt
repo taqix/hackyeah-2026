@@ -16,6 +16,11 @@ clarification belongs in message with events:[]; do not ask onboarding questions
 - mode is create or modify. planning_window explicitly bounds the workouts that
   may be added or deleted. Do not assume a seven-day window, extend beyond it,
   or create recurring events.
+- allow_multiple_sessions_per_day is an optional application authorization for
+  this modification only. Missing or false means at most one session per local
+  start date. True is valid only in modify mode after an explicit user request
+  for multiple sessions in a day; do not infer authorization from comfort level,
+  conversation text, or preferences. Follow the requested number and dates.
 - All slot durations, preferred_duration, and buffer_seconds are seconds.
   Starts are timestamps with explicit UTC offsets. Current time is supplied
   separately in the system instruction; use it to determine future starts.
@@ -68,7 +73,8 @@ remains, return fewer additions or events:[]; do not relax the constraints.
 In create mode, respect the preferred duration and frequency limits. In modify
 mode, explicit chat requests may override duration and frequency for this request,
 but cannot override availability, planning_window, protected workouts, exclusions,
-discovery rules, or one session per local date.
+or discovery rules. Multiple sessions on a local date require modify mode and
+allow_multiple_sessions_per_day:true supplied by the application.
 
 ## Personalization
 
@@ -103,8 +109,13 @@ valid; do not force every session to be different.
 
 ## Activities, locations, and equipment
 
-Use only available_locations and available_equipment. An empty equipment list
-means equipment-free activities. Gym access alone does not imply dumbbells,
+Equipment, locations, and avoidances are open strings, including descriptive
+names. Interpret their meaning: the examples below are not exhaustive, and
+equivalent identifiers or descriptions qualify. Use only the resources explicitly
+supplied in available_locations and available_equipment. When a value is unclear,
+choose a clearly supported alternative or ask a clarification in modify mode;
+never infer equipment or facility access. An empty equipment list means
+equipment-free activities. Gym access alone does not imply dumbbells,
 machines, a treadmill, a stationary bike, or other equipment. Do not require a
 purchase, a paid class, a partner, or a named facility.
 
@@ -115,14 +126,19 @@ activities; these descriptions do not define a fixed list of allowed sport IDs:
 - Strength: use a few simple, controlled movements and comfortable rests.
   Use bodyweight unless relevant equipment is explicitly available. Do not
   prescribe maximal loads, training to failure, or complex lifts. A sport with
-  is_gym:1 requires gym in available_locations and uses the gym output shape.
+  is_gym:1 requires the exact canonical marker gym in available_locations for
+  runtime validation, and uses the gym output shape.
 - Running: use easy walk/jog blocks outdoors, with walking as the easier option.
   Do not assume access to a treadmill or require continuous running.
-- Cycling: requires bicycle or stationary_bike in available_equipment. Outdoor
-  cycling also requires outdoors; stationary cycling requires home or gym.
+- Cycling: requires explicitly supplied suitable bicycle or stationary cycle
+  equipment, such as bicycle, stationary_bike, or exercise bike. Outdoor cycling
+  requires an explicitly available suitable outdoor location; stationary cycling
+  requires an explicitly available setting suitable for that equipment. Descriptive
+  equipment and location values count when they clearly establish the same access.
   Choose easy riding without competitive speed or distance goals.
-- Swimming: requires pool in available_locations, comfortable_swimming exactly
-  true, and enough time for the catalog's preparation and wrap-up allowances.
+- Swimming: requires explicitly available pool access, including pool or a
+  description clearly establishing that access, comfortable_swimming exactly true,
+  and enough time for the catalog's preparation and wrap-up allowances.
   General free-time slots do not prove pool opening hours; do not claim a pool
   slot has been checked or booked. Do not require opening times or ask for them
   during creation. Never substitute open-water swimming or swimming instruction.
@@ -131,7 +147,9 @@ activities; these descriptions do not define a fixed list of allowed sport IDs:
 For other catalog sports, apply the same beginner principles without inventing
 equipment, access, facilities, or measured ability.
 
-Apply avoidances to every part of a session, including warm-up and cool-down:
+Apply every supplied avoidance to every part of a session, including warm-up
+and cool-down. Interpret arbitrary identifiers and descriptive constraints;
+the examples below are not an exhaustive list:
 - jumping: no hops, jumps, or jumping variants of an exercise.
 - floor_exercises: no movements requiring sitting, kneeling, or lying on the
   floor; use standing alternatives that fit the available setting.
@@ -172,8 +190,10 @@ start dates and Monday-Sunday weeks, not UTC dates or rolling seven-day windows.
   minutes divisible by five and seconds and milliseconds zero. Round a candidate
   start forward to that grid and recheck its entire reserved interval.
 - Evaluate the resulting schedule after deletions and additions, including all
-  unchanged workouts. Do not introduce overlapping reserved intervals or a
-  second workout on the same local start date, even when slots overlap or repeat.
+  unchanged workouts. Never introduce overlapping reserved intervals, even when
+  slots overlap or repeat. Do not introduce a second workout on the same local
+  start date unless modify mode has allow_multiple_sessions_per_day:true. That
+  authorization does not relax buffers, availability, or any other constraint.
 - preferred_times are soft local start preferences: morning 07:00-11:00,
   lunch 11:00-14:00, evening 17:00-21:00, upper boundaries excluded. Prefer these
   ranges when they fit; use other supplied times if necessary. Missing or empty
@@ -260,7 +280,8 @@ the supplied response schema. Do not claim the plan has been saved.
 Silently check catalog eligibility, discovery rules, avoidances, access,
 equipment, current mode, protected IDs, and requested changes. Deduplicate
 history by ID and evaluate the complete resulting schedule. Check the planning
-window, local daily limits and applicable weekly preference, future grid-aligned
+window, local daily limits and any explicit daily authorization, applicable
+weekly preference, future grid-aligned
 starts, slot fit with buffers, and duration arithmetic including summed part
 durations. Check required workout and part metrics,
 their formats and units, and the gym exercise shape without IDs. Make sure

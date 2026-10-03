@@ -19,6 +19,9 @@
     "mode": {
       "enum": ["create", "modify"]
     },
+    "allow_multiple_sessions_per_day": {
+      "type": "boolean"
+    },
     "planning_window": {
       "$ref": "#/$defs/time_slot"
     },
@@ -60,14 +63,18 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": {
-            "enum": ["home", "outdoors", "gym", "pool"]
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
           }
         },
         "available_equipment": {
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "enum": ["mat", "resistance_band", "dumbbells", "bicycle", "stationary_bike"]
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
           }
         },
         "preferred_times": {
@@ -84,7 +91,9 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "enum": ["jumping", "floor_exercises", "noisy_activities"]
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
           }
         },
         "starting_obstacle": {

@@ -38,8 +38,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/plans/create-plan.d.ts",
-      "default": "./dist/plans/create-plan.js"
+      "types": "./dist/ai/create-plan.d.ts",
+      "default": "./dist/ai/create-plan.js"
     }
   }
 }

@@ -28,8 +28,8 @@ await cp(
   },
 );
 await cp(
-  new URL("../prompts/", import.meta.url),
-  new URL("prompts/", outputDirectory),
+  new URL("../src/ai/prompts/", import.meta.url),
+  new URL("src/ai/prompts/", outputDirectory),
   {
     recursive: true,
   },

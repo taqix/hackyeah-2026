@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { generatePlan, createPlan } from "../src/plans/create-plan.js";
+import { generatePlan, createPlan } from "../src/ai/create-plan.js";
 import {
   parsePlanInput,
   parsePlanOutput,
@@ -11,7 +11,7 @@ import {
   type PlanInput,
   type PlanOutput,
 } from "@hackyeah/contracts/plan";
-import { PLAN_GENERATION_CONFIG } from "../src/plans/plan-config.js";
+import { PLAN_GENERATION_CONFIG } from "../src/ai/plan-config.js";
 
 const fixture = <T>(name: string): T =>
   JSON.parse(

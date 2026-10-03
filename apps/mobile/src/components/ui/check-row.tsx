@@ -24,7 +24,7 @@ export function CheckRow({ label, checked, onPress, disabled = false, style }: C
       scaleTo={0.985}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
-      accessibilityState={{ checked, disabled }}
+      aria-checked={checked} aria-disabled={disabled}
       style={[
         { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 48, paddingVertical: 10 },
         disabled ? { opacity: 0.45 } : null,

@@ -32,7 +32,7 @@ function PlanStep({ n, step, detail, state, onPress }: { n: number; step: GymSte
       accessibilityRole="button"
       accessibilityLabel={`${step.name}, ${detail}, ${state === 'done' ? 'done' : current ? 'now' : 'to do'}`}
       accessibilityHint={current ? undefined : 'Does this exercise now'}
-      accessibilityState={{ selected: current }}
+      aria-selected={current}
       style={({ pressed }) => [
         styles.step,
         {

@@ -89,7 +89,7 @@ export function ExerciseRow({
           onPress={onToggle}
           accessibilityRole="checkbox"
           accessibilityLabel={name}
-          accessibilityState={{ checked: done }}
+          aria-checked={done}
           style={styles.toggle}>
           <Animated.View
             style={{

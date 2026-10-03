@@ -43,7 +43,7 @@ export function Spinner({ size = 20, color, accessibilityLabel = 'Loading', styl
       accessible={!!label}
       accessibilityRole={label ? 'progressbar' : undefined}
       accessibilityLabel={label}
-      accessibilityState={label ? { busy: true } : undefined}>
+      aria-busy={label ? true : undefined}>
       <Spin>
         <Icon name="loader-circle" size={size} color={color} strokeWidth={2} />
       </Spin>

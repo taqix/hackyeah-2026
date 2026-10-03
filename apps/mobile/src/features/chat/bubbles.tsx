@@ -41,7 +41,7 @@ export function QuickReplies({
           onPress={() => onPick(item)}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityState={{ disabled }}
+          aria-disabled={disabled}
           style={({ pressed }) => [
             styles.reply,
             {

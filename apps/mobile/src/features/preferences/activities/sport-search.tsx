@@ -33,7 +33,7 @@ function Hit({ sport, label, added, divider, onPress }: HitProps) {
       scaleTo={0.99}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
-      accessibilityState={{ disabled: !pickable, selected: added }}
+      aria-disabled={!pickable} aria-selected={added}
       style={({ pressed }) => [
         styles.hit,
         divider ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSubtle } : null,

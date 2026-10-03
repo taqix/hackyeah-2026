@@ -73,7 +73,7 @@ export function Radio({ label, description, checked = false, disabled = false, o
       scaleTo={0.985}
       accessibilityRole="radio"
       accessibilityLabel={description ? `${label}, ${description}` : label}
-      accessibilityState={{ checked, disabled }}
+      aria-checked={checked} aria-disabled={disabled}
       style={[styles.row, { alignItems: description ? 'flex-start' : 'center', opacity: disabled ? 0.45 : 1 }, style]}>
       <Indicator checked={checked} />
       <ChoiceText label={label} description={description} strong={false} />
@@ -91,7 +91,7 @@ export function RadioCard({ label, description, checked = false, disabled = fals
       scaleTo={0.985}
       accessibilityRole="radio"
       accessibilityLabel={description ? `${label}, ${description}` : label}
-      accessibilityState={{ checked, disabled }}
+      aria-checked={checked} aria-disabled={disabled}
       style={({ pressed }) => [
         styles.card,
         {

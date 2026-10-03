@@ -91,7 +91,7 @@ export function Composer({
               placeholderTextColor={busy ? colors.textSecondary : colors.textTertiary}
               selectionColor={colors.accent}
               accessibilityLabel="Message"
-              accessibilityState={{ disabled: busy }}
+              aria-disabled={busy}
               autoComplete="off"
               enterKeyHint={Platform.OS === 'web' ? 'send' : undefined}
               onFocus={() => setFocused(true)}

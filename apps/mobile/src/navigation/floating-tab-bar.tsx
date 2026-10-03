@@ -122,7 +122,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 <Pressable
                   accessibilityRole="tab"
                   accessibilityLabel={item.label}
-                  accessibilityState={{ selected: active }}
+                  aria-selected={active}
                   onPress={() => onTabPress(item.route)}
                   onLongPress={() => onTabLongPress(item.route)}
                   style={({ pressed }) => [

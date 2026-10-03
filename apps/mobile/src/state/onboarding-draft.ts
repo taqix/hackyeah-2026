@@ -16,7 +16,7 @@ import type {
   Preferences,
   StartingComfort,
 } from '@/api/types';
-import { anyTime, PREFERRED_WINDOW_RANGE, SAMPLE_PREFS } from '@/lib/preference-options';
+import { anyTime, PREFERRED_WINDOW_RANGE } from '@/lib/preference-options';
 
 export interface OnboardingDraft {
   starting_comfort: StartingComfort | null;
@@ -34,18 +34,23 @@ export interface OnboardingDraft {
 }
 
 /** The prototype opens every step with the sample answers (onboarding.jsx usePrefs). */
+/**
+ * A new person starts blank where the answer is personal (starting point, sports,
+ * places, good to know) and from the planner's usual values where a slider needs a
+ * position: three 20-minute sessions a week, any time of day.
+ */
 function defaults(): OnboardingDraft {
   return {
-    starting_comfort: SAMPLE_PREFS.starting_comfort,
-    sessions_per_week: SAMPLE_PREFS.sessions_per_week,
-    session_minutes: SAMPLE_PREFS.session_minutes,
-    preferred_window: SAMPLE_PREFS.preferred_window,
-    activity_interests: [...SAMPLE_PREFS.activity_interests],
-    discovery_preference: SAMPLE_PREFS.discovery_preference,
-    available_locations: [...SAMPLE_PREFS.available_locations],
-    available_equipment: [...SAMPLE_PREFS.available_equipment],
-    avoidances: [...SAMPLE_PREFS.avoidances],
-    starting_obstacles: [...SAMPLE_PREFS.starting_obstacles],
+    starting_comfort: null,
+    sessions_per_week: 3,
+    session_minutes: 20,
+    preferred_window: null,
+    activity_interests: [],
+    discovery_preference: 'occasional',
+    available_locations: [],
+    available_equipment: [],
+    avoidances: [],
+    starting_obstacles: [],
   };
 }
 

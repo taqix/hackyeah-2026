@@ -8,11 +8,14 @@
    The feedback answer and the summary go beyond the current docs: the plan contract takes
    only answers and free time slots (README › Profile › Not decided yet).
    Answers are edited with the onboarding questions themselves (9.4): same pieces, same
-   PREF_OPTIONS labels, edit chrome instead of steps. Ana's sessions follow home.jsx.
+   PREF_OPTIONS labels, edit chrome instead of steps. Answers live on the server, one JSON
+   per person, so a new phone keeps them. Ana's sessions follow home.jsx.
+   3 October review: profile and settings are separate. The gear opens Settings (9.6):
+   appearance, account, legal and sign out; Data and privacy (9.7) sits under it.
    Loaded before screens.jsx and wrapped in a function so its names stay local.
    Layout helpers (TopBar, Content, BottomBar, NavBar, Col, Row, H1, Kicker, Body, Section),
-   Sheet (workout.jsx) and the choice pieces and PREF_OPTIONS (onboarding.jsx) resolve at
-   render time. Registers window.PROFILE_SCREENS. */
+   Sheet (workout.jsx) and the choice pieces (TimeQuestions, Segmented from onboarding.jsx)
+   resolve at render time. Registers window.PROFILE_SCREENS. */
 (() => {
 const { Icon, Button, IconButton, Card, SuggestionCard } = window.DS;
 
@@ -20,9 +23,8 @@ const { Icon, Button, IconButton, Card, SuggestionCard } = window.DS;
 const ANA={
   timezone:"Europe/Warsaw", starting_comfort:"starting_out", sessions_per_week:3, session_minutes:20,
   activity_interests:["walking","running"], available_locations:["outdoors","home"],
-  available_equipment:[], preferred_times:["morning"], discovery_preference:"occasional",
-  avoidances:["jumping"], starting_obstacle:"time", comfortable_swimming:null,
-  excluded_activity_types:[],
+  available_equipment:[], preferred_window:[7,11], discovery_preference:"occasional",
+  avoidances:["jumping"], starting_obstacles:["time"], excluded_activity_types:[],
 };
 
 const CAPTION={font:"var(--type-caption)",color:"var(--text-tertiary)",textWrap:"pretty"};
@@ -112,16 +114,16 @@ function You({week=3,kicker="By our assistant · updated today",body="You'd choo
       <Content pb={104} gap={20}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
           <Col gap={4}><Kicker>Ana · week {week}</Kicker><H1>About you</H1></Col>
-          <IconButton icon="settings" label="Data and privacy" variant="secondary"/>
+          <IconButton icon="settings" label="Settings" variant="secondary"/>
         </div>
         <SuggestionCard tone="dawn" kicker={kicker} title="Mornings, on foot." body={body} actionLabel="See why" style={{flex:"none"}}/>
         <Col gap={0}>
           <Section>What shapes your plan</Section>
           <PrefRow icon="sprout" title="Starting point" value="Starting from scratch"/>
-          <PrefRow icon="calendar-clock" title="Time" value="3 days a week · 20 min · mornings" divider/>
+          <PrefRow icon="calendar-clock" title="Time" value="3 days a week · 20 min · 7:00–11:00" divider/>
           <PrefRow icon="footprints" title="Activities" value="Walk, run · new ideas now and then" divider/>
           <PrefRow icon="map-pin" title="Places" value="Outdoors, home · no equipment" divider/>
-          <PrefRow icon="feather" title="Good to know" value="Avoid jumping · time is the hard part" divider/>
+          <PrefRow icon="feather" title="Good to know" value="Avoid jumping · hardest: finding time" divider/>
           <PrefRow icon="heart" title="Your feedback" value={feedback} divider/>
         </Col>
       </Content>
@@ -194,29 +196,13 @@ function Why(){
 function EditTime(){
   const [p,setP]=React.useState(ANA);
   const set=(k,v)=>setP(s=>({...s,[k]:v}));
-  const toggle=v=>setP(s=>({...s,preferred_times:s.preferred_times.includes(v)?s.preferred_times.filter(x=>x!==v):[...s.preferred_times,v]}));
   return (
     <>
       <TopBar left={<IconButton icon="arrow-left" label="Back"/>}/>
       <Content gap={24}>
         <H1>Time</H1>
-        <Col gap={12}>
-          <Question>How often would you like to make room for movement?</Question>
-          <Segmented label="Sessions a week" value={p.sessions_per_week} onChange={v=>set("sessions_per_week",v)}
-            options={PREF_OPTIONS.sessions_per_week.map(n=>({value:n,label:String(n),unit:n===1?"day a week":"days a week"}))}/>
-        </Col>
-        <Col gap={12}>
-          <Question>What feels manageable for one session?</Question>
-          <Segmented label="Minutes a session" value={p.session_minutes} onChange={v=>set("session_minutes",v)}
-            options={PREF_OPTIONS.session_minutes.map(n=>({value:n,label:String(n),unit:"min"}))}/>
-        </Col>
-        <Col gap={12}>
-          <Question optional>When would you prefer to move?</Question>
-          <div role="group" aria-label="When would you prefer to move?" style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8}}>
-            {PREF_OPTIONS.preferred_times.map(o=><CheckTile key={o.value} icon={o.icon} label={o.label} detail={o.range} checked={p.preferred_times.includes(o.value)} onClick={()=>toggle(o.value)}/>)}
-          </div>
-        </Col>
-        <Note icon="calendar-clock">We plan around what's in your calendar and try your preferred times first.</Note>
+        <TimeQuestions p={p} set={set}/>
+        <Note icon="calendar-clock">We plan around what's in your calendar and keep to your time of day when we can.</Note>
       </Content>
       <BottomBar>
         <Col gap={10} style={{flex:1}}>
@@ -261,7 +247,54 @@ function YourFeedback(){
   );
 }
 
-/* 9.6 — Data and privacy: what's connected, and exactly what our assistant sees. */
+/* A row that opens another screen. */
+function LinkRow({icon,name,meta,divider}){
+  return (
+    <button type="button" style={{...ROW_BUTTON,gap:14,minHeight:60,padding:"8px 0",borderTop:divider?"1px solid var(--border-subtle)":"none"}}>
+      <Disc icon={icon} tone="muted" size={36}/>
+      <Col gap={2} style={{flex:1,minWidth:0}}>
+        <span style={{font:"600 var(--text-base)/1.3 var(--font-body)"}}>{name}</span>
+        {meta?<span style={{font:"var(--type-body-sm)",color:"var(--text-secondary)"}}>{meta}</span>:null}
+      </Col>
+      <Icon name="chevron-right" size={18} color="var(--text-tertiary)"/>
+    </button>
+  );
+}
+
+/* 9.6 — Settings, behind the gear: how the app looks and the account, kept apart from what
+   shapes the plan. Appearance follows the phone unless the person picks. */
+function Settings(){
+  const [theme,setTheme]=React.useState("system");
+  return (
+    <>
+      <TopBar left={<IconButton icon="arrow-left" label="Back"/>} title="Settings" right={null}/>
+      <Content gap={24} pb={34}>
+        <Col gap={12}>
+          <Section>Appearance</Section>
+          <Segmented label="Appearance" value={theme} onChange={setTheme} options={[{value:"system",label:"Phone"},{value:"light",label:"Light"},{value:"dark",label:"Dark"}]}/>
+        </Col>
+        <Col gap={0}>
+          <Section>Account</Section>
+          <ItemRow icon="mail" name="ana@example.com" meta="Signed in with email"/>
+          <ItemRow icon="globe" name="Time zone" meta="Warsaw · from your phone" divider/>
+        </Col>
+        <Col gap={0}>
+          <Section>Privacy</Section>
+          <LinkRow icon="shield-check" name="Data and privacy" meta="Connections and what our assistant sees"/>
+        </Col>
+        <Col gap={0}>
+          <Section>About</Section>
+          <LinkRow icon="file-text" name="Terms"/>
+          <LinkRow icon="lock" name="Privacy policy" divider/>
+        </Col>
+        <Button variant="ghost" icon="log-out" style={{alignSelf:"flex-start",marginLeft:-12}}>Sign out</Button>
+      </Content>
+    </>
+  );
+}
+
+/* 9.7 — Data and privacy: what's connected, and exactly what our assistant sees. Notes after
+   sessions now feed the description it keeps of the person (review, 3 October). */
 function Sees({yes,children}){
   return (
     <Row gap={10} style={{alignItems:"flex-start"}}>
@@ -286,16 +319,11 @@ function Privacy(){
           <Section>What our assistant sees</Section>
           <Sees yes>Your answers</Sees>
           <Sees yes>Your free times, never what's in your calendar</Sees>
-          <Sees yes>Whether you'd choose a session again, for your summary</Sees>
-          <Sees>Your name, email, steps or notes</Sees>
-          <Caption>It builds your plan and writes your summary.</Caption>
+          <Sees yes>Your sessions, how they felt and your notes</Sees>
+          <Sees yes>Whether you'd choose a session again</Sees>
+          <Sees>Your name, email or steps</Sees>
+          <Caption>It builds your plan, keeps a short description of you from your sessions, and writes your summary.</Caption>
         </Col>
-        <Col gap={0}>
-          <Section>Account</Section>
-          <ItemRow icon="mail" name="ana@example.com" meta="Email and password"/>
-          <ItemRow icon="globe" name="Time zone" meta="Warsaw · from your phone" divider/>
-        </Col>
-        <Button variant="ghost" icon="log-out" style={{alignSelf:"flex-start",marginLeft:-12}}>Sign out</Button>
       </Content>
     </>
   );
@@ -308,7 +336,8 @@ const PROFILE_SCREENS=[
   {id:"profile-why",label:"9.3 · Summary: why we think this",C:Why},
   {id:"profile-edit-time",label:"9.4 · Edit: time (onboarding 3.1)",C:EditTime},
   {id:"profile-feedback",label:"9.5 · Your feedback",C:YourFeedback},
-  {id:"profile-privacy",label:"9.6 · Data and privacy",C:Privacy},
+  {id:"profile-settings",label:"9.6 · Settings",C:Settings,note:"The gear opens settings, kept apart from what shapes the plan: appearance, account, legal, sign out."},
+  {id:"profile-privacy",label:"9.7 · Data and privacy",C:Privacy,note:"Under Settings. Notes after sessions now feed the assistant's description of you."},
 ];
 
 Object.assign(window,{PROFILE_SCREENS});

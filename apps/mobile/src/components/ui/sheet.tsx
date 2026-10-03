@@ -80,8 +80,7 @@ export function Sheet({ visible, onClose, title, description, label, showClose =
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.end}>
           <AnimatedPressable
             onPress={onClose}
-            accessible={false}
-            importantForAccessibility="no"
+            aria-hidden
             style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }, overlayStyle]}
           />
           <Animated.View

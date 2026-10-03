@@ -13,8 +13,7 @@ export function Divider({ vertical = false, style }: DividerProps) {
   const { colors } = useTheme();
   return (
     <View
-      accessible={false}
-      importantForAccessibility="no"
+      aria-hidden
       style={[
         vertical ? { width: 1, alignSelf: 'stretch' } : { height: 1, alignSelf: 'stretch' },
         { backgroundColor: colors.borderSubtle },

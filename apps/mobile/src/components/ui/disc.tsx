@@ -35,8 +35,7 @@ export function Disc({ icon, tone = 'accent', size = 40, spin = false, strokeWid
   const glyph = <Icon name={icon} size={Math.round(size / 2)} color={colors[fg]} strokeWidth={strokeWidth} />;
   return (
     <View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
       style={[
         {
           width: size,

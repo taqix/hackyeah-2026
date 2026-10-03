@@ -25,8 +25,7 @@ export function ExerciseMedia({ shape = 'circle', size = 52, aspectRatio = 1, ic
   const circle = shape === 'circle';
   return (
     <View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
       style={[
         circle
           ? { width: size, height: size, borderRadius: size / 2 }

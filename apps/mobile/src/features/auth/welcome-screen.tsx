@@ -33,7 +33,7 @@ function Brand() {
 
 function OrDivider() {
   return (
-    <Row gap={12} accessible={false} importantForAccessibility="no-hide-descendants">
+    <Row gap={12} aria-hidden>
       <Divider style={{ flex: 1 }} />
       <Text variant="caption" tone="secondary">
         or

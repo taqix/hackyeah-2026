@@ -1,10 +1,5 @@
-import { PlaceholderScreen } from '@/navigation/placeholder-screen';
+import { DemoScreen } from '@/features/demo/demo-screen';
 
 export default function DemoRoute() {
-  return (
-    <PlaceholderScreen
-      title="Demo controls"
-      screenId="demo"
-    />
-  );
+  return <DemoScreen />;
 }

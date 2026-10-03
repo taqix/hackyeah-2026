@@ -6,9 +6,12 @@ import {
   examples,
   generation,
   messages,
+  opinion,
   profile,
   snapshot,
   sports,
+  undonePlan,
+  undoRequest,
 } from '../tests/fixtures.ts';
 
 // Keep the shareable Markdown examples executable against the same client contracts.
@@ -89,14 +92,17 @@ export function renderFrontendHandoff(): string {
 
   return `# Supabase API: frontend handoff
 
-Contract version: **1**. Prepared on 3 October 2026.
-Status: **local source and contracts verified; NOT applied or deployed to hosted Supabase**.
+Contract version: **1**. Prepared on 3 October 2026; extended on 4 October 2026.
+Status: **local source and contracts verified**. The 4 October migrations and
+routes (late feedback, opinions, Undo, catalog seed) are NOT applied or
+deployed to hosted Supabase yet; see section 12.
 
 Send this file to the web/mobile developer. It describes the implemented local
 PoC contract, with complete JSON payloads that can be used as mock responses.
 All IDs, sport rows, users, and dates below are synthetic. Examples form a sample
 workflow; replace IDs and dates with values returned by the API when connecting.
-Never replay these UUIDs against live accounts. No catalog or demo data is seeded.
+Never replay these UUIDs against live accounts. The catalog seed migration adds
+the sport rows; no users, plans, or demo data are seeded.
 
 The full mobile design has additional requirements listed at the end. Those
 features are not endpoints in this contract. The earlier proposed v2 schema
@@ -144,15 +150,21 @@ All paths below are relative to the base URL, and require a session.
 | GET | /plans/current | None | {plan, version} or null |
 | GET | /plans/history | limit, offset | PlanVersionEntity[] |
 | POST | /plans/generate | GeneratePlanDto | {plan, version} |
+| POST | /plans/undo | UndoPlanDto | {plan, version} |
 | GET | /chat/messages | plan_id, limit, offset | ChatMessageEntity[] |
 | POST | /chat | SendChatDto | {outcome, active_plan, messages} |
 | GET | /completions | limit, offset | ActivityCompletionEntity[] |
 | POST | /completions | CompleteActivityDto | ActivityCompletionEntity |
+| PUT | /completions/feedback | UpdateFeedbackDto | ActivityCompletionEntity |
+| GET | /opinions | None | ActivityOpinionEntity[] |
+| PUT | /opinions | PutOpinionDto | ActivityOpinionEntity or null |
+| POST | /opinions/reset | ResetOpinionsDto ({}) | {cleared} |
 
 Pagination: limit defaults to 50 (1–100); offset defaults to 0 (0–10000).
 Collections are plain arrays inside data. Fetch pages until fewer than limit
 rows are returned. Reload after writes. History is newest first, completions
 newest first, and chat messages oldest first. GET /chat/messages requires plan_id.
+GET /opinions is not paged and returns the newest updated_at first.
 GET /schema uses the same success envelope; data contains the named schemas.
 There is no realtime subscription contract in this slice.
 
@@ -165,11 +177,12 @@ shared runtime schemas. All application tables have RLS enabled.
 | Table / entity | Fields | Client access and relationships |
 | --- | --- | --- |
 | profile / ProfileEntity | id uuid; username text nullable; created_at timestamptz nullable; preferences jsonb nullable. Database also stores email text nullable; API omits email. | Owner read/update; id references auth.users. Signup provisions one profile. |
-| sport / SportEntity | id bigint identity; name text; is_gym boolean; generation_enabled boolean; metrics jsonb | Authenticated reads; catalog writes are server/owner work. API IDs are decimal strings. API requires valid nonempty names and metric definitions even though legacy DB columns permit nulls. |
+| sport / SportEntity | id bigint identity; name text; is_gym boolean; generation_enabled boolean; metrics jsonb | Authenticated reads; catalog writes are server/owner work. API IDs are decimal strings. Names are unique ignoring case. API requires valid nonempty names and metric definitions even though legacy DB columns permit nulls. |
 | plan / PlanEntity | id uuid; profile_id uuid; active_version_id uuid nullable; created_at timestamptz | Owner read only. One plan row per profile; active_version_id must belong to that plan and owner. |
-| plan_version / PlanVersionEntity | id uuid; plan_id uuid; profile_id uuid; version integer; origin text; plan jsonb; summary text; created_at timestamptz | Owner read only. Unique plan/version number. Origin is generate or revise. plan stores a complete weekly snapshot. |
+| plan_version / PlanVersionEntity | id uuid; plan_id uuid; profile_id uuid; version integer; origin text; plan jsonb; summary text; created_at timestamptz | Owner read only. Unique plan/version number. Origin is generate, revise, or undo. plan stores a complete weekly snapshot. |
 | chat_message / ChatMessageEntity | id uuid; profile_id uuid; plan_id uuid; role text; content text; outcome text nullable; plan_version_id uuid nullable; created_at timestamptz; request_id uuid | Owner read only. Role user/assistant; assistant outcome plan_updated/reply/clarification. Plan/version references enforce ownership. |
-| activity_completion / ActivityCompletionEntity | id uuid; profile_id uuid; plan_version_id uuid; activity_id uuid; metrics jsonb; gym_log jsonb; feedback jsonb; completed_at timestamptz; request_id uuid | Owner read only. Completion is unique per owner/activity and retains the version it was completed against. |
+| activity_completion / ActivityCompletionEntity | id uuid; profile_id uuid; plan_version_id uuid; activity_id uuid; metrics jsonb; gym_log jsonb; feedback jsonb nullable; completed_at timestamptz; request_id uuid | Owner read only. Completion is unique per owner/activity and retains the version it was completed against. Only feedback can change later, through PUT /completions/feedback. |
+| activity_opinion / ActivityOpinionEntity | profile_id uuid; activity_key text; title text; sport_id bigint; opinion text; last_date date; updated_at timestamptz | Owner read/write under RLS through this API. One row per owner/activity_key. sport_id references sport. The server stamps updated_at. |
 | product_request_receipt / internal | profile_id uuid; request_id uuid; action text; payload jsonb; result jsonb; created_at timestamptz | No client access. Server deduplication across plan/chat/completion actions. Not a frontend entity. |
 
 Legacy workout, tournament, and wearable storage are outside this API. Do not
@@ -194,12 +207,13 @@ IDs must be unique. Unknown request fields are rejected.
 | Availability | source: device_calendar/manual; captured_at; slots: up to 100 sorted, nonoverlapping start_at/end_at intervals with positive duration. Send only free time, never private calendar events. Chat message is 1–2000 characters; attached activity_id is optional. |
 | Completion metrics | At most five number/string values matching the sport's definitions, required keys, types, and bounds. Numbers are finite and nonnegative; strings at most 200 characters. No invented values for missing optional measurements. |
 | Gym actuals | gym_log: up to 20 unique exercise_id entries from the plan; each has 1–10 sets with repetitions integer 0–100 and weight_kg null or number 0–1000. Non-gym gym_log is []. |
-| Feedback | effort: easy/okay/hard/too_much; enjoyment: yes/maybe/no/null; notes: string at most 1000 characters, empty when absent. All three keys required. |
+| Feedback | effort: easy/okay/hard/too_much; enjoyment: yes/maybe/no/null; notes: string at most 1000 characters, empty when absent. All three keys required. A completion's feedback may be null until it is given. |
+| Opinion | activity_key: 1–100 characters matching ^[a-z0-9][a-z0-9_-]*$ (for example a title slug); title: 1–200; sport_id: catalog ID; opinion: yes/maybe/no (null in PutOpinionDto clears it); last_date: YYYY-MM-DD |
 
-In this PoC, enjoyment answers **Would you choose this again?** Null means no
-opinion, not no. Okay displays as **Just right**. Send null from the completion
-screen when it does not ask for an opinion. Updating/resetting an opinion later
-is not implemented.
+In this PoC, enjoyment answers **Would you choose this again?** at log time. Null
+means no opinion, not no. Okay displays as **Just right**. Send null from the
+completion screen when it does not ask for an opinion. The opinion that can be
+changed or reset later lives separately in /opinions (section 8).
 
 Metric values use the catalog's declared unit. The sample duration_minutes field
 is minutes. This contract has no separate display/storage scale: do not blindly
@@ -223,11 +237,22 @@ ${payload('ProfileResponse', { data: profile, meta: meta() })}
 
 GET /sports sample response:
 ${payload('SportListResponse', { data: sports, meta: meta() })}
-The actual hosted catalog is not seeded by these migrations. An empty catalog
-returns data: []. Do not hardcode the sample ID or generation eligibility.
-Build fields from metrics. A sport with generation_enabled false is a preview;
-do not offer it as a working generation choice. Search can run on the fetched
-PoC catalog; there is no ranking/suggestions endpoint.
+The seed migration \`20261004110000_sport_catalog_seed.sql\` upserts the catalog
+by case-insensitive name. The working sports are Walking, Strength (the gym
+sport), Running, Cycling, Swimming, Mobility, and Football, with
+generation_enabled true. Tennis, Table tennis, Badminton, Padel, Basketball,
+Volleyball, Yoga, Pilates, Dancing, Hiking, Nordic walking, Rowing, Climbing,
+Ice skating, and Boxing are previews with generation_enabled false. Names match
+the mobile mock catalog exactly, so mobile maps rows to its own sport keys by
+name. IDs differ between projects: never hardcode them.
+
+Non-gym sports have a required duration_minutes metric (label Time, unit min,
+number, minimum 1). Walking, Running, Cycling, Hiking, Nordic walking, and Rowing
+add an optional distance in km; Swimming adds an optional distance in m. Strength
+has no metrics: its actuals are the gym_log. Build fields from metrics. A sport
+with generation_enabled false is a preview; do not offer it as a working
+generation choice. Search can run on the fetched catalog; there is no
+ranking/suggestions endpoint. A project without the seed returns data: [].
 
 ## 6. Plan generation and current plan
 
@@ -256,8 +281,8 @@ canonical weekly/calendar projection endpoint yet; one history page is not a
 complete month. Never count every historical revision as another session.
 
 GET /plans/history returns data as an array of PlanVersionEntity objects, with
-the same version shape shown above, newest first. Every accepted generation or
-revision increments the version. Old versions are preserved.
+the same version shape shown above, newest first. Every accepted generation,
+revision, or Undo increments the version. Old versions are preserved.
 
 **Runtime availability:** the provider adapter is unconnected. After valid
 prerequisites, generation returns 501 AI_NOT_CONFIGURED, not this successful
@@ -279,7 +304,20 @@ ${payload('ChatResponse', { data: { outcome: 'plan_updated', active_plan: revise
 Replace the displayed active plan immediately when plan_updated succeeds.
 There is no confirmation step. A completed activity cannot be altered or
 removed from a same-week revision. Failed validation leaves the plan intact.
-Change diff/Undo is not implemented; do not show a working Undo button.
+There is no server diff: build a change card by comparing the new version with
+the previous one (GET /plans/history) by activity id.
+
+To undo that revision, POST /plans/undo with the active plan and version and a
+new request ID:
+${payload('UndoPlanDto', undoRequest)}
+Response, a new active version with origin undo:
+${payload('UndoPlanResponse', { data: undonePlan, meta: meta(undoRequest.request_id) })}
+Undo makes no AI call and writes no chat messages. It restores the version just
+before the active one when the active version came from a chat revision and
+both are in the same week. Anything else returns 409 NOTHING_TO_UNDO, including
+an Undo of an Undo. If a session the change touched is already logged, Undo
+returns 409 UNDO_LOCKED, so a logged session never changes. A transport retry
+with the same request ID and body returns the saved result.
 
 A clarification has the same SendChatDto shape with a new request ID and a
 message such as "Can you change it?". After the example revision, pass
@@ -325,10 +363,37 @@ is a gym session that contains exercise_id squat and its catalog permits the
 supplied metrics. Replace the synthetic gym activity/version IDs with real
 returned IDs. Never generate a planned weight. Null actual weight means unknown.
 
+To save the log before asking for feedback, send feedback: null:
+${payload('CompleteActivityDto', { ...actuals, request_id: requestId('19'), feedback: null })}
+Then add or change the feedback at any later time:
+${payload('UpdateFeedbackDto', { completion_id: recorded.id, feedback: { effort: 'okay', enjoyment: 'yes', notes: '' } })}
+The response is the whole completion with the new feedback:
+${payload('CompletionResponse', { data: { ...recorded, feedback: { effort: 'okay', enjoyment: 'yes', notes: '' } }, meta: meta() })}
+Only the owner can change feedback; another account gets 404. A full feedback
+object is required here (null is rejected).
+
 GET /completions returns the saved entity array, newest first. Join by
 activity_id to show completion; keep plan_version_id for historical detail.
 No completion does not establish that an activity was skipped or started.
-Completion metrics, sets, and feedback cannot be edited through this API.
+Completion metrics, sets, and completed_at cannot be edited through this API.
+
+### Opinions: "Would you choose this again?"
+
+Opinions are kept per activity, apart from completions, so they can change or
+be cleared later. GET /opinions returns the account's opinions, newest first:
+${payload('OpinionListResponse', { data: [opinion], meta: meta() })}
+PUT /opinions saves (inserts or replaces) the opinion for one activity_key:
+${payload('PutOpinionDto', examples.PutOpinionDto)}
+Response:
+${payload('OpinionResponse', { data: opinion, meta: meta() })}
+Send opinion: null with the same fields to clear it; the response data is then
+null. POST /opinions/reset with an empty object clears every opinion of the
+account and returns how many were cleared:
+${payload('ResetOpinionsResponse', { data: { cleared: 1 }, meta: meta() })}
+The client picks a stable activity_key (for example a slug of the session
+title). title, sport_id, and last_date describe the latest session for display.
+An unknown sport_id returns 400. Reset never touches completions, saved
+answers, or excluded sports.
 
 ## 9. Empty lists, errors, and retries
 
@@ -344,6 +409,8 @@ ${payload('ErrorResponse', { error: { code: 'VERSION_CONFLICT', message: 'The pl
 | 409 | VERSION_CONFLICT | Reload plan, confirm the intended change, create a new request ID |
 | 409 | REQUEST_CONFLICT | Request ID was reused with different data/action; use a new ID for new work |
 | 409 | ALREADY_COMPLETED | Reload completions and show the existing result |
+| 409 | NOTHING_TO_UNDO | Hide Undo; the active version is not an undoable chat change |
+| 409 | UNDO_LOCKED | Hide Undo; a session in the change is already logged |
 | 405 / 413 | METHOD_NOT_ALLOWED / PAYLOAD_TOO_LARGE | Correct method or reduce body |
 | 501 | AI_NOT_CONFIGURED | Show unavailable/provider-pending state; no automatic retry loop |
 | 502 / 503 | INVALID_AI_OUTPUT / PROVIDER_UNAVAILABLE / DATA_UNAVAILABLE | Display failure; respect retryable; retain the current plan |
@@ -366,14 +433,18 @@ version checks for a new action. Disable duplicate submits while a request runs.
    empty week. Join completions separately.
 6. Chat sends plan ID, expected version, optional attached activity ID, message,
    availability, and a new UUID. Apply only validated replacement responses.
-7. Log actual metrics/sets and feedback; save completion using its own UUID.
-8. Refetch after successful writes and normalize Auth/gateway/network failures.
+7. Log actual metrics/sets and save the completion with its own UUID, with
+   feedback or with null and PUT /completions/feedback later.
+8. Read and write opinions through /opinions; Undo the newest chat change with
+   POST /plans/undo.
+9. Refetch after successful writes and normalize Auth/gateway/network failures.
 
 Shared monorepo import: \`@hackyeah/contracts/product\`. Request DTOs:
-UpdateProfileDto, GeneratePlanDto, SendChatDto, CompleteActivityDto. Entities:
+UpdateProfileDto, GeneratePlanDto, SendChatDto, CompleteActivityDto,
+UpdateFeedbackDto, PutOpinionDto, ResetOpinionsDto, UndoPlanDto. Entities:
 ProfileEntity, SportEntity, PlanEntity, PlanVersionEntity, ChatMessageEntity,
-ActivityCompletionEntity. Response DTOs and apiSchemas are exported alongside
-them. No client UI is shared between web and mobile.
+ActivityCompletionEntity, ActivityOpinionEntity. Response DTOs and apiSchemas
+are exported alongside them. No client UI is shared between web and mobile.
 
 Machine-readable companions in docs/api: product-api.openapi.json,
 product-api.schemas.json, product-api.examples.json, and
@@ -387,9 +458,9 @@ product-api.design-examples.json. Those files and this document regenerate with
 | Weekly Home/Calendar and outcomes | Canonical weekly/calendar projection and persisted started/skipped states |
 | Complete gym experience | Timed sets, actual duration, stable exercise catalog/history, last-weight prefill |
 | All dynamic log fields/import states | Boolean/enum metrics, storage/display unit conversion, provenance |
-| Chat change cards and Undo | Canonical diff and transactional restore as a new version |
+| Chat change cards | Undo is implemented (POST /plans/undo). Change cards are a client diff of two versions; there is no canonical server diff |
 | Workouts outside the plan | Separate extra-workout records, edit/Undo; no planned progress credit |
-| Feedback management | Independently mutable opinions/reset while actual completion data remains immutable |
+| Feedback management | Implemented: late/changed feedback (PUT /completions/feedback) and mutable opinions with reset (/opinions). Completion actuals remain immutable |
 | Assistant profile summary | Separate specified AI call, evidence references, validation, freshness and fallback |
 | Web guest demo | Isolated anonymous bootstrap, demo data and AI limits |
 
@@ -407,9 +478,12 @@ the HTTP API or connect AI. The owner must complete these steps:
 1. Confirm the intended Supabase project and review the migration files. Verify
    the changes in a disposable Supabase project before the hosted project.
 2. Apply and record \`20261003130000_profile_sport_workout_baseline.sql\` first,
-   then \`20261003140000_product_persistence.sql\`. They live under
+   then \`20261003140000_product_persistence.sql\`,
+   \`20261004100000_feedback_opinions_undo.sql\`, and
+   \`20261004110000_sport_catalog_seed.sql\`. They live under
    supabase/migrations. Review the earlier wearable migration separately before
-   syncing the entire migration directory. No seed rows are included.
+   syncing the entire migration directory. The seed adds catalog rows and
+   profile rows for accounts without one; it adds no users or plans.
 3. Verify signup creates singular profile rows, owner-only access works, and
    another account cannot see or modify application history. Re-run advisors.
 4. Verify Auth provider/confirmation/recovery settings and allowlisted web/mobile
@@ -420,15 +494,16 @@ the HTTP API or connect AI. The owner must complete these steps:
    fallback is supported); privileged persistence uses SUPABASE_SERVICE_ROLE_KEY
    inside the function only. Never share the server-only key with a client.
    Clients receive only the project URL and publishable configuration.
-6. For catalog/AI success, provide reviewed enabled sport definitions and connect
-   the PlanGenerator provider adapter. Until then catalog reads can be empty;
-   generation returns 400 for missing prerequisites or 501 for disconnected AI.
+6. The seed migration provides the catalog. For AI success, connect and
+   configure the PlanGenerator provider adapter. Until then generation returns
+   400 for missing prerequisites or 501 for disconnected AI. Undo, feedback, and
+   opinions need no AI.
 7. Share the actual base URL and client publishable configuration securely with
    the frontend developer, then smoke-test the authenticated journey on web and
    Expo. Confirm cross-account isolation and failed-revision preservation.
 
-Local verification already completed: 21 Supabase tests passed, workspace and
-Supabase typechecks passed, and Supabase/contracts lint and formatting passed.
+Local verification already completed: 30 Supabase tests passed, Supabase
+typechecks passed, and Supabase lint and formatting passed.
 This does not prove hosted Auth, Deno bundling, provider integration, or actual
 device/browser operation. Supabase CLI and Deno are not installed here.
 `;

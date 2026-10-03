@@ -15,9 +15,16 @@ npm run lint:supabase
 ```
 
 The tests create disposable PGlite databases with synthetic Auth accounts.
-They never connect to hosted Supabase or load real credential files. There is no
-seed SQL or real user data. AI success examples are synthetic; the runtime AI
-adapter returns `AI_NOT_CONFIGURED` until the provider collaborator connects it.
+They never connect to hosted Supabase or load real credential files. AI success
+examples are synthetic; the runtime AI adapter returns `AI_NOT_CONFIGURED` until
+the provider collaborator connects it.
+
+Migrations apply in filename order. `20261004100000_feedback_opinions_undo.sql`
+adds late and changeable completion feedback, the `activity_opinion` table and
+the `undo` plan version origin. `20261004110000_sport_catalog_seed.sql` is the
+only seed: it upserts the sport catalog by case-insensitive name (names match
+the mobile mock catalog) and adds profile rows for accounts without one. It
+contains no users, plans, or other personal data.
 
 The owner handles remote migrations, deployment, and Auth provider configuration.
 Actual local Supabase/Deno runtime verification remains pending because those

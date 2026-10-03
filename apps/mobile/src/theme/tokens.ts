@@ -327,25 +327,20 @@ export const type = {
 
 export type TypeVariant = keyof typeof type;
 
-export type Shadow = {
-  shadowColor: string;
-  shadowOffset: { width: number; height: number };
-  shadowOpacity: number;
-  shadowRadius: number;
-  elevation: number;
-};
+/** A CSS box-shadow, supported by React Native (New Architecture) and the web alike. */
+export type Shadow = { boxShadow: string };
 
-/** Brown-tinted, low opacity, three steps. Dark mode drops to a faint ring (use a border). */
+/** effects.css: brown-tinted, low opacity, three steps. Dark mode drops shadow 1 to a faint ring. */
 export const shadows: Record<ColorScheme, Record<1 | 2 | 3, Shadow>> = {
   light: {
-    1: { shadowColor: '#3C2A14', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1 },
-    2: { shadowColor: '#3C2A14', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 3 },
-    3: { shadowColor: '#3C2A14', shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.22, shadowRadius: 28, elevation: 8 },
+    1: { boxShadow: '0 1px 2px rgba(60,42,20,0.06)' },
+    2: { boxShadow: '0 1px 2px rgba(60,42,20,0.05), 0 6px 18px -6px rgba(60,42,20,0.12)' },
+    3: { boxShadow: '0 2px 6px rgba(60,42,20,0.06), 0 18px 40px -12px rgba(60,42,20,0.22)' },
   },
   dark: {
-    1: { shadowColor: '#000000', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 },
-    2: { shadowColor: '#000000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 4 },
-    3: { shadowColor: '#000000', shadowOffset: { width: 0, height: 24 }, shadowOpacity: 0.7, shadowRadius: 32, elevation: 10 },
+    1: { boxShadow: '0 0 0 1px rgba(255,240,220,0.03)' },
+    2: { boxShadow: '0 0 0 1px rgba(255,240,220,0.04), 0 8px 24px -8px rgba(0,0,0,0.6)' },
+    3: { boxShadow: '0 0 0 1px rgba(255,240,220,0.05), 0 24px 48px -12px rgba(0,0,0,0.7)' },
   },
 };
 

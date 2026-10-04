@@ -90,6 +90,9 @@ One GitHub Pages site serves both web parts of the project:
 - https://taqix.github.io/hackyeah-2026/ is the landing page (`apps/website`).
 - https://taqix.github.io/hackyeah-2026/app/ is the web app: the Expo app in
   `apps/mobile`, exported for the web.
+- https://taqix.github.io/hackyeah-2026/phone/ shows that same web app in a
+  scaled iPhone frame. It is a static page in `apps/website/public/phone/` and
+  embeds `/app/` at phone width; the landing page links to it.
 
 **Workflow.** `.github/workflows/pages.yml` runs on pushes to `main` and
 `develop` that touch `apps/website/**`, `apps/mobile/**`, `packages/**`, the root
@@ -106,6 +109,7 @@ assembles them:
 ```text
 dist/pages/
   index.html, assets/   landing page (Vite build of apps/website)
+  phone/                phone-sized preview of the app
   app/                  web app (expo export --platform web)
   404.html              the app's page again, for deep links
   .nojekyll

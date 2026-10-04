@@ -4,6 +4,9 @@ Movo's product website: a landing page that presents the app and leads into it. 
 deployed to GitHub Pages at https://taqix.github.io/hackyeah-2026/, next to the app's
 web build at https://taqix.github.io/hackyeah-2026/app/.
 
+The landing page also links to `/phone/`, which shows that same Expo app in a
+phone-sized frame and warns that browser features may differ from a phone.
+
 React 18 + TypeScript (`strict`), built with Vite into static files. The page's
 sections are hash routes (`#/how`, `#/features`), so the build works from any folder.
 

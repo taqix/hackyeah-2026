@@ -10,7 +10,9 @@ import { isOutsidePreferredWindow, sessionMinutes, sessionStart } from '@/lib/se
 import { routes } from '@/navigation/routes';
 
 import { dayWord, headline, heroBody } from './copy';
+import { useHeroSize } from './hero-size';
 import { NotTodaySheet } from './not-today-sheet';
+import { SessionOutline } from './session-outline';
 
 type Props = {
   session: PlannedSession;
@@ -36,24 +38,27 @@ function useBody(session: PlannedSession): string {
   return heroBody(session, isOutsidePreferredWindow(session, preferences));
 }
 
-/** Today's planned session: the photo card with Start and Not today (5, 5.2). */
+/** Today's planned session: the photo card with Start and Not today (5, 5.2). Large, it also lists the session's steps. */
 export function TodaySessionHero({ session, date, today, nextSession }: Props) {
   const router = useRouter();
   const body = useBody(session);
+  const large = useHeroSize() === 'lg';
   const [notToday, setNotToday] = useState(false);
 
   return (
     <View>
       <SuggestionCard
         tone="dusk"
+        size={large ? 'lg' : 'md'}
         kicker={sessionKicker(session, date, today)}
         title={headline(session.title)}
         body={body}
         actionLabel="Start"
         onAction={() => router.push(isGymSession(session) ? routes.gym(session.id) : routes.session(session.id))}
         secondaryLabel="Not today"
-        onSecondary={() => setNotToday(true)}
-      />
+        onSecondary={() => setNotToday(true)}>
+        {large ? <SessionOutline session={session} /> : null}
+      </SuggestionCard>
       <NotTodaySheet
         visible={notToday}
         onClose={() => setNotToday(false)}
@@ -69,15 +74,18 @@ export function TodaySessionHero({ session, date, today, nextSession }: Props) {
 export function PreviewSessionHero({ session, date, today }: Props) {
   const router = useRouter();
   const body = useBody(session);
+  const large = useHeroSize() === 'lg';
 
   return (
     <SuggestionCard
       tone="dawn"
+      size={large ? 'lg' : 'md'}
       kicker={sessionKicker(session, date, today)}
       title={headline(session.title)}
       body={body}
       actionLabel="Preview"
-      onAction={() => router.push(routes.session(session.id))}
-    />
+      onAction={() => router.push(routes.session(session.id))}>
+      {large ? <SessionOutline session={session} /> : null}
+    </SuggestionCard>
   );
 }

@@ -33,6 +33,8 @@ export function useStepCounter() {
   return {
     ...state,
     source: stepSource.name,
+    /** False on the web: steps come from the phone's own counter, so there is nothing to show or ask for. */
+    supported: stepSource.name !== 'unsupported',
     refresh: counter.refresh,
     requestPermission: counter.requestPermission,
     openSettings: stepSource.openSettings,

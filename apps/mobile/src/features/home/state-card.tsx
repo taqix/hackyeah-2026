@@ -4,6 +4,9 @@ import { StyleSheet, View } from 'react-native';
 import { Icon, type IconName, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
+import { HeroMark } from './hero/hero-card';
+import { LARGE_HERO, useHeroSize } from './hero/hero-size';
+
 type StateCardProps = {
   icon: IconName;
   kicker: string;
@@ -23,10 +26,17 @@ type StateCardProps = {
  */
 export function StateCard({ icon, kicker, title, body, actions, alert, children }: StateCardProps) {
   const { colors, radius, fontFamily } = useTheme();
+  const large = useHeroSize() === 'lg';
+  const titleSize = large ? LARGE_HERO.titleSize : 27;
   return (
     <View
       accessibilityRole={alert ? 'alert' : undefined}
-      style={[styles.card, { borderRadius: radius.xl, backgroundColor: colors.surfaceSunken }]}>
+      style={[
+        styles.card,
+        { borderRadius: radius.xl, backgroundColor: colors.surfaceSunken },
+        large ? styles.large : null,
+      ]}>
+      {large ? <HeroMark icon={icon} color={colors.textSecondary} /> : null}
       <View style={styles.kicker}>
         <View style={[StyleSheet.absoluteFill, styles.kickerFill, { backgroundColor: colors.surfaceCard }]} />
         <Icon name={icon} size={14} strokeWidth={2} color={colors.textSecondary} />
@@ -36,11 +46,16 @@ export function StateCard({ icon, kicker, title, body, actions, alert, children 
       </View>
       <Text
         accessibilityRole="header"
-        style={{ fontFamily: fontFamily.displayBold, fontSize: 27, lineHeight: 29, letterSpacing: -0.54 }}>
+        style={{
+          fontFamily: fontFamily.displayBold,
+          fontSize: titleSize,
+          lineHeight: large ? Math.round(titleSize * 1.08) : 29,
+          letterSpacing: -0.02 * titleSize,
+        }}>
         {title}
       </Text>
       {body ? (
-        <Text variant="bodySm" style={{ fontSize: 15, lineHeight: 21 }}>
+        <Text variant="bodySm" style={[styles.body, large ? styles.bodyLarge : null]}>
           {body}
         </Text>
       ) : null}
@@ -70,6 +85,12 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 10,
   },
+  large: {
+    minHeight: LARGE_HERO.minHeight,
+    padding: LARGE_HERO.padding,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
   kicker: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -84,6 +105,8 @@ const styles = StyleSheet.create({
   kickerFill: {
     opacity: 0.72,
   },
+  body: { fontSize: 15, lineHeight: 21 },
+  bodyLarge: { fontSize: 16, lineHeight: 23, maxWidth: 560 },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',

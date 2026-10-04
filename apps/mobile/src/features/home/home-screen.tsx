@@ -1,30 +1,16 @@
-import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 
-import {
-  useBuildPlan,
-  useDismissRecentChange,
-  useEnsureNextWeek,
-  usePlanState,
-  usePreferences,
-  useSession,
-  useSports,
-  useWeek,
-} from '@/api/hooks';
-import { isApiError, type LocalDate } from '@/api/types';
-import { Col, Content, Screen } from '@/components/layout';
+import { isApiError } from '@/api/types';
+import { Col, Content, Screen, useLayout } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
-import { useNow } from '@/lib/clock';
-import { addDays, startOfWeek, toLocalDate } from '@/lib/dates';
-import { answersSentence } from '@/lib/preference-options';
 import { useBottomClearance } from '@/navigation/bottom-clearance';
-import { useOpenChat } from '@/navigation/open-chat';
 import { useTheme } from '@/theme';
 
+import { HomeDashboard } from './dashboard/home-dashboard';
 import { HomeHeader } from './home-header';
-import { changedWhen, firstName, headerKicker, resolveSelection } from './home-model';
+import { changedWhen } from './home-model';
 import { PlanUpdated } from './plan-updated';
 import {
   BuildFailed,
@@ -36,63 +22,45 @@ import {
   WeekSkeleton,
 } from './plan-states';
 import { PlanWeekView } from './plan-week';
+import { useHome } from './use-home';
 import { WeekStripLoading } from './week-strip';
 
 /**
- * The Today tab (5): what do I do today, and how is my week going? The route
- * params `week` and `day` hold the selection, so chat's See week can open a day.
+ * The Today tab (5): what do I do today, and how is my week going? Phones get
+ * the design's single column; the desktop web gets the dashboard.
  */
 export function HomeScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{ week?: string; day?: string }>();
-  const now = useNow();
-  const today = toLocalDate(now);
-  const currentWeek = startOfWeek(today);
+  const home = useHome();
+  const { isDesktop } = useLayout();
+  if (isDesktop) return <HomeDashboard home={home} />;
 
-  const session = useSession();
-  const preferences = usePreferences();
-  const sports = useSports();
-  const planState = usePlanState();
-  const plan = planState.data;
-  const ready = plan?.status === 'ready';
-
-  const { weekStart, day } = resolveSelection(params, today, plan);
-  const nextWeekStart = addDays(weekStart, 7);
-  const canNext = nextWeekStart <= currentWeek || (!!plan?.planned_through && nextWeekStart <= plan.planned_through);
-  const week = useWeek(weekStart, { enabled: ready });
-  const nextWeek = useWeek(nextWeekStart, { enabled: ready && canNext });
-
-  const build = useBuildPlan();
-  const focused = useIsFocused();
-  // Plans go one week ahead: from the last planned day, Home plans the next week.
-  useEnsureNextWeek(focused);
-  const openChat = useOpenChat();
-  const recentChange = plan?.recent_change ?? null;
-  const dismissChange = useDismissWhenLeft(!!recentChange);
-
-  const [refreshing, setRefreshing] = useState(false);
-  const refresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        planState.refetch(),
-        ready ? week.refetch() : null,
-        ready && canNext ? nextWeek.refetch() : null,
-      ]);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const select = (targetWeek: LocalDate, targetDay: LocalDate) => {
-    if (targetWeek === currentWeek && targetDay === today) router.setParams({ week: undefined, day: undefined });
-    else router.setParams({ week: targetWeek, day: targetDay });
-  };
-
-  const name = firstName(session.data?.user.name);
-  const answers = preferences.data ? answersSentence(preferences.data, sports.data) : null;
-  const header = <HomeHeader kicker={headerKicker(today, ready ? plan.first_week_start : null)} name={name} now={now} />;
-  const buildPlan = () => build.mutate({ week_start: currentWeek });
+  const {
+    now,
+    today,
+    currentWeek,
+    kicker,
+    name,
+    answers,
+    planState,
+    plan,
+    weekStart,
+    day,
+    week,
+    nextWeek,
+    canNext,
+    build,
+    buildPlan,
+    recentChange,
+    dismissChange,
+    openChat,
+    reviewAnswers,
+    preferences,
+    sports,
+    refreshing,
+    refresh,
+    select,
+  } = home;
+  const header = <HomeHeader kicker={kicker} name={name} now={now} />;
 
   let body: ReactNode;
   if (planState.isPending) {
@@ -136,7 +104,7 @@ export function HomeScreen() {
           retrying={build.isPending}
           retryFailed={build.isError}
           onRetry={buildPlan}
-          onReviewAnswers={() => router.navigate('/you')}
+          onReviewAnswers={reviewAnswers}
         />
       </>
     );
@@ -180,8 +148,8 @@ export function HomeScreen() {
           }
           nextWeek={nextWeek.data?.planned ? nextWeek.data : null}
           canNext={canNext}
-          preferences={preferences.data}
-          sports={sports.data}
+          preferences={preferences}
+          sports={sports}
           onSelect={select}
         />
       </>
@@ -213,31 +181,4 @@ function HomeShell({ children, refreshing, onRefresh }: { children: ReactNode; r
       </Content>
     </Screen>
   );
-}
-
-/**
- * The Plan updated note is shown once: Dismiss or See the chat hide it at
- * once, and leaving Home after it was on screen marks it seen.
- */
-function useDismissWhenLeft(shown: boolean) {
-  const { mutate } = useDismissRecentChange();
-  const shownRef = useRef(shown);
-  useEffect(() => {
-    shownRef.current = shown;
-  }, [shown]);
-  useFocusEffect(
-    useCallback(
-      () => () => {
-        if (shownRef.current) {
-          shownRef.current = false;
-          mutate();
-        }
-      },
-      [mutate],
-    ),
-  );
-  return () => {
-    shownRef.current = false;
-    mutate();
-  };
 }

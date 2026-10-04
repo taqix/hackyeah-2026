@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { Icon, type IconName, Text } from '@/components/ui';
 import { type SemanticColors, useTheme } from '@/theme';
 
+import { LARGE_HERO, useHeroSize } from './hero-size';
+
 /** Tinted hero tones (home.jsx HERO): sage for rest, moss for done, peach for a finished week. */
 export type HeroTone = 'rest' | 'done' | 'warm' | 'quiet';
 
@@ -27,14 +29,19 @@ export type HeroCardProps = {
 
 /**
  * The hero for days without a session to start. Same slot, radius and title
- * scale as SuggestionCard, so the top of Home keeps its shape.
+ * scale as SuggestionCard, so the top of Home keeps its shape. Large (the
+ * desktop dashboard), it takes the photo card's height, with its icon drawn big
+ * and faint in the empty corner.
  */
 export function HeroCard({ tone = 'quiet', icon, kicker, title, body, actions, children }: HeroCardProps) {
   const { colors, radius, fontFamily } = useTheme();
+  const large = useHeroSize() === 'lg';
   const t = TONES[tone];
+  const titleSize = large ? LARGE_HERO.titleSize : 27;
 
   return (
-    <View style={[styles.card, { borderRadius: radius.xl, backgroundColor: colors[t.bg] }]}>
+    <View style={[styles.card, { borderRadius: radius.xl, backgroundColor: colors[t.bg] }, large ? styles.large : null]}>
+      {large ? <HeroMark icon={icon} color={colors[t.fg]} /> : null}
       <View style={styles.kicker}>
         {/* The prototype mixes the card surface at 72% over the tint. */}
         <View style={[StyleSheet.absoluteFill, styles.kickerFill, { backgroundColor: colors.surfaceCard }]} />
@@ -46,16 +53,31 @@ export function HeroCard({ tone = 'quiet', icon, kicker, title, body, actions, c
       </View>
       <Text
         accessibilityRole="header"
-        style={{ fontFamily: fontFamily.displayBold, fontSize: 27, lineHeight: 29, letterSpacing: -0.54, color: colors.textPrimary }}>
+        style={{
+          fontFamily: fontFamily.displayBold,
+          fontSize: titleSize,
+          lineHeight: large ? Math.round(titleSize * 1.08) : 29,
+          letterSpacing: -0.02 * titleSize,
+          color: colors.textPrimary,
+        }}>
         {title}
       </Text>
       {body ? (
-        <Text variant="bodySm" style={styles.body}>
+        <Text variant="bodySm" style={[styles.body, large ? styles.bodyLarge : null]}>
           {body}
         </Text>
       ) : null}
       {actions ? <View style={styles.actions}>{actions}</View> : null}
       {children}
+    </View>
+  );
+}
+
+/** The large hero's illustration: its icon, big and faint, in the top corner. Decorative. */
+export function HeroMark({ icon, color }: { icon: IconName; color: string }) {
+  return (
+    <View aria-hidden style={styles.mark}>
+      <Icon name={icon} size={132} strokeWidth={1.1} color={color} />
     </View>
   );
 }
@@ -68,6 +90,19 @@ export function HeroFootnote({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   card: { padding: 20, gap: 10 },
+  large: {
+    minHeight: LARGE_HERO.minHeight,
+    padding: LARGE_HERO.padding,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  mark: {
+    position: 'absolute',
+    top: 20,
+    right: 24,
+    opacity: 0.2,
+    pointerEvents: 'none',
+  },
   kicker: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -81,6 +116,7 @@ const styles = StyleSheet.create({
   },
   kickerFill: { opacity: 0.72 },
   body: { fontSize: 15, lineHeight: 21 },
+  bodyLarge: { fontSize: 16, lineHeight: 23, maxWidth: 560 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   footnote: {
     marginTop: 6,

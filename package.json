@@ -18,6 +18,7 @@
     "web": "npm run web --workspace=@hackyeah/mobile",
     "dev:website": "npm run dev --workspace=@hackyeah/website",
     "build:website": "npm run build --workspace=@hackyeah/website",
+    "build:pages": "node scripts/build-pages.mjs",
     "dev:backend": "npm run dev --workspace=@hackyeah/backend",
     "build:backend": "npm run build --workspace=@hackyeah/backend",
     "test:backend": "npm run test --workspace=@hackyeah/backend",

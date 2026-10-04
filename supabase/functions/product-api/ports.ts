@@ -4,6 +4,7 @@ import type {
   ActivityOpinionEntity,
   ChatMessageEntity,
   CompleteActivityDto,
+  GoogleTokenResultDto,
   GeneratePlanDto,
   PlanSnapshotDto,
   PlanVersionEntity,
@@ -72,8 +73,14 @@ export interface PlanGenerator {
   ): Promise<{ plan: PlanSnapshotDto; summary: string }>;
   chat(input: SendChatDto, context: GeneratorContext): Promise<GeneratedChat>;
 }
+/** Trades a Google refresh token for a new access token (Google Calendar). */
+export interface GoogleTokenRefresher {
+  refresh(refreshToken: string): Promise<GoogleTokenResultDto>;
+}
 export interface ApiDependencies {
   authenticate(token: string): Promise<{ id: string }>;
   store(userId: string, token: string): ProductStore;
   generator: PlanGenerator;
+  /** Omitted: POST /google/token answers 501 GOOGLE_NOT_CONFIGURED. */
+  google?: GoogleTokenRefresher;
 }

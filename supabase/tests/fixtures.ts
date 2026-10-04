@@ -167,6 +167,11 @@ export const undonePlan = {
     created_at: '2026-10-03T12:10:00Z',
   },
 };
+// Placeholders shaped like tokens; never real Google credentials.
+export const googleToken = {
+  request: { refresh_token: 'synthetic-google-refresh-token' },
+  result: { access_token: 'synthetic-google-access-token', expires_in: 3599 },
+};
 const meta = { contract_version: '1', request_id: null };
 export const examples = {
   UpdateProfileDto: { username: profile.username, preferences },
@@ -183,6 +188,7 @@ export const examples = {
   },
   ResetOpinionsDto: {},
   UndoPlanDto: undoRequest,
+  GoogleTokenDto: googleToken.request,
   SchemaResponse: { data: { Example: { type: 'object' } }, meta },
   ProfileResponse: { data: profile, meta },
   SportListResponse: { data: sports, meta },
@@ -210,6 +216,7 @@ export const examples = {
   OpinionResponse: { data: opinion, meta },
   ResetOpinionsResponse: { data: { cleared: 1 }, meta },
   UndoPlanResponse: { data: undonePlan, meta: { ...meta, request_id: undoRequest.request_id } },
+  GoogleTokenResponse: { data: googleToken.result, meta },
   ErrorResponse: {
     error: {
       code: 'AI_NOT_CONFIGURED',

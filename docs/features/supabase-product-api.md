@@ -74,6 +74,7 @@ included in the AI context.
 | GET    | `/opinions`             | None                           | `ActivityOpinionEntity[]`, newest first        |
 | PUT    | `/opinions`             | `PutOpinionDto`                | Saved opinion, or `null` when cleared          |
 | POST   | `/opinions/reset`       | `{}`                           | `{cleared}`                                    |
+| POST   | `/google/token`         | `GoogleTokenDto`               | `{access_token, expires_in}`                   |
 
 Success is `{data, meta: {contract_version: "1", request_id: UUID | null}}`.
 Failure is `{error: {code, message, retryable}, meta}`. Platform gateway errors
@@ -206,6 +207,33 @@ Runtime configuration names (values supplied by the platform/owner):
 | SUPABASE_SERVICE_ROLE_KEY | `<SERVER_ONLY_KEY>`                 | Function only; never a client value |
 | GEMINI_API_KEY            | `<GEMINI_API_KEY>`                  | Function secret; never a client value |
 | GEMINI_MODEL              | a model ID from AI Studio           | Function secret; no default model   |
+| GOOGLE_OAUTH_CLIENT_ID    | the Web OAuth client's ID           | Function secret (Google Calendar)   |
+| GOOGLE_OAUTH_CLIENT_SECRET | the Web OAuth client's secret      | Function secret; never a client value |
+
+### Google Calendar token refresh
+
+`POST /google/token` takes `{refresh_token}` and answers
+`{access_token, expires_in}`. The mobile app keeps the person's Google tokens
+on the device and calls Google Calendar itself. It reads free/busy only and
+writes only to a calendar it created. Only the refresh needs the OAuth client
+secret, so the function does it.
+
+- `google.ts` posts the refresh token to `https://oauth2.googleapis.com/token`
+  with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`. Use the same
+  Web client as Supabase Auth's Google provider.
+- Without both secrets the route answers 501 `GOOGLE_NOT_CONFIGURED`.
+- Google's `invalid_grant` becomes 409 `GOOGLE_RECONNECT_REQUIRED`. It is not
+  a 401, so clients never take it for an expired Supabase session.
+- `invalid_client` becomes 501 `GOOGLE_NOT_CONFIGURED`. Outages and odd
+  answers become 502 `PROVIDER_UNAVAILABLE`, retryable.
+- The route reads no database rows. Logs carry the status and Google's error
+  code only, never a token.
+- `availability.source` also accepts `google_calendar`. Validation and the
+  Gemini adapter treat it like `device_calendar`: only the slots matter.
+
+```sh
+supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<WEB_CLIENT_ID> GOOGLE_OAUTH_CLIENT_SECRET=<WEB_CLIENT_SECRET>
+```
 
 ### AI provider (Gemini)
 

@@ -26,6 +26,8 @@ import {
   errorResponseSchema,
   feedbackSchema,
   generatePlanSchema,
+  googleTokenRequestSchema,
+  googleTokenSchema,
   gymExerciseSchema,
   gymLogSchema,
   metaSchema,
@@ -109,6 +111,9 @@ type Pairs = {
   PutOpinionDto: [wire.PutOpinionDto, Contract<typeof putOpinionSchema>];
   ResetOpinionsDto: [Record<string, never>, Contract<typeof resetOpinionsSchema>];
   ClearedDto: [wire.ClearedDto, Contract<typeof resetOpinionsResultSchema>];
+  // Google Calendar
+  GoogleTokenDto: [wire.GoogleTokenDto, Contract<typeof googleTokenRequestSchema>];
+  GoogleTokenResultDto: [wire.GoogleTokenResultDto, Contract<typeof googleTokenSchema>];
   // Envelope
   WireErrorCode: [wire.WireErrorCode, Contract<typeof errorCodeSchema>];
   WireMeta: [wire.WireMeta, Contract<typeof metaSchema>];
@@ -126,6 +131,7 @@ type Pairs = {
   OpinionResponse: [wire.WireEnvelope<wire.ActivityOpinionEntity | null>, Contract<typeof apiSchemas.OpinionResponse>];
   ResetOpinionsResponse: [wire.WireEnvelope<wire.ClearedDto>, Contract<typeof apiSchemas.ResetOpinionsResponse>];
   UndoPlanResponse: [wire.WireEnvelope<wire.ActivePlanDto>, Contract<typeof apiSchemas.UndoPlanResponse>];
+  GoogleTokenResponse: [wire.WireEnvelope<wire.GoogleTokenResultDto>, Contract<typeof apiSchemas.GoogleTokenResponse>];
 };
 
 export const wireMatchesContract = expectSame<{ [K in keyof Pairs]: Same<Pairs[K][0], Pairs[K][1]> }>({
@@ -160,6 +166,8 @@ export const wireMatchesContract = expectSame<{ [K in keyof Pairs]: Same<Pairs[K
   PutOpinionDto: true,
   ResetOpinionsDto: true,
   ClearedDto: true,
+  GoogleTokenDto: true,
+  GoogleTokenResultDto: true,
   WireErrorCode: true,
   WireMeta: true,
   WireErrorEnvelope: true,
@@ -176,6 +184,7 @@ export const wireMatchesContract = expectSame<{ [K in keyof Pairs]: Same<Pairs[K
   OpinionResponse: true,
   ResetOpinionsResponse: true,
   UndoPlanResponse: true,
+  GoogleTokenResponse: true,
 });
 
 /** Readable diagnostics: a mismatch here names the field that differs. */
@@ -187,6 +196,7 @@ export const toContract = {
   complete: (v: wire.CompleteActivityDto): Contract<typeof completionInputSchema> => v,
   feedback: (v: wire.UpdateFeedbackDto): Contract<typeof updateFeedbackSchema> => v,
   opinion: (v: wire.PutOpinionDto): Contract<typeof putOpinionSchema> => v,
+  googleToken: (v: wire.GoogleTokenDto): Contract<typeof googleTokenRequestSchema> => v,
 };
 export const toWire = {
   profile: (v: Contract<typeof profileSchema>): wire.ProfileEntity => v,
@@ -198,6 +208,7 @@ export const toWire = {
   completion: (v: Contract<typeof completionSchema>): wire.ActivityCompletionEntity => v,
   opinion: (v: Contract<typeof activityOpinionSchema>): wire.ActivityOpinionEntity => v,
   cleared: (v: Contract<typeof resetOpinionsResultSchema>): wire.ClearedDto => v,
+  googleToken: (v: Contract<typeof googleTokenSchema>): wire.GoogleTokenResultDto => v,
   error: (v: Contract<typeof errorResponseSchema>): wire.WireErrorEnvelope => v,
 };
 

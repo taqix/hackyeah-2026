@@ -4,6 +4,7 @@ import {
   completionInputSchema,
   generatePlanSchema,
   getProductJsonSchemas,
+  googleTokenRequestSchema,
   putOpinionSchema,
   resetOpinionsSchema,
   sendChatSchema,
@@ -15,6 +16,7 @@ import {
 import type { PlanSnapshotDto, UndoPlanDto } from '../../../packages/contracts/src/product.ts';
 import type { ApiDependencies, GeneratorContext, Page, ProductStore } from './ports.ts';
 import { ApiError } from './errors.ts';
+import { unavailableGoogle } from './google.ts';
 import { parseInput, validateGeneratedPlan } from './validation.ts';
 
 export const routes = [
@@ -73,6 +75,12 @@ export const routes = [
     path: '/opinions/reset',
     request: 'ResetOpinionsDto',
     response: 'ResetOpinionsResponse',
+  },
+  {
+    method: 'POST',
+    path: '/google/token',
+    request: 'GoogleTokenDto',
+    response: 'GoogleTokenResponse',
   },
 ] as const;
 
@@ -278,6 +286,12 @@ export function createProductApi(dependencies: ApiDependencies) {
             parseInput(resetOpinionsSchema, body);
             data = { cleared: await store.resetOpinions() };
             break;
+          case '/google/token': {
+            // The refresh token stays in this request: it is never stored or logged here.
+            const input = parseInput(googleTokenRequestSchema, body);
+            data = await (dependencies.google ?? unavailableGoogle).refresh(input.refresh_token);
+            break;
+          }
           case '/plans/undo': {
             const input = parseInput(undoPlanSchema, body);
             requestId = input.request_id;

@@ -6,6 +6,7 @@
  */
 import type { ChatMessage, PlanChange, SessionRef } from '../../types';
 import type { ToAppSportId } from '../mappers';
+import { previousOfWeek } from '../plan/weeks';
 import type { ChatMessageEntity, PlanVersionEntity } from '../wire';
 import { diffVersions, KEPT_LINE } from './diff';
 
@@ -37,12 +38,7 @@ export const isChangeMessage = (message: ChatMessageEntity) =>
 
 /** The version a change replaced: the newest older version of the same week. */
 export function previousVersion(versions: PlanVersionEntity[], to: PlanVersionEntity): PlanVersionEntity | null {
-  let best: PlanVersionEntity | null = null;
-  for (const version of versions) {
-    if (version.version >= to.version || version.plan.week_start !== to.plan.week_start) continue;
-    if (!best || version.version > best.version) best = version;
-  }
-  return best;
+  return previousOfWeek(to, versions);
 }
 
 /**

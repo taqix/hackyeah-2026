@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -11,6 +11,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { KeyboardAvoider, useKeyboardLifted } from '@/components/layout/keyboard-avoider';
 import { useTheme } from '@/theme';
 
 import { IconButton } from './icon-button';
@@ -33,14 +34,21 @@ export type SheetProps = {
   children?: ReactNode;
 };
 
+/** The home-indicator space under a sheet's content; while the keyboard is up the sheet sits on it instead. */
+function SafeFoot() {
+  const insets = useSafeAreaInsets();
+  const lifted = useKeyboardLifted();
+  return <View aria-hidden style={{ height: lifted ? 0 : insets.bottom }} />;
+}
+
 /**
  * Bottom sheet over a dimmed screen: raised surface, 32 radius on top, grab
  * handle, safe-area padding. Slides up (320 ms ease-in-out); appears in place
- * under reduced motion.
+ * under reduced motion. It rides above the keyboard on iOS and Android
+ * (KeyboardAvoider: the modal is its own window, outside the Screen's).
  */
 export function Sheet({ visible, onClose, title, description, label, showClose = false, children }: SheetProps) {
   const { colors, radius, shadows, layout, motion } = useTheme();
-  const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   // Stays true through the closing slide so the Modal unmounts after it.
   const [mounted, setMounted] = useState(visible);
@@ -77,12 +85,13 @@ export function Sheet({ visible, onClose, title, description, label, showClose =
       navigationBarTranslucent
       onRequestClose={onClose}>
       <GestureHandlerRootView style={styles.fill}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.end}>
-          <AnimatedPressable
-            onPress={onClose}
-            aria-hidden
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }, overlayStyle]}
-          />
+        {/* The dim covers the whole screen, keyboard area included; only the panel rides up. */}
+        <AnimatedPressable
+          onPress={onClose}
+          aria-hidden
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }, overlayStyle]}
+        />
+        <KeyboardAvoider style={styles.end}>
           <Animated.View
             accessibilityViewIsModal
             accessibilityLabel={label ?? title}
@@ -96,7 +105,6 @@ export function Sheet({ visible, onClose, title, description, label, showClose =
                 borderTopLeftRadius: radius.sheet,
                 borderTopRightRadius: radius.sheet,
                 paddingHorizontal: layout.gutter,
-                paddingBottom: insets.bottom + 16,
               },
               panelStyle,
             ]}>
@@ -115,8 +123,9 @@ export function Sheet({ visible, onClose, title, description, label, showClose =
               </View>
             ) : null}
             {children}
+            <SafeFoot />
           </Animated.View>
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
       </GestureHandlerRootView>
     </Modal>
   );
@@ -124,7 +133,7 @@ export function Sheet({ visible, onClose, title, description, label, showClose =
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  end: { flex: 1, justifyContent: 'flex-end' },
+  end: { justifyContent: 'flex-end' },
   panel: {
     paddingTop: 10,
     gap: 16,

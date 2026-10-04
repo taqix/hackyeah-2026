@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
+
+import { useBottomEdgePadding } from './keyboard-avoider';
 
 /** '#RRGGBB' → 'rgba(r,g,b,a)': a fade must end in the page colour, not transparent black. */
 function withAlpha(hex: string, alpha: number) {
@@ -16,20 +17,26 @@ export type BottomBarProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+/** The BottomBar's padding under its buttons: the home indicator, or a small gap over the keyboard. */
+export function useBottomBarPadding(): number {
+  return useBottomEdgePadding(20);
+}
+
 /**
  * Sticky bottom actions over the scroll: a short fade to the page colour, then
  * a row of buttons (gap 12). Pair with <Content bottomInset="bottomBar">.
+ * While the keyboard is up it rides on top of it (Screen's KeyboardAvoider).
  * Never on a screen with the tab bar.
  */
 export function BottomBar({ children, style }: BottomBarProps) {
   const { colors, layout } = useTheme();
-  const insets = useSafeAreaInsets();
+  const paddingBottom = useBottomBarPadding();
   return (
     <View
       style={[
         styles.bar,
         { pointerEvents: 'box-none' },
-        { paddingHorizontal: layout.gutter, paddingBottom: Math.max(insets.bottom, 20) },
+        { paddingHorizontal: layout.gutter, paddingBottom },
         style,
       ]}>
       <LinearGradient

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePlannedSession, useSaveFeedback } from '@/api/hooks';
 import { type ActivityLog, type ChooseAgain, type Felt, isApiError } from '@/api/types';
-import { BOTTOM_BAR_CLEARANCE, BottomBar, Col, Content } from '@/components/layout';
+import { BOTTOM_BAR_CLEARANCE, BottomBar, Col, Content, useBottomBarPadding } from '@/components/layout';
 import { Button, Input, Question, RadioCard, RadioGroup, Segmented, Text } from '@/components/ui';
 
 import { CHOOSE_AGAIN_OPTIONS, CHOOSE_AGAIN_QUESTION, FELT_OPTIONS, FELT_QUESTION } from './copy';
@@ -26,7 +25,7 @@ function saveErrorText(error: unknown): string {
  * again (optional), and a note our assistant reads. Pre-filled when editing.
  */
 export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => void }) {
-  const insets = useSafeAreaInsets();
+  const barPadding = useBottomBarPadding();
   const session = usePlannedSession(log.session_id);
   const save = useSaveFeedback();
   const [felt, setFelt] = useState<Felt | null>(log.feedback?.felt ?? null);
@@ -46,7 +45,7 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
     <>
       <Content
         gap={24}
-        bottomInset={save.isError ? BOTTOM_BAR_CLEARANCE + Math.max(insets.bottom, 20) + ERROR_SPACE : 'bottomBar'}>
+        bottomInset={save.isError ? BOTTOM_BAR_CLEARANCE + barPadding + ERROR_SPACE : 'bottomBar'}>
         <FeedbackHeader log={log} session={log.session_id && !session.isError ? session.data : null} />
         <Col gap={12}>
           <Question>{FELT_QUESTION}</Question>

@@ -10,7 +10,6 @@ import { useTheme } from '@/theme';
 
 import { EMAIL_FORMAT_ERROR, googleErrorMessage, looksLikeEmail, normalizeEmail, passwordRoute } from './auth-routes';
 import { GoogleButton } from './google-button';
-import { KeyboardFrame } from './keyboard-frame';
 import { Legal } from './legal';
 import { RequestAlert } from './notes';
 
@@ -87,70 +86,68 @@ export function WelcomeScreen() {
 
   return (
     <Screen>
-      <KeyboardFrame>
-        <Content gap={16} automaticallyAdjustKeyboardInsets={false}>
-          <Brand />
-          <SuggestionCard
-            tone="dawn"
-            style={{ minHeight: 216 }}
-            kicker="Welcome"
-            title="Find a way to move you'll keep."
-            body="A few questions, then a gentle first week. Everyone starts somewhere."
+      <Content gap={16}>
+        <Brand />
+        <SuggestionCard
+          tone="dawn"
+          style={{ minHeight: 216 }}
+          kicker="Welcome"
+          title="Find a way to move you'll keep."
+          body="A few questions, then a gentle first week. Everyone starts somewhere."
+        />
+        {offerGoogle ? (
+          <>
+            <GoogleButton onPress={continueWithGoogle} loading={google.isPending} disabled={lookup.isPending} />
+            {google.isError ? (
+              <RequestAlert
+                error={google.error}
+                onRetry={continueWithGoogle}
+                message={googleErrorMessage(google.error)}
+              />
+            ) : null}
+            <OrDivider />
+          </>
+        ) : null}
+        <Col gap={12}>
+          <Input
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (lookup.isError) lookup.reset();
+            }}
+            onBlur={() => {
+              if (email.trim()) setCheckFormat(true);
+            }}
+            error={emailError}
+            keyboardType="email-address"
+            inputMode="email"
+            autoComplete="email"
+            textContentType="emailAddress"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={(event) => continueWithEmail(event.nativeEvent.text)}
           />
-          {offerGoogle ? (
-            <>
-              <GoogleButton onPress={continueWithGoogle} loading={google.isPending} disabled={lookup.isPending} />
-              {google.isError ? (
-                <RequestAlert
-                  error={google.error}
-                  onRetry={continueWithGoogle}
-                  message={googleErrorMessage(google.error)}
-                />
-              ) : null}
-              <OrDivider />
-            </>
-          ) : null}
-          <Col gap={12}>
-            <Input
-              label="Email"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (lookup.isError) lookup.reset();
-              }}
-              onBlur={() => {
-                if (email.trim()) setCheckFormat(true);
-              }}
-              error={emailError}
-              keyboardType="email-address"
-              inputMode="email"
-              autoComplete="email"
-              textContentType="emailAddress"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="go"
-              onSubmitEditing={(event) => continueWithEmail(event.nativeEvent.text)}
-            />
-            <Button
-              size="lg"
-              fullWidth
-              iconRight="arrow-right"
-              disabled={!valid || google.isPending}
-              loading={lookup.isPending}
-              onPress={() => continueWithEmail()}>
-              Continue with email
-            </Button>
-            {lookupFailed ? <RequestAlert error={lookup.error} onRetry={() => continueWithEmail()} /> : null}
-          </Col>
-          <Legal lead="We'll sign you in, or set up your account if you're new. By continuing" />
-          {__DEV__ && isMockMode ? (
-            <Text variant="caption" align="center">
-              Demo: ana@example.com, any 8+ character password
-            </Text>
-          ) : null}
-        </Content>
-      </KeyboardFrame>
+          <Button
+            size="lg"
+            fullWidth
+            iconRight="arrow-right"
+            disabled={!valid || google.isPending}
+            loading={lookup.isPending}
+            onPress={() => continueWithEmail()}>
+            Continue with email
+          </Button>
+          {lookupFailed ? <RequestAlert error={lookup.error} onRetry={() => continueWithEmail()} /> : null}
+        </Col>
+        <Legal lead="We'll sign you in, or set up your account if you're new. By continuing" />
+        {__DEV__ && isMockMode ? (
+          <Text variant="caption" align="center">
+            Demo: ana@example.com, any 8+ character password
+          </Text>
+        ) : null}
+      </Content>
     </Screen>
   );
 }

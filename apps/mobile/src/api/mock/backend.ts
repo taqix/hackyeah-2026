@@ -16,6 +16,7 @@ import {
   toLocalDate,
   weekdayIndex,
 } from '../../lib/dates';
+import { checkName } from '../../lib/person-name';
 import { answersSentence } from '../../lib/preference-options';
 import { sessionLocalDate, sessionMinutes, sessionStart, sortSessions } from '../../lib/sessions';
 import {
@@ -23,8 +24,8 @@ import {
   type Account,
   type ActivityLog,
   type AssistantSummary,
+  type AuthProviders,
   type AuthSession,
-  type BuildPlanInput,
   type ChatMessage,
   type ChatTurn,
   type ChooseAgain,
@@ -131,6 +132,7 @@ export function createBackend(deps: BackendDeps) {
       first_week_start: p.first_week_start,
       planned_through: p.planned_through,
       failure_message: p.failure_message,
+      failure_code: p.status === 'failed' ? 'generation_failed' : null,
       recent_change: p.recent_change,
     };
   }
@@ -401,13 +403,14 @@ export function createBackend(deps: BackendDeps) {
         db().session_user_id = acc.user.id;
         return sessionFor(acc.user);
       },
-      signUpWithEmail(email: string, password: string): AuthSession {
+      signUpWithEmail(email: string, password: string, name: string): AuthSession {
         const e = validateEmail(email);
+        const saved = checkName(name);
         if (db().accounts.some((a) => a.user.email === e)) {
           throw new ApiError('email_taken', 'An account already uses this email. Sign in instead.');
         }
         if (password.length < 8) throw new ApiError('weak_password', 'Use at least 8 characters.');
-        const acc = createAccount(e, password, null, 'email');
+        const acc = createAccount(e, password, saved, 'email');
         db().session_user_id = acc.user.id;
         return sessionFor(acc.user);
       },
@@ -419,6 +422,16 @@ export function createBackend(deps: BackendDeps) {
       },
       sendPasswordReset(email: string): void {
         validateEmail(email);
+      },
+      updatePassword(password: string): void {
+        if (password.length < 8) throw new ApiError('weak_password', 'Use at least 8 characters.');
+        const d = db();
+        const acc = d.accounts.find((a) => a.user.id === d.session_user_id);
+        if (!acc) throw new ApiError('unauthorized', 'Open the link from the email again.');
+        acc.password = password;
+      },
+      getProviders(): AuthProviders {
+        return { google: true };
       },
       signOut(): void {
         db().session_user_id = null;
@@ -470,14 +483,15 @@ export function createBackend(deps: BackendDeps) {
         tick(u);
         return planState(u);
       },
-      build(input: BuildPlanInput, fail = false): PlanState {
+      /** Plans today and the next six days; free time (null: none known) shapes the times. */
+      build(slots: TimeSlot[] | null = null, fail = false): PlanState {
         const u = data();
         tick(u);
         if (!u.preferences) throw new ApiError('validation', 'Save your answers before building a plan.');
         if (u.plan.status === 'none' || u.plan.status === 'failed') {
           u.plan.status = 'building';
           u.plan.failure_message = null;
-          u.plan.build = { ready_at_ms: wallMs() + BUILD_MS, fail, slots: input.available_slots };
+          u.plan.build = { ready_at_ms: wallMs() + BUILD_MS, fail, slots };
         }
         return planState(u);
       },
@@ -605,6 +619,10 @@ export function createBackend(deps: BackendDeps) {
         }
         u.summary_at = nowIso();
         return next;
+      },
+      /** Mock logs are saved on create, so there is nothing left to save. */
+      commit(id: string): ActivityLog {
+        return findLog(data(), id);
       },
       lastForExercise(exercise: { exercise_id?: string; name: string }): LastExerciseResult | null {
         const u = data();
@@ -785,6 +803,11 @@ export function createBackend(deps: BackendDeps) {
       get(): Account {
         const u = data();
         return { user: account().user, timezone: u.preferences?.timezone ?? 'Europe/Warsaw' };
+      },
+      updateName(name: string): string {
+        const saved = checkName(name);
+        account().user.name = saved;
+        return saved;
       },
     },
   };

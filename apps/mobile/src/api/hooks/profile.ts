@@ -24,6 +24,7 @@ export function useFeedbackOverview() {
 export function useSetOpinion() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['profile', 'set-opinion'],
     mutationFn: ({ activityKey, opinion }: { activityKey: string; opinion: ChooseAgain | null }) =>
       api.profile.setOpinion(activityKey, opinion),
     onSuccess: (overview) => feedbackChanged(queryClient, overview),
@@ -34,6 +35,7 @@ export function useSetOpinion() {
 export function useResetFeedback() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['profile', 'reset-feedback'],
     mutationFn: () => api.profile.resetFeedback(),
     onSuccess: (overview) => feedbackChanged(queryClient, overview),
   });
@@ -43,6 +45,7 @@ export function useResetFeedback() {
 export function useSetSportExcluded() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['profile', 'set-sport-excluded'],
     mutationFn: ({ sportId, excluded }: { sportId: string; excluded: boolean }) =>
       api.profile.setSportExcluded(sportId, excluded),
     onSuccess: (overview) => {

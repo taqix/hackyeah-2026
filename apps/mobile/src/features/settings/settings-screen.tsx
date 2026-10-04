@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking } from 'react-native';
 
+import { isMockMode } from '@/api/config';
 import { useSignOut } from '@/api/hooks';
 import { BackButton, Col, Content, Screen, Section, TopBar } from '@/components/layout';
 import { Button, ListRow, Segmented, type SegmentedOption } from '@/components/ui';
@@ -97,17 +98,19 @@ export function SettingsScreen() {
           />
         </Col>
 
-        <Col gap={0}>
-          <Section>Demo</Section>
-          <ListRow
-            icon="sliders-horizontal"
-            discTone="quiet"
-            discSize={36}
-            title="Demo controls"
-            detail="Mocked data, failures and time travel"
-            onPress={() => router.push('/settings/demo')}
-          />
-        </Col>
+        {isMockMode ? (
+          <Col gap={0}>
+            <Section>Demo</Section>
+            <ListRow
+              icon="sliders-horizontal"
+              discTone="quiet"
+              discSize={36}
+              title="Demo controls"
+              detail="Mocked data, failures and time travel"
+              onPress={() => router.push('/settings/demo')}
+            />
+          </Col>
+        ) : null}
 
         <Button
           variant="ghost"

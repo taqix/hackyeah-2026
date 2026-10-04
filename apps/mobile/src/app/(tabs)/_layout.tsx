@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
+import { CalendarExportSync } from '@/features/calendar-export';
 import { useStepCounterTracking } from '@/hooks/use-step-counter';
 import { FloatingTabBar } from '@/navigation/floating-tab-bar';
 import { GateError, GateLoading } from '@/navigation/gate-states';
@@ -30,12 +31,16 @@ function TabsNavigator() {
   const { colors } = useTheme();
 
   return (
-    <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bgApp } }}>
-      <Tabs.Screen name="index" options={{ title: 'Today' }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
-      <Tabs.Screen name="you" options={{ title: 'You' }} />
-    </Tabs>
+    <>
+      {/* Copies planned sessions to the Movo calendar once the person turns that on. */}
+      <CalendarExportSync />
+      <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bgApp } }}>
+        <Tabs.Screen name="index" options={{ title: 'Today' }} />
+        <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
+        <Tabs.Screen name="you" options={{ title: 'You' }} />
+      </Tabs>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import { type ReactNode, type Ref, useState } from 'react';
 import {
-  Platform,
   type StyleProp,
   StyleSheet,
   TextInput,
@@ -12,6 +11,7 @@ import {
 
 import { useTheme } from '@/theme';
 
+import { noBrowserOutline } from './focus-visible';
 import { IconButton } from './icon-button';
 import { Text } from './text';
 
@@ -171,7 +171,8 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingVertical: 0,
     paddingHorizontal: 0,
-    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : null),
+    // The field draws its own focus ring; hide the browser's square one inside it.
+    ...noBrowserOutline,
   },
   inputMultiline: {
     height: undefined,

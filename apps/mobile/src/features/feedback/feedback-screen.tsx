@@ -1,14 +1,15 @@
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { useLog } from '@/api/hooks';
+import { useCommitLog, useLog } from '@/api/hooks';
+import { isApiError } from '@/api/types';
 import { Col, Content, Row, Screen, TopBar } from '@/components/layout';
-import { Button, IconButton, Skeleton, Text } from '@/components/ui';
+import { Button, IconButton, Skeleton, Spinner, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 import { FeedbackForm } from './feedback-form';
 
-/** Close and Save both keep the log and land on Today, dropping the logging screens underneath. */
+/** Lands on Today, dropping the logging screens underneath. */
 function useLeaveToToday() {
   const router = useRouter();
   return () => {
@@ -17,14 +18,58 @@ function useLeaveToToday() {
   };
 }
 
-/** Completion & feedback (7), a modal after any session is logged (log-it form, gym review). */
+/** Why closing didn't save. Offline and server hiccups keep the draft, saved at the next start. */
+function closeErrorText(error: unknown): string {
+  if (isApiError(error, 'offline') || isApiError(error, 'timeout') || isApiError(error, 'unknown')) {
+    return "This workout isn't saved yet. Check your connection and try again, or close and we'll save it the next time you open the app.";
+  }
+  return isApiError(error) ? error.message : "We couldn't save this workout. Try again.";
+}
+
+/**
+ * Completion & feedback (7), a modal after any session is logged (log-it form,
+ * gym review). Save sends the log with its feedback. Close saves the log
+ * without feedback (it can be given later); if that fails, the log stays on
+ * this phone and Close a second time leaves anyway.
+ */
 export function FeedbackScreen({ logId }: { logId: string | undefined }) {
   const log = useLog(logId);
+  const commit = useCommitLog();
   const leave = useLeaveToToday();
+  const { colors, layout } = useTheme();
+
+  const saveAndLeave = () => {
+    const current = log.data;
+    if (!current || current.actuals_locked) return leave();
+    commit.mutate(current.id, { onSuccess: leave });
+  };
+  const close = () => (commit.isError ? leave() : saveAndLeave());
 
   return (
     <Screen>
-      <TopBar right={<IconButton icon="x" accessibilityLabel="Close" onPress={leave} />} />
+      <TopBar
+        right={
+          commit.isPending ? (
+            <View style={styles.closing}>
+              <Spinner color={colors.textTertiary} accessibilityLabel="Saving" />
+            </View>
+          ) : (
+            <IconButton icon="x" accessibilityLabel="Close" onPress={close} />
+          )
+        }
+      />
+      {commit.isError ? (
+        <Row gap={12} style={[styles.closeError, { paddingHorizontal: layout.gutter }]}>
+          <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.fill}>
+            <Text variant="bodySm" tone="danger">
+              {closeErrorText(commit.error)}
+            </Text>
+          </View>
+          <Button variant="secondary" size="sm" icon="rotate-ccw" onPress={saveAndLeave}>
+            Try again
+          </Button>
+        </Row>
+      ) : null}
       {log.data ? (
         <FeedbackForm key={log.data.id} log={log.data} onDone={leave} />
       ) : log.isError || !logId ? (
@@ -75,3 +120,9 @@ function LoadError({ onRetry, retrying }: { onRetry?: () => void; retrying: bool
     </Content>
   );
 }
+
+const styles = StyleSheet.create({
+  closing: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  closeError: { alignItems: 'flex-start', paddingBottom: 12 },
+  fill: { flex: 1, minWidth: 0 },
+});

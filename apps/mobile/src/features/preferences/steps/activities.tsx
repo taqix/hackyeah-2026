@@ -1,9 +1,10 @@
 import { useSports } from '@/api/hooks';
-import { Question } from '@/components/ui';
+import { Question, Text } from '@/components/ui';
 import { Body, Col, H1, Steps } from '@/components/layout';
 import { ONBOARDING_ORDER } from '@/features/onboarding/step-screen';
 import {
   DiscoveryQuestion,
+  isPickable,
   SportSearch,
   SportTags,
   SportTagsError,
@@ -34,7 +35,12 @@ export function ActivitiesStep({ draft, update, mode }: StepBodyProps) {
       ) : null}
       <Col gap={12}>
         {mode === 'edit' ? <Question>{QUESTION}</Question> : null}
-        {sports.data ? (
+        {sports.data && !sports.data.some(isPickable) ? (
+          // An empty catalog (nothing seeded yet): explain, and let the person go on with explore.
+          <Text variant="bodySm">
+            {"We can't plan any sport yet. You can still continue, and we'll help you explore once sports are ready."}
+          </Text>
+        ) : sports.data ? (
           <>
             <SportTags sports={sports.data} selected={picked} onToggle={toggle} />
             <SportSearch

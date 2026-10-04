@@ -7,8 +7,7 @@
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, type TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, type TextInput, View } from 'react-native';
 
 import { useChatMessages, usePlannedSession, usePlanState, useUndoChatMessage } from '@/api/hooks';
 import { type ChatMessage, isApiError } from '@/api/types';
@@ -23,22 +22,19 @@ import { useTheme } from '@/theme';
 import { CoachBubble, FineLine, QuickReplies } from './bubbles';
 import { ChatHeader } from './chat-header';
 import { Composer } from './composer';
-import { DONE_STAYS, INTRO, MOVE_REQUEST, SESSION_REPLIES } from './copy';
+import { DONE_STAYS, INTRO, MOVE_REQUEST, NOT_READY_HINT, SESSION_REPLIES } from './copy';
 import { Examples } from './examples';
-import { aboutLabel, sessionQuestion, sessionRef } from './labels';
+import { aboutLabel, sessionQuestion, sessionRef, undoProblem } from './labels';
 import { ThreadMessages } from './thread-messages';
 import { ThreadScroll, type ThreadScrollHandle } from './thread-scroll';
 import { useChatSend } from './use-chat-send';
-import { useKeyboardShown } from './use-keyboard-shown';
 import { usePlanSubtitle } from './use-plan-subtitle';
 
 export function ChatScreen() {
   const params = useLocalSearchParams<ChatRouteParams>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { layout } = useTheme();
   const today = useNow();
-  const keyboardShown = useKeyboardShown();
 
   const chat = useChatMessages();
   const plan = usePlanState();
@@ -62,9 +58,11 @@ export function ChatScreen() {
   });
   const pendingSession = usePlannedSession(sender.pending?.aboutId);
   const busy = sender.busy || undo.isPending;
+  // A message changes the plan, so there must be one (not while it builds or after it failed).
+  const planReady = plan.data?.status === 'ready';
 
   const sendText = (text: string) => {
-    if (undo.isPending || !sender.submit(text, aboutId)) return false;
+    if (!planReady || undo.isPending || !sender.submit(text, aboutId)) return false;
     undo.reset();
     setSentThisVisit(true);
     threadRef.current?.follow();
@@ -115,69 +113,67 @@ export function ChatScreen() {
   return (
     <Screen>
       <ChatHeader sub={subtitle} />
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'web' ? undefined : 'padding'}>
-        <ThreadScroll ref={threadRef} contentKey={threadKey} gutter={layout.gutter}>
-          <CoachBubble>{INTRO}</CoachBubble>
-          {chat.isPending ? (
-            <View style={styles.loading}>
-              <Spinner accessibilityLabel="Loading the conversation" />
-            </View>
-          ) : chat.isError && !chat.data ? (
-            <LoadProblem
-              offline={isApiError(chat.error, 'offline')}
-              retrying={chat.isFetching}
-              onRetry={() => void chat.refetch()}
-            />
-          ) : null}
-          <ThreadMessages
-            messages={messages}
-            pending={sender.pending}
-            pendingMessage={pendingMessage}
-            today={today}
-            busy={busy}
-            onQuickReply={(text) => void sendText(text)}
-            onUndo={onUndo}
-            onSeeWeek={(date) => router.dismissTo(routes.today({ week: startOfWeek(date), day: date }))}
-            onEditLog={(logId) => router.push(routes.log('new', logId))}
-            onRetry={sender.retry}
-            onEdit={onEditMessage}
+      <ThreadScroll ref={threadRef} contentKey={threadKey} gutter={layout.gutter}>
+        <CoachBubble>{INTRO}</CoachBubble>
+        {chat.isPending ? (
+          <View style={styles.loading}>
+            <Spinner accessibilityLabel="Loading the conversation" />
+          </View>
+        ) : chat.isError && !chat.data ? (
+          <LoadProblem
+            offline={isApiError(chat.error, 'offline')}
+            retrying={chat.isFetching}
+            onRetry={() => void chat.refetch()}
           />
-          {showSessionQuestion && about.data ? (
-            <>
-              <CoachBubble>{sessionQuestion(about.data, today)}</CoachBubble>
-              <QuickReplies items={SESSION_REPLIES} disabled={busy} onPick={(text) => void sendText(text)} />
-            </>
-          ) : null}
-          {showExamples ? (
-            <>
-              <Examples onPick={fillBox} />
-              <FineLine icon="lock">{DONE_STAYS}</FineLine>
-            </>
-          ) : null}
-        </ThreadScroll>
-        <Composer
-          inputRef={inputRef}
-          value={draft}
-          onChangeText={setDraft}
-          onSend={() => {
-            if (sendText(draft)) setDraft('');
-          }}
+        ) : null}
+        <ThreadMessages
+          messages={messages}
+          pending={sender.pending}
+          pendingMessage={pendingMessage}
+          today={today}
           busy={busy}
-          offline={sender.pending?.status === 'offline'}
-          about={about.data ? { icon: sportIcon(about.data.sport_id), label: aboutLabel(about.data, today) } : null}
-          onRemoveAbout={() => setAboutId(null)}
-          top={
-            undo.isError ? (
-              <FineLine icon="circle-alert" danger align="center" alert>
-                {isApiError(undo.error, 'offline')
-                  ? "You're offline, so nothing was undone."
-                  : "Couldn't undo that. Your plan hasn't changed."}
-              </FineLine>
-            ) : null
-          }
-          bottomPadding={keyboardShown ? 10 : Math.max(insets.bottom, 16)}
+          onQuickReply={(text) => void sendText(text)}
+          onUndo={onUndo}
+          onSeeWeek={(date) => router.dismissTo(routes.today({ week: startOfWeek(date), day: date }))}
+          onEditLog={(logId) => router.push(routes.log('new', logId))}
+          onRetry={sender.retry}
+          onEdit={onEditMessage}
         />
-      </KeyboardAvoidingView>
+        {showSessionQuestion && about.data ? (
+          <>
+            <CoachBubble>{sessionQuestion(about.data, today)}</CoachBubble>
+            <QuickReplies items={SESSION_REPLIES} disabled={busy} onPick={(text) => void sendText(text)} />
+          </>
+        ) : null}
+        {showExamples ? (
+          <>
+            <Examples onPick={fillBox} />
+            <FineLine icon="lock">{DONE_STAYS}</FineLine>
+          </>
+        ) : null}
+      </ThreadScroll>
+      <Composer
+        inputRef={inputRef}
+        value={draft}
+        onChangeText={setDraft}
+        onSend={() => {
+          if (sendText(draft)) setDraft('');
+        }}
+        busy={busy}
+        disabled={!planReady}
+        offline={sender.pending?.status === 'offline'}
+        about={about.data ? { icon: sportIcon(about.data.sport_id), label: aboutLabel(about.data, today) } : null}
+        onRemoveAbout={() => setAboutId(null)}
+        top={
+          undo.isError ? (
+            <FineLine icon="circle-alert" danger align="center" alert>
+              {undoProblem(undo.error)}
+            </FineLine>
+          ) : plan.data && !planReady ? (
+            <FineLine align="center">{NOT_READY_HINT}</FineLine>
+          ) : null
+        }
+      />
     </Screen>
   );
 }
@@ -202,7 +198,6 @@ function LoadProblem({ offline, retrying, onRetry }: { offline: boolean; retryin
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
   loading: { paddingVertical: 32, alignItems: 'center' },
   error: { gap: 10 },
   inline: { alignSelf: 'flex-start' },

@@ -4,8 +4,9 @@
 
 These are the team's agreed target conventions. `develop` already contains an
 Expo SDK 57 starter in `apps/mobile`, npm workspaces, and `package-lock.json`.
-Root commands include `npm start`, `npm run android`, `npm run ios`,
-`npm run web`, `npm run typecheck`, and `npm run lint`. The current web command
+Root commands include `npm start`, `npm run start:hostname`,
+`npm run android`, `npm run ios`, `npm run web`, `npm run typecheck`, and
+`npm run lint`. The current web command
 starts Expo's web target, not the planned standalone React dashboard.
 
 The NestJS backend now serves `GET /health` and has a Dockerfile and Compose
@@ -85,6 +86,80 @@ On a physical mobile device, `localhost` refers to that device. Document the
 backend's reachable development URL, bind address, and Expo network setup when
 the mobile scaffold lands. Test that URL on the actual judging device.
 
+### Mobile environment
+
+The Expo app in `apps/mobile` uses the Supabase product API by default. Copy
+`apps/mobile/.env.example` to `apps/mobile/.env`, which Git ignores, and fill it
+in. Expo bundles every `EXPO_PUBLIC_` value into the app, so never put a secret
+or service-role key there. Restart `expo start` after changing the file.
+
+| Variable | Required | Value |
+| --- | --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL` | yes, in Supabase mode | `https://<project-ref>.supabase.co` |
+| `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes, in Supabase mode | the publishable (`sb_publishable_…`) or legacy anon key |
+| `EXPO_PUBLIC_PRODUCT_API_URL` | no | defaults to `${EXPO_PUBLIC_SUPABASE_URL}/functions/v1/product-api` |
+| `EXPO_PUBLIC_API_MODE` | no | `supabase` (default) or `mock` |
+| `EXPO_PUBLIC_DEBUG_LOGS` | no | `off` silences the debug logs of development builds |
+
+Without the URL or key the app shows a setup screen that lists the missing
+values. It never falls back to the mock. `EXPO_PUBLIC_API_MODE=mock` runs the
+offline demo backend (demo account, Demo controls) and needs no other value; see
+[Mobile app on a mocked API](features/mobile-mock-app.md). Mobile checks, run in
+`apps/mobile`: `npm run typecheck`, `npx eslint src`, `npm test`,
+`npm run test:remote`, `npm run test:calendar`, and `npm run test:activity-import`.
+
+#### Starting the app for Expo Go
+
+`npm start` (`expo start`) serves Expo Go on the computer's LAN IP. Google
+sign-in and Google Calendar can't return to Expo Go on an IP address:
+Supabase Auth refuses redirects to raw IP hosts and sends the phone to its
+Site URL (`http://localhost:3000`), which can't be reached. The app says so
+before opening Google. To use Google from Expo Go, start the app with a
+hostname:
+
+- `npm run start:hostname`, in `apps/mobile` or at the repository root. It
+  finds the Mac's LAN IPv4 (`en0`, then `en1`) and runs `expo start` with
+  `REACT_NATIVE_PACKAGER_HOSTNAME=<ip>.nip.io`, so Expo Go's links become
+  `exp://<ip>.nip.io:8081/--/…`. Extra arguments go to `expo start`:
+  `npm run start:hostname -- --clear`. A preset
+  `REACT_NATIVE_PACKAGER_HOSTNAME` is used as it is.
+- `npx expo start --tunnel`, when the phone can't resolve `nip.io` (DNS
+  rebinding protection on the router) or isn't on the same network.
+- The development build (`npm run android`, `npm run ios`), whose
+  `hackyeah2026://` links never depend on the host.
+
+Details: [Expo Go and IP addresses](features/mobile-supabase-integration.md#expo-go-and-ip-addresses).
+
+#### Debug logs
+
+Development builds (`__DEV__`) print one line per event to the Metro terminal
+and the React Native DevTools console (press `j` in `expo start`). Each line
+starts with `[movo:<scope>]`:
+
+- `http`: every product API request, response or failure, with the status,
+  duration, short request ID, the 401 refresh-and-resend, transport retries
+  and timeouts.
+- `auth`: Auth state events, sign-in, sign-up, Google, password reset and
+  sign-out attempts and outcomes, and auth deep links (kind only).
+- `query` and `mutation`: React Query loads, changed refetches, failures and
+  retries; mutations by their `mutationKey`. `query` also shows the remote
+  data cache being invalidated or reset.
+- `nav`: route changes, with IDs shortened and parameter names only.
+- `plan`, `chat`, `logs`, `profile`, `calendar`: plan builds and re-plans,
+  chat sends and Undo, drafts and feedback, opinions and switched-off sports,
+  calendar free time (source, slot count, read time), the Movo export, and
+  Google Calendar connect, token refresh, free/busy counts and export counts.
+- `app`: the API mode and missing variables at start. `mock`: each mock call.
+
+Failures use `console.warn`; the root layout keeps these lines out of LogBox.
+Set `EXPO_PUBLIC_DEBUG_LOGS=off` in `apps/mobile/.env` to silence them, then
+restart `expo start`. Release builds and Node tests log nothing. The logs never
+contain tokens, keys, `Authorization` headers, passwords, full emails (only
+`a***@example.com`), chat text, feedback notes or calendar event titles.
+Request bodies appear as their keys and safe values only. The logger is
+`apps/mobile/src/lib/debug-log.ts`; route new logs through it rather than
+calling `console` directly.
+
 ## Application and data boundaries
 
 - The current proof-of-concept path is the [Supabase product API](features/supabase-product-api.md):
@@ -93,9 +168,11 @@ the mobile scaffold lands. Test that URL on the actual judging device.
   and uses owner-scoped reads plus transactional RPC writes.
   Never trust a client-provided user ID as authorization.
 - RLS enforces owner access; privileged Supabase credentials remain server-only.
-  Product tables and functions are prepared locally and are not deployed.
-- Guest bootstrap and limits remain follow-up work; no real or demo data is seeded
-  by the current product API migrations.
+  The hosted project runs an earlier `product-api`; the 4 October migrations and
+  function changes are not applied yet (see [Runtime status](deployment.md)).
+- Guest bootstrap and limits remain follow-up work. The only seed migration adds
+  the sport catalog and missing profile rows; no users, plans, or demo data are
+  seeded.
 - Keep AI credentials and prompts in the server function. Validate AI output as untrusted
   input and apply changes in a database transaction.
   Backend AI communication, configuration, and prompts live together under
@@ -112,8 +189,10 @@ the corresponding feature. Auth identities remain managed by Supabase Auth.
 
 Available product API checks are `npm run test:supabase`,
 `npm run typecheck:supabase`, and `npm run lint:supabase`. Regenerate its client
-schemas/examples with `npm run schema:product`. The AI adapter is disabled;
-actual Edge/Auth runtime smoke checks and owner deployment remain pending.
+schemas/examples with `npm run schema:product`. The function plans with Gemini
+when `GEMINI_API_KEY` and `GEMINI_MODEL` are set and answers 501
+`AI_NOT_CONFIGURED` otherwise. Actual Edge/Auth runtime smoke checks and owner
+deployment remain pending.
 
 ## Code conventions
 
@@ -157,6 +236,17 @@ did not change behaviour. `apps/website` is the worked example and compiles unde
 - Validate API inputs and return consistent, actionable errors.
 - Make loading, empty, failure, and retry states explicit in both clients.
 - Use accessible labels, keyboard support on web, and usable touch targets.
+- Mobile layout: start every screen with `Screen`. It ends the screen at the
+  software keyboard's top on iOS and Android (`KeyboardAvoider`), so `Content`
+  scrolls to its end with the focused field in view and `BottomBar` rides
+  above the keyboard; a `Sheet` does the same in its own window. Do not add a
+  `KeyboardAvoidingView` or `automaticallyAdjustKeyboardInsets` per screen.
+- Mobile shapes: give a `View` whose fill or border only appears later (a
+  selection ring, a halo) `collapsable={false}`. React Native flattens it while
+  it draws nothing, and Android re-creates it without its `borderRadius`.
+- Mobile focus on the web: `PressableScale` draws the kit's focus ring for
+  keyboard focus only; text fields hide the browser's square outline
+  (`noBrowserOutline`) and draw their own rounded ring.
 - Log operational context without credentials or raw personal chat content.
 - Keep environment templates current and document required versus optional values.
 - Keep installed third-party skills separate from application code; do not reformat

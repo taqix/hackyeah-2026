@@ -173,6 +173,12 @@ the account. A wrong password says so in the field (1.3). **Change** goes back
 to the email. Supabase Auth covers both ways. There is no guest entry on mobile;
 the website demo keeps one.
 
+The app also asks a new email account for **Your name** above the new password
+on 1.2 (required, up to 50 characters), and Today and the You tab greet by it.
+Settings (9.6) has a **Name** row that changes it in a sheet. Not designed yet:
+neither has a prototype screen; the app builds both from the kit's Input,
+ListRow and Sheet.
+
 Not decided yet: the new field shapes (`preferred_window`, `starting_obstacles`
 as an array, `activity_interests` as catalog IDs) need `PREFERENCES.md` and the
 plan contract updated; `codex/gemini-plan-contract` already takes catalog IDs.

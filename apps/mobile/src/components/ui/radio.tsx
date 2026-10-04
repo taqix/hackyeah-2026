@@ -11,7 +11,11 @@ function Indicator({ checked }: { checked: boolean }) {
   const { colors, motion } = useTheme();
   const reduced = useReducedMotion();
   return (
-    <View style={[styles.halo, { backgroundColor: checked ? colors.accentSoftStrong : 'transparent' }]}>
+    // Not collapsable: unchecked, the halo has no fill, so React Native would flatten it
+    // away, and Android re-creates it on check with only the new fill: a square halo.
+    <View
+      collapsable={false}
+      style={[styles.halo, { backgroundColor: checked ? colors.accentSoftStrong : 'transparent' }]}>
       <View
         style={[
           styles.ring,

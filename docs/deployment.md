@@ -1,12 +1,63 @@
 # Runtime status
 
-The [Supabase product API](features/supabase-product-api.md) now has local migration,
-function, DTO, and schema artifacts. They have not been applied/deployed remotely.
-Local CPU tests validate database rules and the HTTP handler; actual Supabase CLI,
-Deno, Auth provider, and device/browser integration checks remain owner work.
+## Supabase product API
 
-The current backend milestone is local only. There is no cloud infrastructure,
-registry, or hosted API; the only deployment workflow publishes the website (see
+The hosted Supabase project (FitnessApp) runs the
+[product API](features/supabase-product-api.md), and the mobile app uses it by
+default; see [Mobile app on Supabase](features/mobile-supabase-integration.md).
+
+Live state after the 4 October 2026 push:
+
+- **Migrations:**
+  - Applied up to `20261004120000_profile_username_from_auth`, including
+    `20261004100000_feedback_opinions_undo` and
+    `20261004110000_sport_catalog_seed`. The username migration makes signup
+    copy the Auth name into `profile.username` and backfills existing profiles.
+  - The wearable migration `20261003120000` is intentionally not applied.
+  - The catalog has 7 working sports and 15 previews.
+- **Function:** `product-api` is redeployed with `verify_jwt = true`. It
+  includes the Gemini adapter, late feedback, opinions, Undo, and Google token
+  refresh (`POST /google/token`).
+- **Secrets:** `GEMINI_API_KEY` and `GEMINI_MODEL` are set.
+- **Auth:**
+  - The Google provider is on, and manual identity linking is on.
+  - Redirects are allowlisted for `hackyeah2026://auth/{callback,reset}`,
+    `exp://**/--/auth/{callback,reset}` and
+    `http://localhost:8081/auth/{callback,reset}`.
+  - Auth refuses redirects to a raw IP host, even allowlisted ones, and falls
+    back to the Site URL (`http://localhost:3000`). Expo Go needs a hostname:
+    `npm run start:hostname`, `--tunnel`, or the development build.
+
+Remaining owner steps:
+
+1. **Google token refresh:** set the same Web client the Supabase Google
+   provider uses:
+   `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<ID> GOOGLE_OAUTH_CLIENT_SECRET=<SECRET>`.
+   The Management API exposes only a digest of the secret, so it cannot be
+   copied from Auth settings. Without it, Google Calendar asks the person to
+   reconnect when the access token expires (about an hour).
+2. **Google Cloud:** enable the Google Calendar API. Add the
+   `calendar.freebusy` and `calendar.app.created` scopes and the test users to
+   the consent screen.
+3. **Gateway JWT check:** if the gateway ever rejects valid user tokens (the
+   project signs them with ES256), decide whether to deploy with
+   `--no-verify-jwt`. The handler verifies every token with Auth itself.
+4. **Optional:** enable leaked-password protection in Auth.
+5. **Smoke test** from the app:
+   - a new account through onboarding to its first plan
+   - a log with feedback
+   - a chat change and its Undo
+   - Google sign-in and Google Calendar connect
+   - a second account that sees none of the first account's data
+
+Deploy commands (Supabase CLI, no Docker needed):
+`supabase functions deploy product-api --project-ref <REF> --use-api` and
+`supabase secrets set --env-file <file-with-only-the-new-secrets>`.
+
+## Backend (NestJS)
+
+The NestJS backend is local only. There is no cloud infrastructure, registry,
+or hosted NestJS API; the only deployment workflow publishes the website (see
 [Website](#website)).
 
 From the repository root, run `npm ci` and then either `npm run dev:backend`

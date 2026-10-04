@@ -4,6 +4,15 @@
  * when the demo says so, and returns copies, never live database objects.
  */
 import { now } from '@/lib/clock';
+import {
+  debugLog,
+  debugLogsEnabled,
+  debugWarn,
+  describeError,
+  errorLabel,
+  startTimer,
+  summarizeData,
+} from '@/lib/debug-log';
 
 import type { ApiClient } from '../client';
 import { ApiError } from '../types';
@@ -23,6 +32,34 @@ function whenReady(): Promise<void> {
   return ready;
 }
 
+/**
+ * Debug builds: every mock call as `[movo:mock] plan.getState 12ms`, with the
+ * result's shape or the error code; never arguments (emails, passwords, chat
+ * text). Unchanged when debug logs are off.
+ */
+function withCallLogging(client: ApiClient): ApiClient {
+  if (!debugLogsEnabled) return client;
+  const sections = client as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
+  const logged: Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>> = {};
+  for (const [section, methods] of Object.entries(sections)) {
+    logged[section] = {};
+    for (const [name, method] of Object.entries(methods)) {
+      logged[section][name] = (...args) => {
+        const took = startTimer();
+        const result = method(...args);
+        void Promise.resolve(result).then(
+          (value) => debugLog('mock', `${section}.${name} ${took()}`, () => ({ data: summarizeData(value) })),
+          (error: unknown) =>
+            debugWarn('mock', `✕ ${section}.${name} ${took()} ${errorLabel(error)}`, () => describeError(error)),
+        );
+        return result;
+      };
+    }
+  }
+  // Same sections and method names as `client`, each wrapped with the same signature.
+  return logged as unknown as ApiClient;
+}
+
 export function createMockApiClient(): ApiClient {
   const backend = createBackend({ db: getDb, now });
 
@@ -38,14 +75,16 @@ export function createMockApiClient(): ApiClient {
     }
   }
 
-  return {
+  return withCallLogging({
     auth: {
       getSession: () => call(() => backend.auth.getSession()),
       lookupEmail: (email) => call(() => backend.auth.lookupEmail(email)),
       signInWithEmail: (email, password) => call(() => backend.auth.signInWithEmail(email, password)),
-      signUpWithEmail: (email, password) => call(() => backend.auth.signUpWithEmail(email, password)),
+      signUpWithEmail: (email, password, name) => call(() => backend.auth.signUpWithEmail(email, password, name)),
       signInWithGoogle: () => call(() => backend.auth.signInWithGoogle()),
       sendPasswordReset: (email) => call(() => backend.auth.sendPasswordReset(email)),
+      updatePassword: (password) => call(() => backend.auth.updatePassword(password)),
+      getProviders: () => call(() => backend.auth.getProviders()),
       signOut: () => call(() => backend.auth.signOut()),
     },
     catalog: {
@@ -57,7 +96,8 @@ export function createMockApiClient(): ApiClient {
     },
     plan: {
       getState: () => call(() => backend.plan.getState()),
-      build: (input) => call(() => backend.plan.build(copy(input), demo.consume('failNextBuild'))),
+      // The mock plans from the preferred window; it does not read the calendar.
+      build: () => call(() => backend.plan.build(null, demo.consume('failNextBuild'))),
       getWeek: (weekStart) => call(() => backend.plan.getWeek(weekStart)),
       listSessions: (range) => call(() => backend.plan.listSessions(range)),
       getSession: (id) => call(() => backend.plan.getSession(id)),
@@ -69,6 +109,7 @@ export function createMockApiClient(): ApiClient {
       get: (id) => call(() => backend.logs.get(id)),
       update: (id, patch) => call(() => backend.logs.update(id, copy(patch))),
       saveFeedback: (logId, feedback) => call(() => backend.logs.saveFeedback(logId, copy(feedback))),
+      commit: (id) => call(() => backend.logs.commit(id)),
       lastForExercise: (exercise) => call(() => backend.logs.lastForExercise(exercise)),
     },
     chat: {
@@ -94,6 +135,7 @@ export function createMockApiClient(): ApiClient {
     },
     account: {
       get: () => call(() => backend.account.get()),
+      updateName: (name) => call(() => backend.account.updateName(name)),
     },
-  };
+  });
 }

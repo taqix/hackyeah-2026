@@ -3,6 +3,8 @@ import type { LocalDate } from './types';
 /** Every query key in one place, so mutations can invalidate precisely. */
 export const queryKeys = {
   session: ['auth', 'session'] as const,
+  /** Kept across users like the session: it describes the server, not the person. */
+  authProviders: ['auth', 'providers'] as const,
   sports: ['catalog', 'sports'] as const,
   preferences: ['preferences'] as const,
   planState: ['plan', 'state'] as const,

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { LocalDate } from '@/api/types';
-import { PressableScale, Text } from '@/components/ui';
+import { FocusRing, PressableScale, Text } from '@/components/ui';
 import { WEEKDAYS_SHORT } from '@/lib/dates';
 import { useTheme } from '@/theme';
 
@@ -10,6 +10,8 @@ import { dayOfMonth, isInMonth, monthWeeks } from './month';
 
 /** Most marks one date shows; the day's label still names every session. */
 const MAX_MARKS = 4;
+/** The date's circle. */
+const NUMBER = 34;
 
 /** Decorative: each day's label already says it in words. aria-hidden works on iOS, Android and web. */
 const hidden = { 'aria-hidden': true } as const;
@@ -122,30 +124,39 @@ function DayCell({ date, items, today, plannedThrough, selected, onSelect }: Day
     <PressableScale
       onPress={() => onSelect(date)}
       disabled={ahead}
+      focusRing="none"
       accessibilityRole="button"
       accessibilityLabel={dayAccessibilityLabel(date, items, { today, plannedThrough })}
       aria-selected={selected} aria-disabled={ahead}
       style={[styles.cell, styles.day]}>
-      <View
-        style={[
-          styles.number,
-          isToday && { backgroundColor: colors.surfaceInverse },
-          ring && { borderWidth: 2, borderColor: colors.textPrimary },
-          ahead && styles.ahead,
-        ]}>
-        <Text
-          variant="numeric"
-          tone={isToday ? 'inverse' : ahead ? 'tertiary' : 'primary'}
-          tabular
-          style={styles.numberText}>
-          {dayOfMonth(date)}
-        </Text>
-      </View>
-      <View style={styles.marks}>
-        {(items ?? []).slice(0, MAX_MARKS).map((item) => (
-          <Mark key={item.key} state={markState(item, today)} />
-        ))}
-      </View>
+      {({ focusVisible }) => (
+        <>
+          {/* Not collapsable: a plain day has no fill or border, so React Native would flatten the
+              circle away, and Android re-creates it on select with only the new border: a square. */}
+          <View
+            collapsable={false}
+            style={[
+              styles.number,
+              isToday && { backgroundColor: colors.surfaceInverse },
+              ring && { borderWidth: 2, borderColor: colors.textPrimary },
+              ahead && styles.ahead,
+            ]}>
+            <Text
+              variant="numeric"
+              tone={isToday ? 'inverse' : ahead ? 'tertiary' : 'primary'}
+              tabular
+              style={styles.numberText}>
+              {dayOfMonth(date)}
+            </Text>
+            {focusVisible ? <FocusRing radius={NUMBER / 2} /> : null}
+          </View>
+          <View style={styles.marks}>
+            {(items ?? []).slice(0, MAX_MARKS).map((item) => (
+              <Mark key={item.key} state={markState(item, today)} />
+            ))}
+          </View>
+        </>
+      )}
     </PressableScale>
   );
 }
@@ -156,7 +167,7 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row' },
   cell: { flex: 1, minWidth: 0 },
   day: { height: 52, alignItems: 'center', gap: 5, paddingTop: 2 },
-  number: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  number: { width: NUMBER, height: NUMBER, borderRadius: NUMBER / 2, alignItems: 'center', justifyContent: 'center' },
   numberText: { fontSize: 15, lineHeight: 18 },
   outside: { opacity: 0.45 },
   ahead: { opacity: 0.55 },

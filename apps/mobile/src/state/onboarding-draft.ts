@@ -16,7 +16,7 @@ import type {
   Preferences,
   StartingComfort,
 } from '@/api/types';
-import { anyTime, PREFERRED_WINDOW_RANGE } from '@/lib/preference-options';
+import { anyTime, PREF_OPTIONS, PREFERRED_WINDOW_RANGE } from '@/lib/preference-options';
 
 export interface OnboardingDraft {
   starting_comfort: StartingComfort | null;
@@ -84,8 +84,103 @@ function normalize(draft: OnboardingDraft): OnboardingDraft {
   };
 }
 
-let draft: OnboardingDraft = defaults();
+/* ------------------------------------------- Kept across a web redirect */
+
+/**
+ * On the web, connecting Google Calendar from Review sends the whole page to
+ * Google, and this in-memory draft would be lost. Review keeps it in the
+ * tab's sessionStorage just before the page leaves; the draft starts from it
+ * when the page loads again (taken once, within 30 minutes). Phones keep the
+ * app running, so there is nothing to keep there.
+ */
+const STASH_KEY = 'movo.onboarding-draft.v1';
+const STASH_TTL_MS = 30 * 60_000;
+
+/** The tab's sessionStorage on the web; null in React Native, the static render, or where it is blocked. */
+function tabStorage(): Storage | null {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const isStringList = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+/** Only values the options still offer survive, so an older stash can't put unknown answers in the draft. */
+function known<V extends string>(options: readonly { value: V }[], values: unknown): V[] {
+  if (!isStringList(values)) return [];
+  return options.map((option) => option.value).filter((value) => values.includes(value));
+}
+
+/** A stashed draft, checked field by field; null when it isn't one. */
+function parseStash(raw: string, now: number): OnboardingDraft | null {
+  try {
+    const stash = JSON.parse(raw) as { saved_at?: unknown; draft?: Record<string, unknown> };
+    const value = stash.draft;
+    if (!isNumber(stash.saved_at) || now - stash.saved_at > STASH_TTL_MS || !value || typeof value !== 'object') {
+      return null;
+    }
+    const window = value.preferred_window;
+    const base = defaults();
+    return {
+      starting_comfort: known(PREF_OPTIONS.starting_comfort, [value.starting_comfort])[0] ?? null,
+      sessions_per_week: isNumber(value.sessions_per_week) ? value.sessions_per_week : base.sessions_per_week,
+      session_minutes: isNumber(value.session_minutes) ? value.session_minutes : base.session_minutes,
+      preferred_window:
+        Array.isArray(window) && window.length === 2 && isNumber(window[0]) && isNumber(window[1])
+          ? [window[0], window[1]]
+          : null,
+      // Catalog sports are open-ended slugs (`sport-42`): kept as strings.
+      activity_interests: isStringList(value.activity_interests) ? value.activity_interests : [],
+      discovery_preference:
+        known(PREF_OPTIONS.discovery_preference, [value.discovery_preference])[0] ?? base.discovery_preference,
+      available_locations: known(PREF_OPTIONS.available_locations, value.available_locations),
+      available_equipment: known(PREF_OPTIONS.available_equipment, value.available_equipment),
+      avoidances: known(PREF_OPTIONS.avoidances, value.avoidances),
+      starting_obstacles: known(PREF_OPTIONS.starting_obstacles, value.starting_obstacles),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** The stashed draft, taken once: the stash is removed whether or not it was usable. */
+function takeStash(): OnboardingDraft | null {
+  const storage = tabStorage();
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(STASH_KEY);
+    if (raw === null) return null;
+    storage.removeItem(STASH_KEY);
+    return parseStash(raw, Date.now());
+  } catch {
+    return null;
+  }
+}
+
+let draft: OnboardingDraft = normalize(takeStash() ?? defaults());
 const listeners = new Set<() => void>();
+
+/** Review on the web, just before the page goes to Google: keep the draft for the page that loads next. */
+export function stashDraftForRedirect(): void {
+  try {
+    tabStorage()?.setItem(STASH_KEY, JSON.stringify({ saved_at: Date.now(), draft }));
+  } catch {
+    // Storage full or blocked: the answers can be given again.
+  }
+}
+
+/** The page didn't leave after all (the connect failed or was refused): forget the stash. */
+export function dropStashedDraft(): void {
+  try {
+    tabStorage()?.removeItem(STASH_KEY);
+  } catch {
+    // Nothing to forget.
+  }
+}
 
 function setDraft(next: OnboardingDraft) {
   draft = normalize(next);

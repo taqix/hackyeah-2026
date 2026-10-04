@@ -43,10 +43,13 @@ export function UpdatingCard() {
   );
 }
 
-export type ProblemKind = 'failed' | 'stale' | 'offline';
+export type ProblemKind = 'failed' | 'stale' | 'offline' | 'unavailable';
 
 export type ProblemCardProps = {
-  /** failed: 8.12, stale: 8.13 (changed elsewhere), offline: 8.14 (message waits, unsent). */
+  /**
+   * failed: 8.12, stale: 8.13 (changed elsewhere), offline: 8.14 (message
+   * waits, unsent), unavailable: no AI provider is connected yet.
+   */
   kind: ProblemKind;
   /** Try again resends the message. */
   onRetry: () => void;
@@ -77,6 +80,14 @@ const PROBLEMS = {
     title: 'Not sent',
     lead: "You're offline. ",
     bold: "Your plan hasn't changed.",
+    tail: '',
+  },
+  unavailable: {
+    icon: 'cloud-off',
+    tone: 'info',
+    title: 'Not connected yet',
+    lead: "The coach isn't connected yet. ",
+    bold: 'Your plan stays as it is.',
     tail: '',
   },
 } as const;

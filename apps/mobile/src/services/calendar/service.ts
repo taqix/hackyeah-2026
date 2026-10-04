@@ -1,6 +1,7 @@
-import { CalendarError } from './types';
+import { APP_CALENDAR_TITLE, CalendarError, isAppCalendar } from './types';
 import type {
   CalendarEvent,
+  CalendarEventPatch,
   CalendarPermission,
   CalendarService,
   DeviceCalendar,
@@ -15,6 +16,19 @@ export interface CalendarDriver {
   listCalendars(): Promise<DeviceCalendar[]>;
   getEvents(ids: string[], startDate: Date, endDate: Date): Promise<CalendarEvent[]>;
   createEvent(event: NewCalendarEvent): Promise<CalendarEvent>;
+  updateEvent(eventId: string, patch: CalendarEventPatch): Promise<void>;
+  deleteEvent(eventId: string): Promise<void>;
+  /** Creates a local event calendar with this title (iOS: the default calendar's source, else the local one; Android: a local account). */
+  createCalendar(title: string): Promise<DeviceCalendar>;
+  deleteCalendar(calendarId: string): Promise<void>;
+}
+
+function assertTimeZone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone });
+  } catch {
+    throw new CalendarError('invalid-input', 'Provide a valid IANA timeZone.');
+  }
 }
 
 function isMidnight(date: Date) {
@@ -114,11 +128,7 @@ export function createCalendarService(driver: CalendarDriver | null): CalendarSe
       }
       if (input.timeZone !== undefined) {
         if (input.allDay) throw new CalendarError('invalid-input', 'All-day events use device-local dates.');
-        try {
-          new Intl.DateTimeFormat('en', { timeZone: input.timeZone });
-        } catch {
-          throw new CalendarError('invalid-input', 'Provide a valid IANA timeZone.');
-        }
+        assertTimeZone(input.timeZone);
       }
       const event = {
         ...input,
@@ -137,6 +147,51 @@ export function createCalendarService(driver: CalendarDriver | null): CalendarSe
       }
       // Never retry writes automatically: a native failure may follow a successful save.
       return run(() => activeDriver.createEvent(event));
+    },
+    async updateEvent(eventId, patch) {
+      if (!eventId.trim()) throw new CalendarError('invalid-input', 'An event id is required.');
+      if (patch.title !== undefined && !patch.title.trim()) {
+        throw new CalendarError('invalid-input', 'An event title cannot be empty.');
+      }
+      if ((patch.startDate === undefined) !== (patch.endDate === undefined)) {
+        throw new CalendarError('invalid-input', 'Change startDate and endDate together.');
+      }
+      if (patch.startDate && patch.endDate) validateRange(patch.startDate, patch.endDate);
+      if (patch.timeZone !== undefined) assertTimeZone(patch.timeZone);
+      const next: CalendarEventPatch = {
+        ...patch,
+        title: patch.title?.trim(),
+        startDate: patch.startDate && new Date(patch.startDate),
+        endDate: patch.endDate && new Date(patch.endDate),
+      };
+      const activeDriver = await requireAccess();
+      return run(() => activeDriver.updateEvent(eventId, next));
+    },
+    async deleteEvent(eventId) {
+      if (!eventId.trim()) throw new CalendarError('invalid-input', 'An event id is required.');
+      const activeDriver = await requireAccess();
+      return run(() => activeDriver.deleteEvent(eventId));
+    },
+    async ensureAppCalendar() {
+      const activeDriver = await requireAccess();
+      const calendars = await run(() => activeDriver.listCalendars());
+      const existing = calendars.find(isAppCalendar);
+      if (existing) return existing;
+      const created = await run(() => activeDriver.createCalendar(APP_CALENDAR_TITLE));
+      if (!isAppCalendar(created)) {
+        throw new CalendarError('calendar-read-only', 'The new calendar does not accept events.');
+      }
+      return created;
+    },
+    async deleteAppCalendar() {
+      const activeDriver = await requireAccess();
+      const calendars = await run(() => activeDriver.listCalendars());
+      // Duplicates can only come from an interrupted first export; remove them all.
+      const own = calendars.filter(isAppCalendar);
+      for (const calendar of own) {
+        await run(() => activeDriver.deleteCalendar(calendar.id));
+      }
+      return own.length > 0;
     },
   };
 }

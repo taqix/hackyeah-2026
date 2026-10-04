@@ -19,7 +19,7 @@ export type TextLinkProps = {
 
 /** A small text button: 44 high so it is easy to hit, no fill. */
 export function TextLink({ children, onPress, tone = 'accent', icon, accessibilityHint, style }: TextLinkProps) {
-  const { colors, fontFamily } = useTheme();
+  const { colors, fontFamily, radius } = useTheme();
   const color = tone === 'accent' ? colors.accentText : colors.textSecondary;
   const trailing = icon === undefined ? (tone === 'accent' ? 'arrow-right' : null) : icon;
   return (
@@ -28,7 +28,11 @@ export function TextLink({ children, onPress, tone = 'accent', icon, accessibili
       accessibilityRole="link"
       accessibilityLabel={children}
       accessibilityHint={accessibilityHint}
-      style={[{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }, style]}>
+      // The radius only rounds the web focus ring: the link has no fill.
+      style={[
+        { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, borderRadius: radius.xs },
+        style,
+      ]}>
       <Text
         style={{
           fontFamily: fontFamily.bodySemibold,

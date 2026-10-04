@@ -13,8 +13,11 @@ existing [device calendar API](device-calendar.md).
 
 - Included: an injectable abstraction, a ready-to-use device implementation,
   calendar selection, and free-slot calculation over a date range.
-- Deferred: UI, working/sleep hours, minimum activity duration, travel buffers,
-  booking a slot, and backend upload.
+- Included since the Supabase integration: the daily window, a minimum slot
+  length, and upload as the product API's `availability` (see
+  [Plan availability](#plan-availability)). The connection UI is on Review and
+  Data and privacy.
+- Deferred: travel buffers and booking a slot.
 - Affected area: mobile services only; no HTTP contracts or database changes.
 
 ## Acceptance criteria
@@ -90,10 +93,62 @@ Callers own loading/error/retry UI and must request access from an explicit user
 action as described in the device calendar guide. This service does not reserve
 time; consumers needing current availability should query again before scheduling.
 
+## Plan availability
+
+`captureAvailability(options)` (`services/calendar/plan-availability.ts`)
+builds the `availability` sent with plan generation and chat. Each caller
+captures once per action and reuses the result when it retries.
+
+```ts
+const availability = await captureAvailability(
+  {
+    weekStart: '2026-10-05', // Monday of the planned week
+    from: new Date(),        // first plan: now; chat: the week's local midnight
+    window: preferences.preferred_window, // null means 7–21
+    minMinutes: 5,           // optional
+    timeZone: 'Europe/Warsaw', // optional: the plan's zone, for Google free/busy
+  },
+  { google }, // optional FreeTimeSource: Google Calendar when connected for planning
+);
+// { source: 'google_calendar' | 'device_calendar' | 'manual', captured_at, slots: [{ start_at, end_at }] }
+```
+
+- **Range:** from `from` (rounded up to 5 minutes) or the week's local
+  midnight, whichever is later, to the next Monday's local midnight.
+- **Google Calendar first**, when a `google` source is passed (the remote
+  adapter passes one while Google Calendar is connected with "Use for
+  planning" on):
+  - Its free time over the range comes from Google's free/busy for the
+    primary calendar (`services/google-calendar/free-busy.ts`). It never
+    reads event titles or details.
+  - `toDailySlots` cuts it exactly like the device's below.
+  - The source is `google_calendar`. A fully busy week is a valid `[]`.
+  - Any failure (offline, a refused or expired token, a Google error) falls
+    through to the device read, then manual. A failed Google read is never
+    sent as an empty `google_calendar` result.
+- **With access:** `getFreeSlots` reads every calendar except the "Movo"
+  export calendar and any `excludeCalendarIds`. All-day events do not block.
+  - `toDailySlots` intersects the free time with each local day's window,
+    built from wall-clock hours, so DST days keep 7:00–21:00.
+  - Slots shorter than `minMinutes` are dropped; at most 100 are kept, sorted.
+  - The source is `device_calendar`. A fully busy week is a valid `[]`.
+- **Denied, undetermined or unavailable** (web, Expo Go), including access
+  revoked during the read: `manual` slots, one window per day.
+- **Any other read error** (`native-error`) rejects, so a failed read never
+  goes out as an empty device calendar.
+- Times are ISO 8601 with the device's offset. `captured_at` uses the device
+  clock, never the demo override.
+
 ## Verification
 
-- `npm run test:calendar --workspace=@hackyeah/mobile`: 35 tests pass in each of
-  `Europe/Warsaw` and `America/Los_Angeles` (18 new availability tests).
+- `npm run test:calendar --workspace=@hackyeah/mobile`: 77 tests pass in each of
+  `Europe/Warsaw` and `America/Los_Angeles`.
+  - 18 cover free slots.
+  - `tests/calendar-plan-availability.test.ts` covers day splitting, the
+    window, DST weeks, the minimum length, the 100-slot cap, excluded
+    calendars, the manual fallbacks and a native failure.
+  - `tests/google-calendar.test.ts` covers Google free/busy into slots, DST
+    weeks, the fallbacks after a failed Google read, and the Google export.
 - `npm run typecheck`: passes for all workspaces and the mobile test graph.
 - `npm run lint`: passes for all workspaces.
 - New files formatted with `packages/.prettierrc.json`; `git diff --check` passes.
@@ -103,7 +158,9 @@ development build, add overlapping events plus a canceled/free and an all-day
 event, query the surrounding range, and compare slots with the OS calendar.
 Confirm the all-day event blocks only with `blockAllDayEvents: true`.
 Revoke access and confirm the request fails instead of reporting the range free.
-No native binary was built and no real calendar data was accessed for this change.
+Then build a plan with the calendar connected and check that no session lands
+on a busy time. No native binary was built and no real calendar data was
+accessed for this change.
 
 ## Deployment and rollback
 

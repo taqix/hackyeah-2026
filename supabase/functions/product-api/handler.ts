@@ -4,12 +4,19 @@ import {
   completionInputSchema,
   generatePlanSchema,
   getProductJsonSchemas,
+  googleTokenRequestSchema,
+  putOpinionSchema,
+  resetOpinionsSchema,
   sendChatSchema,
+  undoPlanSchema,
+  updateFeedbackSchema,
   updateProfileSchema,
   uuidSchema,
 } from '../../../packages/contracts/src/product.ts';
+import type { PlanSnapshotDto, UndoPlanDto } from '../../../packages/contracts/src/product.ts';
 import type { ApiDependencies, GeneratorContext, Page, ProductStore } from './ports.ts';
 import { ApiError } from './errors.ts';
+import { unavailableGoogle } from './google.ts';
 import { parseInput, validateGeneratedPlan } from './validation.ts';
 
 export const routes = [
@@ -30,6 +37,12 @@ export const routes = [
     request: 'GeneratePlanDto',
     response: 'GeneratePlanResponse',
   },
+  {
+    method: 'POST',
+    path: '/plans/undo',
+    request: 'UndoPlanDto',
+    response: 'UndoPlanResponse',
+  },
   { method: 'GET', path: '/chat/messages', response: 'ChatMessagesResponse' },
   {
     method: 'POST',
@@ -43,6 +56,31 @@ export const routes = [
     path: '/completions',
     request: 'CompleteActivityDto',
     response: 'CompletionResponse',
+  },
+  {
+    method: 'PUT',
+    path: '/completions/feedback',
+    request: 'UpdateFeedbackDto',
+    response: 'CompletionResponse',
+  },
+  { method: 'GET', path: '/opinions', response: 'OpinionListResponse' },
+  {
+    method: 'PUT',
+    path: '/opinions',
+    request: 'PutOpinionDto',
+    response: 'OpinionResponse',
+  },
+  {
+    method: 'POST',
+    path: '/opinions/reset',
+    request: 'ResetOpinionsDto',
+    response: 'ResetOpinionsResponse',
+  },
+  {
+    method: 'POST',
+    path: '/google/token',
+    request: 'GoogleTokenDto',
+    response: 'GoogleTokenResponse',
   },
 ] as const;
 
@@ -132,6 +170,43 @@ async function context(store: ProductStore, planId?: string): Promise<GeneratorC
     messages: activePlan ? await store.recentMessages(activePlan.plan.id) : [],
   };
 }
+// Restores the version before the newest chat change, without an AI call.
+async function undo(store: ProductStore, input: UndoPlanDto) {
+  const active = await store.getCurrentPlan();
+  if (active?.plan.id !== input.plan_id) throw new ApiError('NOT_FOUND', 404, 'Plan not found.');
+  if (active.version.version !== input.expected_version)
+    throw new ApiError(
+      'VERSION_CONFLICT',
+      409,
+      'The plan changed elsewhere. Reload it before retrying.',
+    );
+  const nothingToUndo = () =>
+    new ApiError('NOTHING_TO_UNDO', 409, 'There is no recent change to undo.');
+  if (active.version.origin !== 'revise') throw nothingToUndo();
+  const restored = await store.getVersion(active.plan.id, active.version.version - 1);
+  if (!restored || restored.plan.week_start !== active.version.plan.week_start)
+    throw nothingToUndo();
+  // A logged session must stay exactly as it was completed.
+  const shape = (activities: PlanSnapshotDto['activities']) =>
+    new Map(activities.map((activity) => [activity.id, JSON.stringify(activity)]));
+  const before = shape(restored.plan.activities);
+  const after = shape(active.version.plan.activities);
+  const completions = await store.contextCompletions([
+    ...new Set([...before.keys(), ...after.keys()]),
+  ]);
+  if (completions.some((item) => before.get(item.activity_id) !== after.get(item.activity_id)))
+    throw new ApiError(
+      'UNDO_LOCKED',
+      409,
+      'A session in this change is already logged, so it cannot be undone.',
+    );
+  return store.savePlan({
+    request: input,
+    origin: 'undo',
+    plan: restored.plan,
+    summary: 'The last change was undone.',
+  });
+}
 export function createProductApi(dependencies: ApiDependencies) {
   return async (request: Request): Promise<Response> => {
     let requestId: string | null = null;
@@ -185,6 +260,9 @@ export function createProductApi(dependencies: ApiDependencies) {
           case '/completions':
             data = await store.listCompletions(page(url));
             break;
+          case '/opinions':
+            data = await store.listOpinions();
+            break;
         }
       } else {
         const body = await readBody(request);
@@ -196,6 +274,33 @@ export function createProductApi(dependencies: ApiDependencies) {
             const input = parseInput(completionInputSchema, body);
             requestId = input.request_id;
             data = await store.complete(input);
+            break;
+          }
+          case '/completions/feedback':
+            data = await store.updateFeedback(parseInput(updateFeedbackSchema, body));
+            break;
+          case '/opinions':
+            data = await store.putOpinion(parseInput(putOpinionSchema, body));
+            break;
+          case '/opinions/reset':
+            parseInput(resetOpinionsSchema, body);
+            data = { cleared: await store.resetOpinions() };
+            break;
+          case '/google/token': {
+            // The refresh token stays in this request: it is never stored or logged here.
+            const input = parseInput(googleTokenRequestSchema, body);
+            data = await (dependencies.google ?? unavailableGoogle).refresh(input.refresh_token);
+            break;
+          }
+          case '/plans/undo': {
+            const input = parseInput(undoPlanSchema, body);
+            requestId = input.request_id;
+            const previous = await store.savedRequest(input.request_id, input);
+            if (previous) {
+              data = previous;
+              break;
+            }
+            data = await undo(store, input);
             break;
           }
           case '/plans/generate': {

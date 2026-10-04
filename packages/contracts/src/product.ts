@@ -107,7 +107,8 @@ export const availableSlotSchema = z
   .strictObject({ start_at: instant, end_at: instant })
   .refine((slot) => Date.parse(slot.end_at) > Date.parse(slot.start_at));
 export const availabilitySchema = z.strictObject({
-  source: z.enum(['device_calendar', 'manual']),
+  // google_calendar: free time read from the person's Google Calendar (free/busy only).
+  source: z.enum(['device_calendar', 'google_calendar', 'manual']),
   captured_at: instant,
   slots: z
     .array(availableSlotSchema)
@@ -203,7 +204,8 @@ export const planVersionSchema = z.strictObject({
   plan_id: uuidSchema,
   profile_id: uuidSchema,
   version: z.number().int().positive(),
-  origin: z.enum(['generate', 'revise']),
+  // An undo restores the previous same-week snapshot as a new version.
+  origin: z.enum(['generate', 'revise', 'undo']),
   plan: planSnapshotSchema,
   summary: z.string().min(1).max(1000),
   created_at: instant,
@@ -259,7 +261,8 @@ export const completionInputSchema = z.strictObject({
   request_id: uuidSchema,
   metrics: metricValuesSchema,
   gym_log: gymLogSchema,
-  feedback: feedbackSchema,
+  // Null saves the log first; feedback can be added later with UpdateFeedbackDto.
+  feedback: feedbackSchema.nullable(),
   completed_at: instant,
 });
 export type CompleteActivityDto = z.infer<typeof completionInputSchema>;
@@ -268,6 +271,42 @@ export const completionSchema = completionInputSchema.extend({
   profile_id: uuidSchema,
 });
 export type ActivityCompletionEntity = z.infer<typeof completionSchema>;
+export const updateFeedbackSchema = z.strictObject({
+  completion_id: uuidSchema,
+  feedback: feedbackSchema,
+});
+export type UpdateFeedbackDto = z.infer<typeof updateFeedbackSchema>;
+// "Would you choose this again?" kept per activity, independent of completions.
+const opinionSchema = z.enum(['yes', 'maybe', 'no']);
+export const activityKeySchema = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(/^[a-z0-9][a-z0-9_-]*$/);
+export const activityOpinionSchema = z.strictObject({
+  activity_key: activityKeySchema,
+  title: shortText,
+  sport_id: sportIdSchema,
+  opinion: opinionSchema,
+  last_date: z.iso.date(),
+  updated_at: instant,
+});
+export type ActivityOpinionEntity = z.infer<typeof activityOpinionSchema>;
+export const putOpinionSchema = z.strictObject({
+  activity_key: activityKeySchema,
+  title: shortText,
+  sport_id: sportIdSchema,
+  // Null clears the saved opinion.
+  opinion: opinionSchema.nullable(),
+  last_date: z.iso.date(),
+});
+export type PutOpinionDto = z.infer<typeof putOpinionSchema>;
+export const resetOpinionsSchema = z.strictObject({});
+export type ResetOpinionsDto = z.infer<typeof resetOpinionsSchema>;
+export const resetOpinionsResultSchema = z.strictObject({
+  cleared: z.number().int().nonnegative(),
+});
+export type ResetOpinionsResultDto = z.infer<typeof resetOpinionsResultSchema>;
 export const updateProfileSchema = z.strictObject({
   username: shortText.nullable(),
   preferences: preferencesSchema,
@@ -290,6 +329,24 @@ export const sendChatSchema = z.strictObject({
   availability: availabilitySchema,
 });
 export type SendChatDto = z.infer<typeof sendChatSchema>;
+export const undoPlanSchema = z.strictObject({
+  request_id: uuidSchema,
+  plan_id: uuidSchema,
+  expected_version: z.number().int().positive(),
+});
+export type UndoPlanDto = z.infer<typeof undoPlanSchema>;
+// Google Calendar: the app keeps the person's Google refresh token on the device; the
+// function holds the OAuth client secret and trades the token for a new access token.
+export const googleTokenRequestSchema = z.strictObject({
+  refresh_token: z.string().min(1).max(2048),
+});
+export type GoogleTokenDto = z.infer<typeof googleTokenRequestSchema>;
+export const googleTokenSchema = z.strictObject({
+  access_token: z.string().min(1).max(4096),
+  // Seconds until the new access token expires.
+  expires_in: z.number().int().positive(),
+});
+export type GoogleTokenResultDto = z.infer<typeof googleTokenSchema>;
 
 export const chatResultSchema = z.discriminatedUnion('outcome', [
   z.strictObject({
@@ -318,6 +375,10 @@ export const errorCodeSchema = z.enum([
   'INTERNAL_ERROR',
   'METHOD_NOT_ALLOWED',
   'PAYLOAD_TOO_LARGE',
+  'NOTHING_TO_UNDO',
+  'UNDO_LOCKED',
+  'GOOGLE_NOT_CONFIGURED',
+  'GOOGLE_RECONNECT_REQUIRED',
 ]);
 export type ApiErrorCode = z.infer<typeof errorCodeSchema>;
 export const metaSchema = z.strictObject({
@@ -335,6 +396,11 @@ export const apiSchemas = {
   GeneratePlanDto: generatePlanSchema,
   SendChatDto: sendChatSchema,
   CompleteActivityDto: completionInputSchema,
+  UpdateFeedbackDto: updateFeedbackSchema,
+  PutOpinionDto: putOpinionSchema,
+  ResetOpinionsDto: resetOpinionsSchema,
+  UndoPlanDto: undoPlanSchema,
+  GoogleTokenDto: googleTokenRequestSchema,
   SchemaResponse: envelopeSchema(z.record(z.string(), z.record(z.string(), z.unknown()))),
   ProfileResponse: envelopeSchema(profileSchema),
   SportListResponse: envelopeSchema(z.array(sportSchema)),
@@ -345,6 +411,11 @@ export const apiSchemas = {
   ChatResponse: envelopeSchema(chatResultSchema),
   CompletionResponse: envelopeSchema(completionSchema),
   CompletionListResponse: envelopeSchema(z.array(completionSchema)),
+  OpinionListResponse: envelopeSchema(z.array(activityOpinionSchema)),
+  OpinionResponse: envelopeSchema(activityOpinionSchema.nullable()),
+  ResetOpinionsResponse: envelopeSchema(resetOpinionsResultSchema),
+  UndoPlanResponse: envelopeSchema(activePlanSchema),
+  GoogleTokenResponse: envelopeSchema(googleTokenSchema),
   ErrorResponse: errorResponseSchema,
 };
 export type ProfileResponseDto = z.infer<typeof apiSchemas.ProfileResponse>;
@@ -357,6 +428,11 @@ export type ChatResponseDto = z.infer<typeof apiSchemas.ChatResponse>;
 export type ChatMessagesResponseDto = z.infer<typeof apiSchemas.ChatMessagesResponse>;
 export type CompletionResponseDto = z.infer<typeof apiSchemas.CompletionResponse>;
 export type CompletionListResponseDto = z.infer<typeof apiSchemas.CompletionListResponse>;
+export type OpinionListResponseDto = z.infer<typeof apiSchemas.OpinionListResponse>;
+export type OpinionResponseDto = z.infer<typeof apiSchemas.OpinionResponse>;
+export type ResetOpinionsResponseDto = z.infer<typeof apiSchemas.ResetOpinionsResponse>;
+export type UndoPlanResponseDto = z.infer<typeof apiSchemas.UndoPlanResponse>;
+export type GoogleTokenResponseDto = z.infer<typeof apiSchemas.GoogleTokenResponse>;
 export type ErrorResponseDto = z.infer<typeof errorResponseSchema>;
 export function getProductJsonSchemas() {
   return Object.fromEntries(

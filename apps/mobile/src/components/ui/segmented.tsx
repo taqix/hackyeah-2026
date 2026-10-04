@@ -35,7 +35,7 @@ export function Segmented<T extends string | number | boolean>({ label, options,
             accessibilityRole="radio"
             accessibilityLabel={option.unit ? `${option.label} ${option.unit}` : option.label}
             aria-checked={on}
-            style={{
+            style={({ pressed }) => ({
               flex: 1,
               minWidth: 0,
               height: option.unit ? 68 : 48,
@@ -43,10 +43,11 @@ export function Segmented<T extends string | number | boolean>({ label, options,
               justifyContent: 'center',
               gap: 5,
               borderRadius: radius.md,
-              backgroundColor: on ? colors.accentSoft : colors.surfaceCard,
+              // Pressed sinks like a RadioCard or Tag.
+              backgroundColor: on ? colors.accentSoft : pressed ? colors.surfaceSunken : colors.surfaceCard,
               borderWidth: on ? 1.5 : 1,
               borderColor: on ? colors.accent : colors.borderStrong,
-            }}>
+            })}>
             <Text
               tabular
               numberOfLines={1}

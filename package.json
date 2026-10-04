@@ -12,6 +12,7 @@
     "lint:supabase": "eslint --config supabase/eslint.config.mjs supabase/functions supabase/tests supabase/scripts",
     "schema:product": "npm run build --workspace=@hackyeah/contracts && node --import tsx supabase/scripts/export-schema.ts",
     "start": "npm run start --workspace=@hackyeah/mobile",
+    "start:hostname": "npm run start:hostname --workspace=@hackyeah/mobile --",
     "android": "npm run android --workspace=@hackyeah/mobile",
     "ios": "npm run ios --workspace=@hackyeah/mobile",
     "web": "npm run web --workspace=@hackyeah/mobile",

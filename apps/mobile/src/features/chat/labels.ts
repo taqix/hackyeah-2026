@@ -1,4 +1,4 @@
-import type { ChatMessage, LocalDate, PlannedSession, SessionRef } from '@/api/types';
+import { type ChatMessage, isApiError, type LocalDate, type PlannedSession, type SessionRef } from '@/api/types';
 import {
   diffDays,
   formatDayLong,
@@ -51,3 +51,11 @@ export function dayBreakLabel(date: LocalDate, today: DateLike): string {
 }
 
 export const messageDay = (message: ChatMessage): LocalDate => toLocalDate(message.created_at);
+
+/** Why Undo didn't go through. A conflict's own message says what stops it (a newer change, a done session). */
+export function undoProblem(error: unknown): string {
+  if (isApiError(error, 'offline')) return "You're offline, so nothing was undone.";
+  if (isApiError(error, 'stale_version')) return 'Your plan changed meanwhile, so nothing was undone.';
+  if (isApiError(error, 'conflict')) return error.message;
+  return "Couldn't undo that. Your plan hasn't changed.";
+}

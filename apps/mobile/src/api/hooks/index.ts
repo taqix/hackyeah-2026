@@ -4,8 +4,9 @@
  * changed: logs → plan, summary and feedback; chat → chat and plan; answers →
  * preferences, plan and summary.
  */
-export { useAccount } from './account';
+export { useAccount, useUpdateName } from './account';
 export {
+  useAuthProviders,
   useLookupEmail,
   useSendPasswordReset,
   useSession,
@@ -13,13 +14,15 @@ export {
   useSignInWithGoogle,
   useSignOut,
   useSignUpWithEmail,
+  useUpdatePassword,
 } from './auth';
 export { useSports, useSport } from './catalog';
 export { useChatMessages, useSendChatMessage, useUndoChatMessage, type SendChatMessageInput } from './chat';
-export { useCreateLog, useLastExercise, useLog, useSaveFeedback, useUpdateLog } from './logs';
+export { useCommitLog, useCreateLog, useLastExercise, useLog, useSaveFeedback, useUpdateLog } from './logs';
 export {
   useBuildPlan,
   useDismissRecentChange,
+  useEnsureNextWeek,
   usePlannedSession,
   usePlanState,
   usePlanVersions,

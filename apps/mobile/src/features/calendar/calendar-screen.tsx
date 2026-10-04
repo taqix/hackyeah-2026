@@ -215,6 +215,16 @@ function NoPlanYet({ status, onToday }: { status: PlanStatus; onToday: () => voi
       />
     );
   }
+  if (status === 'failed') {
+    return (
+      <EmptyState
+        icon="calendar-x"
+        title="No sessions yet."
+        body="Your first plan isn't built yet. Today shows why, and lets you try again."
+        action={action}
+      />
+    );
+  }
   return (
     <EmptyState
       icon="calendar-days"

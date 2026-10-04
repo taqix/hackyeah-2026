@@ -15,16 +15,23 @@ import { createSupabaseDependencies } from '../functions/product-api/supabase-st
 import type { PlanGenerator, ProductStore } from '../functions/product-api/ports.ts';
 import {
   activePlan,
+  activityId,
   availability,
   chat,
+  completion,
+  completionId,
   designExamples,
   examples,
   generation,
   messages,
+  opinion,
   owner,
+  planId,
   profile,
   snapshot,
   sports,
+  undonePlan,
+  undoRequest,
 } from './fixtures.ts';
 
 function setup(
@@ -38,6 +45,7 @@ function setup(
     listSports: async () => sports,
     getCurrentPlan: async () => null,
     listVersions: async () => [],
+    getVersion: async () => null,
     listMessages: async () => messages,
     recentMessages: async () => messages,
     requestMessages: async () => messages,
@@ -52,6 +60,12 @@ function setup(
     complete: async () => {
       throw new ApiError('NOT_FOUND', 404, 'Activity not found.');
     },
+    updateFeedback: async () => {
+      throw new ApiError('NOT_FOUND', 404, 'Record not found.');
+    },
+    listOpinions: async () => [],
+    putOpinion: async () => null,
+    resetOpinions: async () => 0,
     ...overrides,
   };
   const api = createProductApi({
@@ -62,10 +76,15 @@ function setup(
     store: () => store,
     generator,
   });
-  const call = (path: string, body?: unknown, headers: Record<string, string> = {}) =>
+  const call = (
+    path: string,
+    body?: unknown,
+    headers: Record<string, string> = {},
+    method = body === undefined ? 'GET' : 'POST',
+  ) =>
     api(
       new Request(`https://example.test/functions/v1/product-api${path}`, {
-        method: body === undefined ? 'GET' : 'POST',
+        method,
         headers: {
           authorization: 'Bearer placeholder-session',
           'content-type': 'application/json',
@@ -461,5 +480,359 @@ test('free slots must be sorted and raw calendar event fields are not accepted',
       })
     ).status,
     400,
+  );
+});
+
+const neverGenerates: PlanGenerator = {
+  generate: async () => {
+    throw new Error('must not call');
+  },
+  chat: async () => {
+    throw new Error('must not call');
+  },
+};
+const secondActivity = {
+  ...snapshot.activities[0]!,
+  id: '00000000-0000-4000-8000-000000000011',
+  title: 'An easy walk',
+  start_at: '2026-10-07T09:00:00+02:00',
+};
+const firstVersion = {
+  ...activePlan.version,
+  plan: { ...snapshot, activities: [snapshot.activities[0]!, secondActivity] },
+};
+// The newest chat change shortened the second session; the first one is unchanged.
+const revisedPlan = {
+  plan: { ...activePlan.plan, active_version_id: '00000000-0000-4000-8000-000000000012' },
+  version: {
+    ...firstVersion,
+    id: '00000000-0000-4000-8000-000000000012',
+    version: 2,
+    origin: 'revise' as 'generate' | 'revise' | 'undo',
+    plan: {
+      ...snapshot,
+      activities: [snapshot.activities[0]!, { ...secondActivity, duration_minutes: 15 }],
+    },
+    summary: 'Your walk is now 15 minutes.',
+  },
+};
+const completedActivity = (id: string) => ({
+  ...completion,
+  activity_id: id,
+  id: completionId,
+  profile_id: owner,
+});
+
+test('a log can be saved before feedback, and feedback can be changed later', async () => {
+  const received: unknown[] = [];
+  const { call } = setup(unavailableGenerator, {
+    complete: async (input) => {
+      received.push(input.feedback);
+      return { ...input, id: completionId, profile_id: owner };
+    },
+    updateFeedback: async (input) => {
+      received.push(input);
+      return { ...completion, feedback: input.feedback, id: completionId, profile_id: owner };
+    },
+  });
+  const logged = await call('/completions', { ...completion, feedback: null });
+  assert.equal(logged.status, 200);
+  const loggedBody = await logged.json();
+  assert.ok(apiSchemas.CompletionResponse.safeParse(loggedBody).success);
+  assert.equal(loggedBody.data.feedback, null);
+  const feedback = { effort: 'hard', enjoyment: 'maybe', notes: '' };
+  const updated = await call(
+    '/completions/feedback',
+    { completion_id: completionId, feedback },
+    {},
+    'PUT',
+  );
+  assert.equal(updated.status, 200);
+  const updatedBody = await updated.json();
+  assert.ok(apiSchemas.CompletionResponse.safeParse(updatedBody).success);
+  assert.deepEqual(updatedBody.data.feedback, feedback);
+  assert.deepEqual(received, [null, { completion_id: completionId, feedback }]);
+  assert.equal(
+    (
+      await call(
+        '/completions/feedback',
+        { completion_id: completionId, feedback: null },
+        {},
+        'PUT',
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await call('/completions/feedback', { completion_id: completionId, feedback })).status,
+    405,
+  );
+  const missing = setup();
+  const notFound = await missing.call(
+    '/completions/feedback',
+    { completion_id: completionId, feedback },
+    {},
+    'PUT',
+  );
+  assert.equal(notFound.status, 404);
+  assert.equal((await notFound.json()).error.code, 'NOT_FOUND');
+});
+test('opinions can be listed, saved, cleared and reset', async () => {
+  const saved: unknown[] = [];
+  const { call } = setup(unavailableGenerator, {
+    listOpinions: async () => [opinion],
+    putOpinion: async (input) => {
+      saved.push(input);
+      return input.opinion === null
+        ? null
+        : { ...input, opinion: input.opinion, updated_at: opinion.updated_at };
+    },
+    resetOpinions: async () => 3,
+  });
+  const list = await call('/opinions');
+  assert.equal(list.status, 200);
+  const listBody = await list.json();
+  assert.ok(apiSchemas.OpinionListResponse.safeParse(listBody).success);
+  assert.deepEqual(listBody.data, [opinion]);
+  const put = await call('/opinions', { ...examples.PutOpinionDto, opinion: 'no' }, {}, 'PUT');
+  assert.equal(put.status, 200);
+  assert.equal((await put.json()).data.opinion, 'no');
+  const cleared = await call('/opinions', { ...examples.PutOpinionDto, opinion: null }, {}, 'PUT');
+  assert.equal(cleared.status, 200);
+  const clearedBody = await cleared.json();
+  assert.ok(apiSchemas.OpinionResponse.safeParse(clearedBody).success);
+  assert.equal(clearedBody.data, null);
+  assert.equal(saved.length, 2);
+  for (const invalid of [
+    { ...examples.PutOpinionDto, activity_key: 'Not a key' },
+    { ...examples.PutOpinionDto, sport_id: 1 },
+    { ...examples.PutOpinionDto, last_date: '5 October' },
+    { ...examples.PutOpinionDto, opinion: 'never' },
+  ])
+    assert.equal((await call('/opinions', invalid, {}, 'PUT')).status, 400);
+  assert.equal(saved.length, 2);
+  const reset = await call('/opinions/reset', {});
+  assert.equal(reset.status, 200);
+  const resetBody = await reset.json();
+  assert.ok(apiSchemas.ResetOpinionsResponse.safeParse(resetBody).success);
+  assert.deepEqual(resetBody.data, { cleared: 3 });
+  assert.equal((await call('/opinions/reset', { everything: true })).status, 400);
+  assert.equal((await call('/opinions', {})).status, 405);
+});
+test('undo restores the previous same-week version without an AI call', async () => {
+  let requestedIds: string[] = [];
+  let saved = 0;
+  const { call } = setup(neverGenerates, {
+    getCurrentPlan: async () => revisedPlan,
+    getVersion: async (id, version) => {
+      assert.equal(id, planId);
+      assert.equal(version, 1);
+      return firstVersion;
+    },
+    contextCompletions: async (ids) => {
+      requestedIds = ids;
+      // The unchanged first session was logged; it stays exactly as it was.
+      return [completedActivity(activityId)];
+    },
+    savePlan: async (input) => {
+      saved++;
+      assert.equal(input.origin, 'undo');
+      assert.deepEqual(input.request, undoRequest);
+      assert.deepEqual(input.plan, firstVersion.plan);
+      assert.equal(input.summary, 'The last change was undone.');
+      return undonePlan;
+    },
+  });
+  const response = await call('/plans/undo', undoRequest);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(apiSchemas.UndoPlanResponse.safeParse(body).success);
+  assert.equal(body.data.version.origin, 'undo');
+  assert.equal(body.meta.request_id, undoRequest.request_id);
+  assert.deepEqual(requestedIds.sort(), [activityId, secondActivity.id].sort());
+  assert.equal(saved, 1);
+});
+test('undo refuses when there is no change to undo or a changed session is logged', async () => {
+  const undo = async (overrides: Partial<ProductStore>, input: unknown = undoRequest) => {
+    const { call, saves } = setup(neverGenerates, {
+      getCurrentPlan: async () => revisedPlan,
+      getVersion: async () => firstVersion,
+      ...overrides,
+    });
+    const response = await call('/plans/undo', input);
+    assert.equal(saves(), 0);
+    return {
+      status: response.status,
+      code: response.status === 200 ? null : (await response.json()).error.code,
+    };
+  };
+  const withOrigin = (origin: 'generate' | 'undo') => ({
+    ...revisedPlan,
+    version: { ...revisedPlan.version, origin },
+  });
+  assert.deepEqual(await undo({ getCurrentPlan: async () => withOrigin('generate') }), {
+    status: 409,
+    code: 'NOTHING_TO_UNDO',
+  });
+  assert.deepEqual(await undo({ getCurrentPlan: async () => withOrigin('undo') }), {
+    status: 409,
+    code: 'NOTHING_TO_UNDO',
+  });
+  assert.deepEqual(await undo({ getVersion: async () => null }), {
+    status: 409,
+    code: 'NOTHING_TO_UNDO',
+  });
+  assert.deepEqual(
+    await undo({
+      getVersion: async () => ({
+        ...firstVersion,
+        plan: { ...firstVersion.plan, week_start: '2026-09-28', activities: [] },
+      }),
+    }),
+    { status: 409, code: 'NOTHING_TO_UNDO' },
+  );
+  assert.deepEqual(
+    await undo({ contextCompletions: async () => [completedActivity(secondActivity.id)] }),
+    { status: 409, code: 'UNDO_LOCKED' },
+  );
+  // A session the change added and the person then logged would disappear, so it is locked too.
+  const added = { ...secondActivity, id: '00000000-0000-4000-8000-000000000013' };
+  assert.deepEqual(
+    await undo({
+      getCurrentPlan: async () => ({
+        ...revisedPlan,
+        version: {
+          ...revisedPlan.version,
+          plan: {
+            ...revisedPlan.version.plan,
+            activities: [...firstVersion.plan.activities, added],
+          },
+        },
+      }),
+      contextCompletions: async () => [completedActivity(added.id)],
+    }),
+    { status: 409, code: 'UNDO_LOCKED' },
+  );
+  assert.deepEqual(await undo({}, { ...undoRequest, expected_version: 1 }), {
+    status: 409,
+    code: 'VERSION_CONFLICT',
+  });
+  assert.deepEqual(
+    await undo({}, { ...undoRequest, plan_id: '00000000-0000-4000-8000-000000000099' }),
+    { status: 404, code: 'NOT_FOUND' },
+  );
+  assert.deepEqual(await undo({ getCurrentPlan: async () => null }), {
+    status: 404,
+    code: 'NOT_FOUND',
+  });
+  assert.deepEqual(await undo({}, { ...undoRequest, expected_version: 0 }), {
+    status: 400,
+    code: 'INVALID_REQUEST',
+  });
+  assert.deepEqual(await undo({ savedRequest: async () => undonePlan }), {
+    status: 200,
+    code: null,
+  });
+});
+test('store writes opinions and feedback under the caller session', async () => {
+  const requests: { url: URL; init: RequestInit | undefined }[] = [];
+  let reply: unknown = [];
+  let status = 200;
+  const dependencies = createSupabaseDependencies(
+    {
+      url: 'https://supabase.example.test',
+      publishableKey: '<PUBLISHABLE_KEY>',
+      serverKey: '<SERVER_ONLY_KEY>',
+    },
+    unavailableGenerator,
+    async (input, init) => {
+      requests.push({ url: new URL(String(input)), init });
+      return Response.json(reply, { status });
+    },
+  );
+  const store = dependencies.store(owner, 'placeholder-session');
+  const last = () => {
+    const request = requests.at(-1)!;
+    const headers = new Headers(request.init!.headers);
+    return {
+      path: request.url.pathname,
+      query: Object.fromEntries(request.url.searchParams),
+      method: request.init!.method,
+      authorization: headers.get('authorization'),
+      prefer: headers.get('prefer'),
+      body: request.init!.body ? JSON.parse(String(request.init!.body)) : undefined,
+    };
+  };
+  const columns = 'activity_key,title,sport_id::text,opinion,last_date,updated_at';
+
+  reply = [opinion];
+  assert.deepEqual(await store.putOpinion(examples.PutOpinionDto), opinion);
+  assert.deepEqual(last(), {
+    path: '/rest/v1/activity_opinion',
+    query: { on_conflict: 'profile_id,activity_key', select: columns },
+    method: 'POST',
+    authorization: 'Bearer placeholder-session',
+    prefer: 'resolution=merge-duplicates,return=representation',
+    body: { ...examples.PutOpinionDto, profile_id: owner },
+  });
+  reply = [];
+  assert.equal(await store.putOpinion({ ...examples.PutOpinionDto, opinion: null }), null);
+  assert.deepEqual(last().query, {
+    profile_id: `eq.${owner}`,
+    activity_key: `eq.${opinion.activity_key}`,
+    select: columns,
+  });
+  assert.equal(last().method, 'DELETE');
+  reply = [{ activity_key: 'a' }, { activity_key: 'b' }];
+  assert.equal(await store.resetOpinions(), 2);
+  assert.deepEqual(last().query, { profile_id: `eq.${owner}`, select: columns });
+  assert.equal(last().method, 'DELETE');
+  reply = [opinion];
+  assert.deepEqual(await store.listOpinions(), [opinion]);
+  assert.equal(last().query.order, 'updated_at.desc,activity_key.asc');
+  assert.equal(last().query.profile_id, `eq.${owner}`);
+
+  const feedback = { effort: 'easy' as const, enjoyment: null, notes: '' };
+  reply = { ...completion, feedback, id: completionId, profile_id: owner };
+  assert.deepEqual(
+    (await store.updateFeedback({ completion_id: completionId, feedback })).feedback,
+    feedback,
+  );
+  assert.deepEqual(last(), {
+    path: '/rest/v1/rpc/update_completion_feedback',
+    query: {},
+    method: 'POST',
+    authorization: 'Bearer placeholder-session',
+    prefer: 'return=representation',
+    body: { p_completion_id: completionId, p_feedback: feedback },
+  });
+
+  reply = [activePlan.version];
+  assert.deepEqual(await store.getVersion(planId, 1), activePlan.version);
+  assert.deepEqual(last().query, {
+    profile_id: `eq.${owner}`,
+    plan_id: `eq.${planId}`,
+    version: 'eq.1',
+    limit: '1',
+  });
+  reply = [];
+  assert.equal(await store.getVersion(planId, 1), null);
+
+  reply = [
+    { action: 'save_plan_version', payload: { client_input: undoRequest }, result: undonePlan },
+  ];
+  assert.deepEqual(await store.savedRequest(undoRequest.request_id, undoRequest), undonePlan);
+  await assert.rejects(
+    store.savedRequest(undoRequest.request_id, { ...undoRequest, expected_version: 3 }),
+    (error: unknown) => error instanceof ApiError && error.code === 'REQUEST_CONFLICT',
+  );
+
+  // An unknown catalog sport fails the foreign key; that is a client error, not an outage.
+  status = 409;
+  reply = { code: '23503', message: 'insert or update violates foreign key constraint' };
+  await assert.rejects(
+    store.putOpinion({ ...examples.PutOpinionDto, sport_id: '999' }),
+    (error: unknown) =>
+      error instanceof ApiError && error.code === 'INVALID_REQUEST' && error.status === 400,
   );
 });

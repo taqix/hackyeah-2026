@@ -141,12 +141,54 @@ export const completion = {
   },
   completed_at: '2026-10-05T09:20:00+02:00',
 };
+export const completionId = '00000000-0000-4000-8000-000000000008';
+export const opinion = {
+  activity_key: 'a-gentle-walk-and-jog',
+  title: snapshot.activities[0]!.title,
+  sport_id: '1',
+  opinion: 'yes' as const,
+  last_date: '2026-10-05',
+  updated_at: '2026-10-05T09:30:00Z',
+};
+export const undoRequest = {
+  request_id: '00000000-0000-4000-8000-000000000009',
+  plan_id: planId,
+  expected_version: 2,
+};
+// After a revision (version 2), Undo saves the version 1 snapshot again as version 3.
+export const undonePlan = {
+  plan: { ...activePlan.plan, active_version_id: '00000000-0000-4000-8000-000000000010' },
+  version: {
+    ...activePlan.version,
+    id: '00000000-0000-4000-8000-000000000010',
+    version: 3,
+    origin: 'undo' as const,
+    summary: 'The last change was undone.',
+    created_at: '2026-10-03T12:10:00Z',
+  },
+};
+// Placeholders shaped like tokens; never real Google credentials.
+export const googleToken = {
+  request: { refresh_token: 'synthetic-google-refresh-token' },
+  result: { access_token: 'synthetic-google-access-token', expires_in: 3599 },
+};
 const meta = { contract_version: '1', request_id: null };
 export const examples = {
   UpdateProfileDto: { username: profile.username, preferences },
   GeneratePlanDto: generation,
   SendChatDto: chat,
   CompleteActivityDto: completion,
+  UpdateFeedbackDto: { completion_id: completionId, feedback: completion.feedback },
+  PutOpinionDto: {
+    activity_key: opinion.activity_key,
+    title: opinion.title,
+    sport_id: opinion.sport_id,
+    opinion: opinion.opinion,
+    last_date: opinion.last_date,
+  },
+  ResetOpinionsDto: {},
+  UndoPlanDto: undoRequest,
+  GoogleTokenDto: googleToken.request,
   SchemaResponse: { data: { Example: { type: 'object' } }, meta },
   ProfileResponse: { data: profile, meta },
   SportListResponse: { data: sports, meta },
@@ -164,12 +206,17 @@ export const examples = {
   CompletionResponse: {
     data: {
       ...completion,
-      id: '00000000-0000-4000-8000-000000000008',
+      id: completionId,
       profile_id: owner,
     },
     meta: { ...meta, request_id: requestId },
   },
   CompletionListResponse: { data: [], meta },
+  OpinionListResponse: { data: [opinion], meta },
+  OpinionResponse: { data: opinion, meta },
+  ResetOpinionsResponse: { data: { cleared: 1 }, meta },
+  UndoPlanResponse: { data: undonePlan, meta: { ...meta, request_id: undoRequest.request_id } },
+  GoogleTokenResponse: { data: googleToken.result, meta },
   ErrorResponse: {
     error: {
       code: 'AI_NOT_CONFIGURED',
@@ -207,6 +254,29 @@ export const designExamples = {
     value: {
       ...completion,
       feedback: { effort: 'too_much', enjoyment: null, notes: 'Stopped early.' },
+    },
+  },
+  LoggedBeforeFeedback: {
+    schema: 'CompleteActivityDto',
+    value: { ...completion, feedback: null },
+  },
+  ClearOpinion: {
+    schema: 'PutOpinionDto',
+    value: { ...examples.PutOpinionDto, opinion: null },
+  },
+  OpinionCleared: {
+    schema: 'OpinionResponse',
+    value: { data: null, meta },
+  },
+  NothingToUndo: {
+    schema: 'ErrorResponse',
+    value: {
+      error: {
+        code: 'NOTHING_TO_UNDO',
+        message: 'There is no recent change to undo.',
+        retryable: false,
+      },
+      meta: { ...meta, request_id: undoRequest.request_id },
     },
   },
 } as const;

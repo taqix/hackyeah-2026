@@ -1,7 +1,8 @@
 import { type ReactNode, type Ref, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Icon, IconButton, type IconName, Text } from '@/components/ui';
+import { useBottomEdgePadding } from '@/components/layout';
+import { Icon, IconButton, type IconName, noBrowserOutline, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 import { FineLine } from './bubbles';
@@ -17,6 +18,8 @@ export type ComposerProps = {
   onSend: () => void;
   /** A change is running: the box is locked, one change at a time. */
   busy: boolean;
+  /** Nothing can be sent yet (no plan to change): the box is locked; `top` says why. */
+  disabled?: boolean;
   /** The last message waits unsent: the offline note replaces the hint. */
   offline: boolean;
   /** The attached session (8.1, 8.15), removable. */
@@ -24,8 +27,6 @@ export type ComposerProps = {
   onRemoveAbout: () => void;
   /** Replaces the hint line (an Undo that didn't go through). */
   top?: ReactNode;
-  /** Space under the box: the home indicator, or a little air above the keyboard. */
-  bottomPadding: number;
   inputRef?: Ref<TextInput>;
 };
 
@@ -35,21 +36,24 @@ export function Composer({
   onChangeText,
   onSend,
   busy,
+  disabled = false,
   offline,
   about,
   onRemoveAbout,
   top,
-  bottomPadding,
   inputRef,
 }: ComposerProps) {
   const { colors, layout, type } = useTheme();
+  // Under the box: the home indicator, or a little air above the keyboard (Screen lifts the box onto it).
+  const bottomPadding = useBottomEdgePadding(16);
   const [focused, setFocused] = useState(false);
   // Web textareas don't grow by themselves: follow the content height, back to one line when cleared.
   const [webContentHeight, setWebContentHeight] = useState(0);
   const line = type.body.lineHeight;
   const webHeight = value ? Math.min(MAX_INPUT_HEIGHT, Math.max(line, webContentHeight)) : line;
-  const ring = focused && !busy;
-  const canSend = value.trim().length > 0 && !busy && !offline;
+  const locked = busy || disabled;
+  const ring = focused && !locked;
+  const canSend = value.trim().length > 0 && !locked && !offline;
 
   return (
     <View
@@ -77,7 +81,7 @@ export function Composer({
               {
                 borderRadius: about ? 24 : 26,
                 borderColor: ring ? colors.accent : colors.borderStrong,
-                backgroundColor: busy ? colors.surfaceSunken : colors.surfaceCard,
+                backgroundColor: locked ? colors.surfaceSunken : colors.surfaceCard,
               },
             ]}>
             {about ? <AboutChip {...about} onRemove={onRemoveAbout} /> : null}
@@ -85,13 +89,13 @@ export function Composer({
               ref={inputRef}
               value={value}
               onChangeText={onChangeText}
-              editable={!busy}
+              editable={!locked}
               multiline
               placeholder={busy ? 'Updating your plan…' : 'Message your coach…'}
               placeholderTextColor={busy ? colors.textSecondary : colors.textTertiary}
               selectionColor={colors.accent}
               accessibilityLabel="Message"
-              aria-disabled={busy}
+              aria-disabled={locked}
               autoComplete="off"
               enterKeyHint={Platform.OS === 'web' ? 'send' : undefined}
               onFocus={() => setFocused(true)}
@@ -194,7 +198,8 @@ const styles = StyleSheet.create({
     margin: 0,
     textAlignVertical: 'center',
     backgroundColor: 'transparent',
-    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : null),
+    // The field draws its own focus ring; hide the browser's square one inside it.
+    ...noBrowserOutline,
   },
   inputWithAbout: { paddingLeft: 7 },
   send: { marginBottom: 4 },

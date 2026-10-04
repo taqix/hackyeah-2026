@@ -82,6 +82,14 @@ void test("sends both modes, whole conversation and catalog with a compatible re
           body.systemInstruction.parts[0].text,
           /beginner movement plan/,
         );
+        assert.match(
+          body.systemInstruction.parts[0].text,
+          /empty available_equipment list, select only freestanding\nbodyweight movements/,
+        );
+        assert.match(
+          body.systemInstruction.parts[0].text,
+          /State warm-up and cool-down guidance explicitly in the overall description/,
+        );
         const text: string = body.contents[0].parts[0].text;
         const serialized = JSON.parse(text.slice(text.indexOf("\n") + 1));
         assert.deepEqual(serialized, request);
@@ -778,12 +786,17 @@ for (const [status, code] of [
   [403, "AUTHENTICATION"],
   [429, "RATE_LIMIT"],
   [500, "PROVIDER"],
+  [503, "PROVIDER"],
 ] as const) {
   void test(`handles HTTP ${status} without exposing provider content`, async () => {
+    let attempts = 0;
     await assert.rejects(
       generatePlan(input(), {
         ...options,
-        fetchImpl: async () => new Response("secret preferences", { status }),
+        fetchImpl: async () => {
+          attempts++;
+          return new Response("secret preferences", { status });
+        },
       }),
       (error: unknown) => {
         assert.equal((error as { code: string }).code, code);
@@ -791,8 +804,82 @@ for (const [status, code] of [
         return true;
       },
     );
+    assert.equal(attempts, [429, 500, 503].includes(status) ? 4 : 1);
   });
 }
+
+for (const status of [408, 429, 500, 502, 503, 504]) {
+  void test(`recovers from HTTP ${status} using the identical request and deadline`, async () => {
+    let attempts = 0;
+    let firstBody: RequestInit["body"];
+    let firstSignal: AbortSignal | null | undefined;
+    const result = await generatePlan(input(), {
+      ...options,
+      fetchImpl: async (_url, init) => {
+        attempts++;
+        if (attempts === 1) {
+          firstBody = init?.body;
+          firstSignal = init?.signal;
+          return new Response("private provider content", { status });
+        }
+        assert.equal(init?.body, firstBody);
+        assert.equal(init?.signal, firstSignal);
+        return response(output());
+      },
+    });
+    assert.equal(attempts, 2);
+    assert.deepEqual(result, output());
+  });
+}
+
+for (const retryAfter of [
+  "60",
+  "2592000",
+  "1e308",
+  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString(),
+]) {
+  void test(`does not retry when Retry-After exceeds the remaining deadline: ${retryAfter}`, async () => {
+    let attempts = 0;
+    await assert.rejects(
+      generatePlan(input(), {
+        ...options,
+        fetchImpl: async () => {
+          attempts++;
+          // A success on a second attempt makes an accidental early retry visible.
+          if (attempts > 1) return response(output());
+          return new Response("private provider content", {
+            status: 429,
+            headers: { "Retry-After": retryAfter },
+          });
+        },
+      }),
+      { code: "TIMEOUT" },
+    );
+    assert.equal(attempts, 1);
+  });
+}
+
+void test("honors a Retry-After cooldown that fits the deadline", async () => {
+  let attempts = 0;
+  let failedAt = 0;
+  const result = await generatePlan(input(), {
+    ...options,
+    fetchImpl: async () => {
+      attempts++;
+      if (attempts === 1) {
+        failedAt = performance.now();
+        return new Response("private provider content", {
+          status: 503,
+          headers: { "Retry-After": "1" },
+        });
+      }
+      assert.ok(performance.now() - failedAt >= 990);
+      return response(output());
+    },
+  });
+  assert.equal(attempts, 2);
+  assert.deepEqual(result, output());
+});
 
 void test("handles network errors and timeouts", async () => {
   await assert.rejects(

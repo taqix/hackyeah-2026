@@ -119,6 +119,13 @@ equipment-free activities. Gym access alone does not imply dumbbells,
 machines, a treadmill, a stationary bike, or other equipment. Do not require a
 purchase, a paid class, a partner, or a named facility.
 
+For a gym sport with an empty available_equipment list, select only freestanding
+bodyweight movements. Do not name, lean on, sit on, hold, or otherwise require a
+bench, chair, box, rail, wall, machine, mat, weight, band, or other fixture. The
+gym location authorizes the gym output shape; it does not authorize any physical
+equipment. If no suitable equipment-free gym session is possible, use another
+eligible sport or return fewer additions.
+
 Apply the following guidance when the supplied catalog contains these kinds of
 activities; these descriptions do not define a fixed list of allowed sport IDs:
 - Walking: choose an available location with space for easy walking. Do not
@@ -256,7 +263,8 @@ Validation applies the entire operation set regardless of its array order.
   technique and rest. Use uniform repetitions across its sets and omit exercise
   IDs. Generate approachable exercise names and instructions based
   on the supplied sport metadata and user context.
-  Include warm-up/cool-down guidance, and fit all exercises, rests, and
+  State warm-up and cool-down guidance explicitly in the overall description;
+  both are included in time_slot.duration. Fit them, all exercises, rests, and
   transitions within the returned duration. Do not add metrics or parts to gym
   workouts, or exercises to non-gym workouts.
 

@@ -22,7 +22,8 @@ planned interfaces.
 ```text
 apps/
   backend/             # NestJS application API and AI integration
-  web/                 # React marketing pages and dashboard
+  web/                 # React dashboard
+  website/             # React marketing site and demo (GitHub Pages)
   mobile/              # React Native / Expo; setup owned by mobile collaborator
 packages/
   contracts/           # Request/response types and runtime validation schemas
@@ -222,6 +223,12 @@ Keep the bundled upstream files intact; update the skill and its references toge
 The source is [Software Mansion's skills repository](https://github.com/software-mansion-labs/skills/tree/main/skills/react-native-best-practices).
 
 ### Application code
+
+Read [coding principles](code-principles.md) before changing application code. It is the
+longer form of the rules below: a single home for every fact, one responsibility per module,
+registries instead of growing conditionals, a domain layer with no React or clock of its own,
+components that take intent callbacks rather than state setters, and evidence that a refactor
+did not change behaviour. `apps/website` is the worked example and compiles under `strict`.
 
 - Use the shared ESLint/Prettier rules; avoid app-specific style drift.
 - Prefer descriptive names, small focused modules, and explicit public contracts.

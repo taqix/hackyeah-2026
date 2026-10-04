@@ -9,10 +9,10 @@ default; see [Mobile app on Supabase](features/mobile-supabase-integration.md).
 Live state after the 4 October 2026 push:
 
 - **Migrations:**
-  - Applied up to `20261004110000_sport_catalog_seed`, including
-    `20261004100000_feedback_opinions_undo`.
-  - `20261004120000_profile_username_from_auth` (signup copies the Auth
-    name into `profile.username`) is prepared and not yet applied.
+  - Applied up to `20261004120000_profile_username_from_auth`, including
+    `20261004100000_feedback_opinions_undo` and
+    `20261004110000_sport_catalog_seed`. The username migration makes signup
+    copy the Auth name into `profile.username` and backfills existing profiles.
   - The wearable migration `20261003120000` is intentionally not applied.
   - The catalog has 7 working sports and 15 previews.
 - **Function:** `product-api` is redeployed with `verify_jwt = true`. It
@@ -57,7 +57,8 @@ Deploy commands (Supabase CLI, no Docker needed):
 ## Backend (NestJS)
 
 The NestJS backend is local only. There is no cloud infrastructure, registry,
-deployment workflow, or hosted NestJS API.
+or hosted NestJS API; the only deployment workflow publishes the website (see
+[Website](#website)).
 
 From the repository root, run `npm ci` and then either `npm run dev:backend`
 for TypeScript watch mode or `docker compose up --build` for the containerized
@@ -75,3 +76,12 @@ check does not verify the AI provider.
 
 Hosting, release automation, and rollback procedures will be designed only when
 the team resumes deployment work.
+
+## Website
+
+The marketing site in `apps/website` is the one hosted part of the project. On
+every push to `main` or `develop` that touches `apps/website/**` or
+`package-lock.json`, `.github/workflows/pages.yml` typechecks it, builds it with
+Vite and publishes `apps/website/dist` to GitHub Pages at
+https://taqix.github.io/hackyeah-2026/. To roll back, revert the commit and push;
+the workflow redeploys the previous version.

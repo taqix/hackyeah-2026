@@ -55,8 +55,9 @@ export interface PlanRunner {
   failure(userId: string): PlanFailure | null;
   /**
    * Prepares the body (answers, free time, expected version) and sends it.
-   * Rejects only when the body cannot be prepared (no answers, offline); the
-   * request's own outcome is `job.done`.
+   * Rejects only when the body cannot be prepared (no answers, offline, the
+   * calendar could not be read), recorded as the failure like a failed send;
+   * the request's own outcome is `job.done`.
    */
   start(input: StartPlanJob): Promise<PlanJob>;
 }
@@ -135,6 +136,22 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
     return body;
   }
 
+  function fail(job: RunningJob, error: unknown): ApiError {
+    const failure =
+      error instanceof ApiError ? error : new ApiError('unknown', defaultErrorMessage('unknown'), { cause: error });
+    const transport = failure.code === 'offline' || failure.code === 'timeout';
+    lastFailure = {
+      userId: job.userId,
+      weekStart: job.weekStart,
+      kind: job.kind,
+      requestId: job.requestId,
+      code: failure.code,
+      message: planFailureMessage(job.kind, failure.code, job.weekStart, toLocalDate(deps.now())),
+      transport,
+    };
+    return failure;
+  }
+
   const generate = (body: GeneratePlanDto) =>
     http.post<ActivePlanDto>('/plans/generate', body, { timeoutMs: AI_TIMEOUT_MS, retryTransport: true });
 
@@ -173,21 +190,10 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       }
       return result;
     } catch (error) {
-      const failure =
-        error instanceof ApiError ? error : new ApiError('unknown', defaultErrorMessage('unknown'), { cause: error });
-      const transport = failure.code === 'offline' || failure.code === 'timeout';
-      if (!transport) bodies.delete(job.requestId);
+      const failure = fail(job, error);
+      if (failure.code !== 'offline' && failure.code !== 'timeout') bodies.delete(job.requestId);
       // A request that timed out may still have been saved: read the plan again.
       data.invalidate('currentPlan', 'history');
-      lastFailure = {
-        userId: job.userId,
-        weekStart: job.weekStart,
-        kind: job.kind,
-        requestId: job.requestId,
-        code: failure.code,
-        message: planFailureMessage(job.kind, failure.code, job.weekStart, toLocalDate(deps.now())),
-        transport,
-      };
       throw failure;
     } finally {
       const index = jobs.findIndex((item) => item === job);
@@ -211,9 +217,15 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
           ? lastFailure.requestId
           : null;
       const requestId = input.requestId ?? resend ?? deps.newId();
-      const body = await prepare(requestId, input.weekStart);
-      if (lastFailure?.userId === input.userId) lastFailure = null;
       const running: RunningJob = { ...input, requestId };
+      let body: GeneratePlanDto;
+      try {
+        body = await prepare(requestId, input.weekStart);
+      } catch (error) {
+        // Nothing was sent; the failed state or note says so (a calendar error is never empty free time).
+        throw fail(running, error);
+      }
+      if (lastFailure?.userId === input.userId) lastFailure = null;
       const job: PlanJob = Object.assign(running, { done: settle(running, body) });
       jobs.push(job);
       // Callers that do not wait read the outcome from getState instead.

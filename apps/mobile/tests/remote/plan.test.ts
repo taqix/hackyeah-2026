@@ -174,6 +174,19 @@ test('a failed first plan reads as failed, with calm copy per cause', async () =
   }
 });
 
+test('a calendar that cannot be read fails the build instead of sending no free time', async () => {
+  const server = fakeServer();
+  const calendarError = Object.assign(new Error('The calendar could not be read.'), { code: 'native-error' });
+  const { client } = createRemoteRuntime(
+    fakeDeps({ fetch: server.fetch, captureAvailability: () => Promise.reject(calendarError) }),
+  );
+  await assert.rejects(client.plan.build({}), (error) => isApiError(error, 'unknown'));
+  const state = await client.plan.getState();
+  assert.deepEqual([state.status, state.failure_code], ['failed', 'unknown']);
+  assert.match(state.failure_message ?? '', /trying again only takes a moment/);
+  assert.equal(server.generates().length, 0, 'nothing was sent');
+});
+
 test('Try again after a transport failure resends the same request, byte for byte', async () => {
   let attempts = 0;
   const server = fakeServer();

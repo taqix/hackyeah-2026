@@ -125,6 +125,7 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       window: window ? [window.start_hour, window.end_hour] : null,
       minMinutes: 5,
       capturedAt: now,
+      timeZone: preferences.timezone,
     });
     const body: GeneratePlanDto = {
       request_id: requestId,

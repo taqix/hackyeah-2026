@@ -12,6 +12,7 @@ import type { RemoteContext } from './context';
 import { createRemoteData, type RemoteData } from './data';
 import type { AuthErrorLike, AuthPort, RemoteDeps } from './deps';
 import { createDraftStore, type DraftStore } from './drafts';
+import { createGoogleCalendarAccount, type GoogleCalendarAccount } from './google-calendar';
 import { createProductApi, type ProductApi } from './http';
 import { createRemoteLogs, flushDrafts } from './logs';
 import { createRemotePlan } from './plan';
@@ -44,6 +45,8 @@ export interface RemoteRuntime {
   drafts: DraftStore;
   /** Saves logs left as drafts (an earlier session closed before saving). Never rejects. */
   flushDrafts(): Promise<void>;
+  /** Google Calendar on Data and privacy: connection, free/busy for planning and the Movo export. */
+  googleCalendar: GoogleCalendarAccount;
 }
 
 export function createRemoteRuntime(deps: RemoteDeps): RemoteRuntime {
@@ -66,7 +69,8 @@ export function createRemoteRuntime(deps: RemoteDeps): RemoteRuntime {
     profile: createRemoteProfile(ctx),
     account: createRemoteAccount(ctx),
   };
-  return { client, http, data, drafts, flushDrafts: () => flushDrafts(ctx) };
+  const googleCalendar = createGoogleCalendarAccount({ deps, http });
+  return { client, http, data, drafts, flushDrafts: () => flushDrafts(ctx), googleCalendar };
 }
 
 export function createRemoteApiClient(deps: RemoteDeps): ApiClient {

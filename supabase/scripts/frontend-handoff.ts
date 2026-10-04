@@ -5,6 +5,7 @@ import {
   completion,
   examples,
   generation,
+  googleToken,
   messages,
   opinion,
   profile,
@@ -93,10 +94,11 @@ export function renderFrontendHandoff(): string {
   return `# Supabase API: frontend handoff
 
 Contract version: **1**. Prepared on 3 October 2026; extended on 4 October 2026.
-Status: **local source and contracts verified**. The hosted project runs an
-earlier product-api deployment. The 4 October migrations, routes (late
-feedback, opinions, Undo, catalog seed) and the Gemini adapter are NOT applied
-or deployed to hosted Supabase yet; see section 12.
+Status: **local source and contracts verified**. The 4 October migrations,
+routes (late feedback, opinions, Undo, catalog seed) and the Gemini adapter are
+deployed to the hosted project. The Google Calendar token route
+(POST /google/token) and the google_calendar availability source are NOT
+deployed yet; see section 12.
 
 Send this file to the web/mobile developer. It describes the implemented local
 PoC contract, with complete JSON payloads that can be used as mock responses.
@@ -160,6 +162,7 @@ All paths below are relative to the base URL, and require a session.
 | GET | /opinions | None | ActivityOpinionEntity[] |
 | PUT | /opinions | PutOpinionDto | ActivityOpinionEntity or null |
 | POST | /opinions/reset | ResetOpinionsDto ({}) | {cleared} |
+| POST | /google/token | GoogleTokenDto | {access_token, expires_in} |
 
 Pagination: limit defaults to 50 (1–100); offset defaults to 0 (0–10000).
 Collections are plain arrays inside data. Fetch pages until fewer than limit
@@ -205,7 +208,7 @@ IDs must be unique. Unknown request fields are rejected.
 | Weekly snapshot | week_start, timezone, activities: zero to seven unique planned activities within that local week, with no time overlap |
 | Planned activity | id, sport_id, title (1–200 characters), description (1–2000), start_at, duration_minutes (5–60 in steps of 5), gym_exercises. Non-gym exercises are []. Version summary is 1–1000 characters. |
 | Planned gym exercise | Unique id, name, sets: 1–10 objects with repetitions (integer 1–100). At most 20 exercises. No AI-generated weights. Timed sets are not implemented. |
-| Availability | source: device_calendar/manual; captured_at; slots: up to 100 sorted, nonoverlapping start_at/end_at intervals with positive duration. Send only free time, never private calendar events. Chat message is 1–2000 characters; attached activity_id is optional. |
+| Availability | source: device_calendar/google_calendar/manual; captured_at; slots: up to 100 sorted, nonoverlapping start_at/end_at intervals with positive duration. Send only free time, never private calendar events. Chat message is 1–2000 characters; attached activity_id is optional. |
 | Completion metrics | At most five number/string values matching the sport's definitions, required keys, types, and bounds. Numbers are finite and nonnegative; strings at most 200 characters. No invented values for missing optional measurements. |
 | Gym actuals | gym_log: up to 20 unique exercise_id entries from the plan; each has 1–10 sets with repetitions integer 0–100 and weight_kg null or number 0–1000. Non-gym gym_log is []. |
 | Feedback | effort: easy/okay/hard/too_much; enjoyment: yes/maybe/no/null; notes: string at most 1000 characters, empty when absent. All three keys required. A completion's feedback may be null until it is given. |
@@ -402,6 +405,33 @@ title). title, sport_id, and last_date describe the latest session for display.
 An unknown sport_id returns 400. Reset never touches completions, saved
 answers, or excluded sports.
 
+### Google Calendar access token
+
+The client connects Google Calendar through Supabase Auth (Google sign-in or
+identity linking with the calendar.freebusy and calendar.app.created scopes,
+offline access). Supabase hands the Google access and refresh tokens to the
+client once, right after that sign-in. The client keeps them on the device and
+calls Google Calendar directly: it reads free/busy only, never event titles,
+and may write planned sessions to a calendar the app created. Google access
+tokens last about an hour. To get a new one, POST the stored refresh token:
+${payload('GoogleTokenDto', googleToken.request)}
+Response:
+${payload('GoogleTokenResponse', { data: googleToken.result, meta: meta() })}
+The function holds the OAuth client secret (function secrets
+GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET) and never stores or logs
+the tokens. Without both secrets it answers 501 GOOGLE_NOT_CONFIGURED. When
+Google rejects the refresh token (revoked access, a changed password, or an
+expired grant) it answers 409 GOOGLE_RECONNECT_REQUIRED; the client then asks
+the person to reconnect Google Calendar. This is not a 401, so it never looks
+like an expired Supabase session. Google outages return 502
+PROVIDER_UNAVAILABLE (retryable).
+
+Free time read from Google goes into generation and chat as availability with
+source google_calendar. It is handled exactly like device_calendar: only the
+slots matter, and an empty slot array still means no free time. A failed
+Google read is never sent as an empty google_calendar result; the client falls
+back to the device calendar or manual slots.
+
 ## 9. Empty lists, errors, and retries
 
 Empty history, messages, or completions use the same collection envelope:
@@ -418,6 +448,8 @@ ${payload('ErrorResponse', { error: { code: 'VERSION_CONFLICT', message: 'The pl
 | 409 | ALREADY_COMPLETED | Reload completions and show the existing result |
 | 409 | NOTHING_TO_UNDO | Hide Undo; the active version is not an undoable chat change |
 | 409 | UNDO_LOCKED | Hide Undo; a session in the change is already logged |
+| 409 | GOOGLE_RECONNECT_REQUIRED | Google rejected the refresh token: ask the person to reconnect Google Calendar |
+| 501 | GOOGLE_NOT_CONFIGURED | The Google secrets are missing: refresh is unavailable; ask the person to reconnect when the token expires |
 | 405 / 413 | METHOD_NOT_ALLOWED / PAYLOAD_TOO_LARGE | Correct method or reduce body |
 | 501 | AI_NOT_CONFIGURED | Show unavailable/provider-pending state; no automatic retry loop |
 | 502 / 503 | INVALID_AI_OUTPUT / PROVIDER_UNAVAILABLE / DATA_UNAVAILABLE | Display failure; respect retryable; retain the current plan |
@@ -444,11 +476,13 @@ version checks for a new action. Disable duplicate submits while a request runs.
    feedback or with null and PUT /completions/feedback later.
 8. Read and write opinions through /opinions; Undo the newest chat change with
    POST /plans/undo.
-9. Refetch after successful writes and normalize Auth/gateway/network failures.
+9. Optional Google Calendar: keep the Google tokens on the device and refresh
+   the access token with POST /google/token.
+10. Refetch after successful writes and normalize Auth/gateway/network failures.
 
 Shared monorepo import: \`@hackyeah/contracts/product\`. Request DTOs:
 UpdateProfileDto, GeneratePlanDto, SendChatDto, CompleteActivityDto,
-UpdateFeedbackDto, PutOpinionDto, ResetOpinionsDto, UndoPlanDto. Entities:
+UpdateFeedbackDto, PutOpinionDto, ResetOpinionsDto, UndoPlanDto, GoogleTokenDto. Entities:
 ProfileEntity, SportEntity, PlanEntity, PlanVersionEntity, ChatMessageEntity,
 ActivityCompletionEntity, ActivityOpinionEntity. Response DTOs and apiSchemas
 are exported alongside them. No client UI is shared between web and mobile.
@@ -510,9 +544,17 @@ the HTTP API or connect AI. The owner must complete these steps:
 7. Share the actual base URL and client publishable configuration securely with
    the frontend developer, then smoke-test the authenticated journey on web and
    Expo. Confirm cross-account isolation and failed-revision preservation.
+8. For Google Calendar, set the Web OAuth client that Supabase Auth uses as
+   function secrets with
+   \`supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<CLIENT_ID> GOOGLE_OAUTH_CLIENT_SECRET=<CLIENT_SECRET>\`
+   and redeploy product-api. In Google Cloud, enable the Google Calendar API and
+   add the calendar.freebusy and calendar.app.created scopes to the consent
+   screen. In Supabase Auth, turn on manual identity linking so email accounts
+   can connect Google Calendar.
 
-Local verification already completed: 43 Supabase tests passed (including the
-Gemini adapter against canned answers), Supabase typechecks passed, and
+Local verification already completed: the Supabase tests passed (including the
+Gemini adapter against canned answers and the Google token route against a
+fake Google endpoint), Supabase typechecks passed, and
 Supabase lint and formatting passed. This does not prove hosted Auth, Deno
 bundling, a live Gemini call, or actual device/browser operation. Supabase CLI
 and Deno are not installed here.

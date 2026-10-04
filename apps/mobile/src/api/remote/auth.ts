@@ -10,7 +10,7 @@ import {
 } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { checkName } from '../../lib/person-name';
-import { ApiError, type AuthProviders, type AuthSession } from '../types';
+import { ApiError, isApiError, type AuthProviders, type AuthSession } from '../types';
 import type { RemoteContext } from './context';
 import type { AuthErrorLike, AuthPort, AuthSessionData, RemoteDeps } from './deps';
 import { defaultErrorMessage } from './http';
@@ -28,6 +28,10 @@ const CONFIRM_FIRST = 'Confirm your email first. Open the link we sent you, then
 const LINK_EXPIRED = 'This link has expired or was opened on another device. Ask for a new one.';
 const TOO_MANY_TRIES = 'Too many tries for now. Wait a minute, then try again.';
 const NOT_FINISHED = "Sign-in didn't finish. Try again.";
+const GOOGLE_NOT_FINISHED = "Google sign-in didn't finish. Try again.";
+
+/** Asks Google to show its account chooser, so a phone with several Google accounts can pick one. */
+export const GOOGLE_SIGN_IN_PARAMS = { prompt: 'select_account' } as const;
 
 /**
  * The person closed the Google sheet or declined on Google's page. Not a
@@ -178,7 +182,11 @@ export async function readSession(auth: AuthPort): Promise<AuthSession | null> {
 
 export interface AuthRedirectParams {
   code: string | null;
-  /** `error` or `error_code` from Supabase or Google, e.g. access_denied, otp_expired. */
+  /**
+   * `error_code`, else `error`. Supabase sets `error_code` for its own
+   * refusals (otp_expired, signup_disabled), often with `error=access_denied`;
+   * a bare `error=access_denied` is Google's: the person declined.
+   */
   error: string | null;
   errorDescription: string | null;
 }
@@ -249,10 +257,10 @@ export async function completeAuthRedirect(
 ): Promise<AuthSession> {
   if (params.error === 'access_denied') throw new SignInCancelled();
   if (params.error) {
-    const expired = LINK_CODES.has(params.error);
-    throw new ApiError(expired ? 'unauthorized' : 'unknown', expired ? LINK_EXPIRED : NOT_FINISHED, {
-      cause: params,
-    });
+    // Auth's own codes keep their copy (an expired link, sign-ups switched off); anything else didn't finish.
+    const known = mapAuthError({ name: 'AuthRedirectError', message: params.error, code: params.error });
+    const plain = known.code === 'unknown' && known.message === defaultErrorMessage('unknown');
+    throw new ApiError(plain ? 'unknown' : known.code, plain ? NOT_FINISHED : known.message, { cause: params });
   }
   if (params.code) return toAuthSession(await exchangeAuthCode(auth, params.code, platform));
   const { data, error } = await call(() => auth.getSession());
@@ -393,23 +401,38 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
     },
 
     async signInWithGoogle() {
+      // Linking.createURL: hackyeah2026://auth/callback in a build, exp://…/--/auth/callback
+      // in Expo Go, http://localhost:8081/auth/callback on the web; all are allowlisted.
       const redirectTo = deps.redirectUrl(CALLBACK_PATH);
+      const queryParams = { ...GOOGLE_SIGN_IN_PARAMS };
       if (deps.platform === 'web') {
         // supabase-js sends the whole page to Google; /auth/callback finishes
         // after the page loads again, so this never settles.
-        const { error } = await call(() => auth.signInWithOAuth({ provider: 'google', options: { redirectTo } }));
+        const { error } = await call(() =>
+          auth.signInWithOAuth({ provider: 'google', options: { redirectTo, queryParams } }),
+        );
         if (error) throw mapAuthError(error);
         return new Promise<never>(() => undefined);
       }
       const { data, error } = await call(() =>
-        auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } }),
+        auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true, queryParams } }),
       );
-      if (error || !data.url) throw mapAuthError(error);
+      if (error || !data.url) throw mapAuthError(error ?? { name: 'AuthUnknownError', message: 'No URL' });
       const result = await deps.openAuthSession(data.url, redirectTo);
+      // Closed or dismissed. On Android a dismiss can race the deep link: if
+      // that carried a code, AuthSessionSync and /auth/callback finish it.
       if (result.type !== 'success') throw new SignInCancelled();
       const params = authRedirectParams(result.url);
-      if (!params.code && !params.error) throw new ApiError('unknown', NOT_FINISHED);
-      return completeAuthRedirect(auth, params, deps.platform);
+      if (!params.code && !params.error) throw new ApiError('unknown', GOOGLE_NOT_FINISHED);
+      try {
+        return await completeAuthRedirect(auth, params, deps.platform);
+      } catch (failure) {
+        // A refused or expired code here means Google took too long: trying again is the fix.
+        if (isApiError(failure, 'unauthorized')) {
+          throw new ApiError('unauthorized', GOOGLE_NOT_FINISHED, { cause: failure });
+        }
+        throw failure;
+      }
     },
 
     async sendPasswordReset(email) {

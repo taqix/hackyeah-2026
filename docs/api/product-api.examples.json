@@ -93,6 +93,9 @@
     "plan_id": "00000000-0000-4000-8000-000000000002",
     "expected_version": 2
   },
+  "GoogleTokenDto": {
+    "refresh_token": "synthetic-google-refresh-token"
+  },
   "SchemaResponse": {
     "data": {
       "Example": {
@@ -439,6 +442,16 @@
     "meta": {
       "contract_version": "1",
       "request_id": "00000000-0000-4000-8000-000000000009"
+    }
+  },
+  "GoogleTokenResponse": {
+    "data": {
+      "access_token": "synthetic-google-access-token",
+      "expires_in": 3599
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
     }
   },
   "ErrorResponse": {

@@ -8,13 +8,16 @@ export { APP_CALENDAR_TITLE, CalendarError, isAppCalendar } from './types';
 export {
   captureAvailability,
   DEFAULT_WINDOW,
+  deviceTimeZone,
   manualAvailability,
   MAX_SLOTS,
   toDailySlots,
   type Availability,
   type AvailabilitySlot,
+  type AvailabilitySources,
   type CaptureAvailability,
   type CaptureAvailabilityOptions,
+  type FreeTimeSource,
 } from './plan-availability';
 export {
   removeAppCalendar,

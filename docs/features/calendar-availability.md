@@ -100,17 +100,32 @@ builds the `availability` sent with plan generation and chat. Each caller
 captures once per action and reuses the result when it retries.
 
 ```ts
-const availability = await captureAvailability({
-  weekStart: '2026-10-05', // Monday of the planned week
-  from: new Date(),        // first plan: now; chat: the week's local midnight
-  window: preferences.preferred_window, // null means 7–21
-  minMinutes: 5,           // optional
-});
-// { source: 'device_calendar' | 'manual', captured_at, slots: [{ start_at, end_at }] }
+const availability = await captureAvailability(
+  {
+    weekStart: '2026-10-05', // Monday of the planned week
+    from: new Date(),        // first plan: now; chat: the week's local midnight
+    window: preferences.preferred_window, // null means 7–21
+    minMinutes: 5,           // optional
+    timeZone: 'Europe/Warsaw', // optional: the plan's zone, for Google free/busy
+  },
+  { google }, // optional FreeTimeSource: Google Calendar when connected for planning
+);
+// { source: 'google_calendar' | 'device_calendar' | 'manual', captured_at, slots: [{ start_at, end_at }] }
 ```
 
 - **Range:** from `from` (rounded up to 5 minutes) or the week's local
   midnight, whichever is later, to the next Monday's local midnight.
+- **Google Calendar first**, when a `google` source is passed (the remote
+  adapter passes one while Google Calendar is connected with "Use for
+  planning" on):
+  - Its free time over the range comes from Google's free/busy for the
+    primary calendar (`services/google-calendar/free-busy.ts`). It never
+    reads event titles or details.
+  - `toDailySlots` cuts it exactly like the device's below.
+  - The source is `google_calendar`. A fully busy week is a valid `[]`.
+  - Any failure (offline, a refused or expired token, a Google error) falls
+    through to the device read, then manual. A failed Google read is never
+    sent as an empty `google_calendar` result.
 - **With access:** `getFreeSlots` reads every calendar except the "Movo"
   export calendar and any `excludeCalendarIds`. All-day events do not block.
   - `toDailySlots` intersects the free time with each local day's window,
@@ -126,12 +141,14 @@ const availability = await captureAvailability({
 
 ## Verification
 
-- `npm run test:calendar --workspace=@hackyeah/mobile`: 62 tests pass in each of
+- `npm run test:calendar --workspace=@hackyeah/mobile`: 77 tests pass in each of
   `Europe/Warsaw` and `America/Los_Angeles`.
   - 18 cover free slots.
   - `tests/calendar-plan-availability.test.ts` covers day splitting, the
     window, DST weeks, the minimum length, the 100-slot cap, excluded
     calendars, the manual fallbacks and a native failure.
+  - `tests/google-calendar.test.ts` covers Google free/busy into slots, DST
+    weeks, the fallbacks after a failed Google read, and the Google export.
 - `npm run typecheck`: passes for all workspaces and the mobile test graph.
 - `npm run lint`: passes for all workspaces.
 - New files formatted with `packages/.prettierrc.json`; `git diff --check` passes.

@@ -107,7 +107,8 @@ export const availableSlotSchema = z
   .strictObject({ start_at: instant, end_at: instant })
   .refine((slot) => Date.parse(slot.end_at) > Date.parse(slot.start_at));
 export const availabilitySchema = z.strictObject({
-  source: z.enum(['device_calendar', 'manual']),
+  // google_calendar: free time read from the person's Google Calendar (free/busy only).
+  source: z.enum(['device_calendar', 'google_calendar', 'manual']),
   captured_at: instant,
   slots: z
     .array(availableSlotSchema)
@@ -334,6 +335,18 @@ export const undoPlanSchema = z.strictObject({
   expected_version: z.number().int().positive(),
 });
 export type UndoPlanDto = z.infer<typeof undoPlanSchema>;
+// Google Calendar: the app keeps the person's Google refresh token on the device; the
+// function holds the OAuth client secret and trades the token for a new access token.
+export const googleTokenRequestSchema = z.strictObject({
+  refresh_token: z.string().min(1).max(2048),
+});
+export type GoogleTokenDto = z.infer<typeof googleTokenRequestSchema>;
+export const googleTokenSchema = z.strictObject({
+  access_token: z.string().min(1).max(4096),
+  // Seconds until the new access token expires.
+  expires_in: z.number().int().positive(),
+});
+export type GoogleTokenResultDto = z.infer<typeof googleTokenSchema>;
 
 export const chatResultSchema = z.discriminatedUnion('outcome', [
   z.strictObject({
@@ -364,6 +377,8 @@ export const errorCodeSchema = z.enum([
   'PAYLOAD_TOO_LARGE',
   'NOTHING_TO_UNDO',
   'UNDO_LOCKED',
+  'GOOGLE_NOT_CONFIGURED',
+  'GOOGLE_RECONNECT_REQUIRED',
 ]);
 export type ApiErrorCode = z.infer<typeof errorCodeSchema>;
 export const metaSchema = z.strictObject({
@@ -385,6 +400,7 @@ export const apiSchemas = {
   PutOpinionDto: putOpinionSchema,
   ResetOpinionsDto: resetOpinionsSchema,
   UndoPlanDto: undoPlanSchema,
+  GoogleTokenDto: googleTokenRequestSchema,
   SchemaResponse: envelopeSchema(z.record(z.string(), z.record(z.string(), z.unknown()))),
   ProfileResponse: envelopeSchema(profileSchema),
   SportListResponse: envelopeSchema(z.array(sportSchema)),
@@ -399,6 +415,7 @@ export const apiSchemas = {
   OpinionResponse: envelopeSchema(activityOpinionSchema.nullable()),
   ResetOpinionsResponse: envelopeSchema(resetOpinionsResultSchema),
   UndoPlanResponse: envelopeSchema(activePlanSchema),
+  GoogleTokenResponse: envelopeSchema(googleTokenSchema),
   ErrorResponse: errorResponseSchema,
 };
 export type ProfileResponseDto = z.infer<typeof apiSchemas.ProfileResponse>;
@@ -415,6 +432,7 @@ export type OpinionListResponseDto = z.infer<typeof apiSchemas.OpinionListRespon
 export type OpinionResponseDto = z.infer<typeof apiSchemas.OpinionResponse>;
 export type ResetOpinionsResponseDto = z.infer<typeof apiSchemas.ResetOpinionsResponse>;
 export type UndoPlanResponseDto = z.infer<typeof apiSchemas.UndoPlanResponse>;
+export type GoogleTokenResponseDto = z.infer<typeof apiSchemas.GoogleTokenResponse>;
 export type ErrorResponseDto = z.infer<typeof errorResponseSchema>;
 export function getProductJsonSchemas() {
   return Object.fromEntries(

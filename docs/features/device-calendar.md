@@ -23,6 +23,9 @@ mobile abstraction without exposing Expo shared objects to callers.
 - Free-slot calculation builds on this API in the separate
   [calendar availability service](calendar-availability.md). Its free time
   goes to the backend with plan generation and chat.
+- Google Calendar is a separate, opt-in source with its own export target. It
+  is called over Google's API, not through this module; see
+  [Mobile app on Supabase › Google Calendar](mobile-supabase-integration.md#google-calendar).
 - Affected area: mobile only. No API contracts or database changes.
 
 ## Acceptance criteria
@@ -192,6 +195,16 @@ When it runs:
   the foreground.
 - Writes run one at a time, and removal waits for a running sync.
 - Failures stay quiet: the row says it will try again.
+
+Export target:
+
+- Sessions go to one Movo calendar: this phone's, or the one the app creates
+  in Google Calendar ("Add sessions to Google Calendar" on the same screen).
+- Turning this one on while Google holds the sessions asks first. It then
+  removes the Movo calendar from Google and turns the phone's export on. The
+  Google switch does the same in reverse.
+- Both targets share the export queue (`features/calendar-export`): the
+  debounce, one write at a time, and a retry on return to the app.
 
 ## Verification
 

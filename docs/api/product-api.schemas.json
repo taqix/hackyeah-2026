@@ -207,6 +207,7 @@
             "type": "string",
             "enum": [
               "device_calendar",
+              "google_calendar",
               "manual"
             ]
           },
@@ -293,6 +294,7 @@
             "type": "string",
             "enum": [
               "device_calendar",
+              "google_calendar",
               "manual"
             ]
           },
@@ -629,6 +631,21 @@
       "request_id",
       "plan_id",
       "expected_version"
+    ],
+    "additionalProperties": false
+  },
+  "GoogleTokenDto": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "refresh_token": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "refresh_token"
     ],
     "additionalProperties": false
   },
@@ -3227,6 +3244,63 @@
     ],
     "additionalProperties": false
   },
+  "GoogleTokenResponse": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "data": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expires_in": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "access_token",
+          "expires_in"
+        ],
+        "additionalProperties": false
+      },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "contract_version",
+          "request_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "data",
+      "meta"
+    ],
+    "additionalProperties": false
+  },
   "ErrorResponse": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -3251,7 +3325,9 @@
               "METHOD_NOT_ALLOWED",
               "PAYLOAD_TOO_LARGE",
               "NOTHING_TO_UNDO",
-              "UNDO_LOCKED"
+              "UNDO_LOCKED",
+              "GOOGLE_NOT_CONFIGURED",
+              "GOOGLE_RECONNECT_REQUIRED"
             ]
           },
           "message": {

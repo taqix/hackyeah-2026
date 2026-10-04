@@ -1,6 +1,7 @@
 import { BackButton, Col, Content, Screen, Section, TopBar } from '@/components/layout';
 
 import { CalendarConnectionRow, CalendarExportRow, StepsConnectionRow, WatchConnectionRow } from './connection-rows';
+import { GoogleCalendarRows } from './google-calendar-rows';
 import { SeesList } from './sees-list';
 import { useCalendarAccess } from './use-calendar-access';
 
@@ -19,6 +20,7 @@ export function PrivacyScreen() {
           <Section>Connected</Section>
           <CalendarConnectionRow calendar={calendar} />
           <CalendarExportRow calendar={calendar} />
+          <GoogleCalendarRows />
           <StepsConnectionRow />
           <WatchConnectionRow />
         </Col>

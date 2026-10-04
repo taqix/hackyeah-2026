@@ -36,6 +36,17 @@ supabase secrets set GEMINI_API_KEY=<GEMINI_API_KEY> GEMINI_MODEL=<MODEL_ID>
 `GEMINI_MODEL` has no default; use a model ID from Google AI Studio. Details are
 in [the product API doc](../docs/features/supabase-product-api.md#ai-provider-gemini).
 
+`POST /google/token` (Google Calendar token refresh) needs the Web OAuth client
+that Supabase Auth's Google provider uses. Without these secrets it answers
+501 `GOOGLE_NOT_CONFIGURED`:
+
+```sh
+supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<WEB_CLIENT_ID> GOOGLE_OAUTH_CLIENT_SECRET=<WEB_CLIENT_SECRET>
+```
+
+The Google Cloud and Auth steps are in
+[Mobile app on Supabase](../docs/features/mobile-supabase-integration.md#google-cloud-and-supabase-setup-owner).
+
 The owner handles remote migrations, deployment, and Auth provider configuration.
 Actual local Supabase/Deno runtime verification remains pending because those
 executables were unavailable during this implementation.

@@ -2,7 +2,8 @@
  * The product API's wire types: a hand-written mirror of
  * `packages/contracts/src/product.ts` (contract_version "1"), including the
  * additive extensions (nullable completion feedback, PUT /completions/feedback,
- * opinions, POST /plans/undo). Mobile does not import the contract, because
+ * opinions, POST /plans/undo, POST /google/token and the google_calendar
+ * availability source). Mobile does not import the contract, because
  * the package ships zod and builds to dist/; tests/remote/contract-compat.test.ts
  * fails typecheck when this mirror and the contract source drift apart.
  *
@@ -83,7 +84,8 @@ export interface AvailableSlot {
 }
 
 export interface AvailabilityDto {
-  source: 'device_calendar' | 'manual';
+  /** Extension: google_calendar is free time read from Google Calendar's free/busy. */
+  source: 'device_calendar' | 'google_calendar' | 'manual';
   captured_at: string;
   /** At most 100, sorted, non-overlapping. `[]` means no free time. */
   slots: AvailableSlot[];
@@ -264,6 +266,21 @@ export interface ClearedDto {
   cleared: number;
 }
 
+/* ------------------------------------------------------ Google Calendar */
+
+/** Extension: POST /google/token. The refresh token stays on the device otherwise. */
+export interface GoogleTokenDto {
+  /** 1–2048 characters. */
+  refresh_token: string;
+}
+
+/** Extension: POST /google/token's data, a new Google access token. */
+export interface GoogleTokenResultDto {
+  access_token: string;
+  /** Seconds until it expires, a positive integer. */
+  expires_in: number;
+}
+
 /* ------------------------------------------------------------ Envelope */
 
 export type WireErrorCode =
@@ -283,7 +300,11 @@ export type WireErrorCode =
   /** Extension: the active version is not a chat change. */
   | 'NOTHING_TO_UNDO'
   /** Extension: a done session differs between the two versions. */
-  | 'UNDO_LOCKED';
+  | 'UNDO_LOCKED'
+  /** Extension (501): the function has no Google OAuth client secrets. */
+  | 'GOOGLE_NOT_CONFIGURED'
+  /** Extension (409): Google rejected the refresh token; reconnect Google Calendar. */
+  | 'GOOGLE_RECONNECT_REQUIRED';
 
 export interface WireMeta {
   contract_version: '1';

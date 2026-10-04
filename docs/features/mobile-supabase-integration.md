@@ -1,6 +1,6 @@
 # Feature: Mobile app on Supabase (real API)
 
-Status: in progress
+Status: ready for review
 Owner: mobile + Supabase/API
 Issue/PR: pending (branch `feat/mobile-full-integration`)
 
@@ -106,7 +106,10 @@ The owner allowlists these in Supabase Auth.
 - `src/api/remote/*`. Pure modules take injected dependencies (fetch, access
   token, storage, clock, availability), so Node tests run without React Native.
   - `http.ts`: the envelope and error normalization.
-  - `wire.ts`: a mirror of the contract plus the extensions below.
+  - `wire.ts`: a mirror of the contract, extensions included.
+    `tests/remote/contract-compat.test.ts` fails typecheck when it drifts from
+    the contract source, and parses the adapter's real request bodies with the
+    contract's schemas.
   - `data.ts`: a cached loader for profile, sports, current plan, all history
     pages, all completion pages, opinions and chat, with in-flight dedupe and
     invalidation after writes.
@@ -311,17 +314,124 @@ router has exact paths only.
 
 ## Verification
 
-To be filled in with exact commands and results as steps land. Planned:
-- **Mobile:**
-  - `npm run typecheck`, `lint`, `test`, `test:calendar`, `test:activity-import`
-  - the new remote adapter tests
-  - `npx expo export` for iOS, Android and web
-- **Supabase:** `npm run test:supabase`, `typecheck:supabase`, `lint:supabase`
-  and `schema:product` (no diff afterwards).
-- **Not possible here:**
-  - hosted Supabase: no credentials, CLI, Docker or Deno on this machine
+Run on 4 October 2026 on the merged branch, with no calls to the hosted
+project or Gemini.
+
+- **Mobile** (in `apps/mobile`):
+  - `npm run typecheck` (app, tests, activity-import and tests/remote): 0 errors.
+  - `npx eslint src`: clean.
+  - `npm run test:remote`: 108 of 108 pass. They use fakes for fetch, Auth,
+    storage and the calendar. This includes `contract-compat.test.ts`, which
+    checks every wire DTO, entity and envelope against the contract both ways
+    and parses the bodies the adapter sends on all eight write routes.
+  - `npm test`: 10 of 10. `npm run test:calendar`: 62 of 62 in Europe/Warsaw
+    and in America/Los_Angeles. `npm run test:activity-import`: 26 of 26.
+  - `npx expo export --platform web`: bundles and renders 35 pages
+    statically. `npx expo export --platform ios`: bundles. Android was not
+    exported.
+- **Supabase and contracts** (repository root):
+  - `npm run test:supabase`: 43 of 43 pass, including the Gemini adapter
+    against canned answers.
+  - `npm run typecheck:supabase`, `npm run lint:supabase`,
+    `npm run lint --workspace=@hackyeah/contracts` and
+    `npm run format:wearables`: clean.
+  - `npm run schema:product`: after a re-run, `git status docs/api` is clean.
+- **Not verified here.** None of these was possible on this machine:
+  - the hosted project: no CLI, Docker or Deno, and no calls by rule
   - a live Gemini key
-  - a native calendar on a device
+  - a device or simulator run
+
+  The acceptance criteria above are therefore covered only by unit tests with
+  fakes.
+
+### Deviations from the plan
+
+- **Validation** skips every per-activity check (sport, discovery, gym shape,
+  duration, slot, window) for a session that is JSON-identical to the
+  previous version of the same week, as it already did for completed
+  sessions. The plan said only slot and window. Without this, regenerating a
+  week after an answers edit would reject past sessions forever. The count
+  limit and the completed-session lock still apply.
+- **Chat change cards** show duration diffs in seconds, not minutes, because
+  the change card and the mock read seconds.
+- **Chat availability** starts at the later of now and the week's start.
+- **Change card rows.** Sessions done before a change are not shown as rows.
+  A session done after the change keeps its row and locks Undo.
+- **Next week.** After a gap the trigger plans the current week, not only the
+  next Monday.
+- **`plan.build` with an existing plan** waits for the result (up to about
+  two minutes) instead of returning `building`. It rejects on failure, and the
+  plan stays as it was.
+- **Failed preparation.** When a plan request cannot be prepared, the attempt
+  is recorded as a failed build or a note. Causes are a calendar `native-error`,
+  missing answers, or being offline while reading the profile. Empty free time
+  is never sent in its place.
+- **Logs.** Workouts outside the plan are rejected. Saved completions are
+  read-only. If the opinions route is missing (404 or 405), the opinion
+  inside `saveFeedback` is skipped without an error, because the completion
+  and its feedback are already saved.
+
+### Deferred and not verified
+
+- **Hosted project (owner).** Steps are in [Runtime status](../deployment.md):
+  - apply `20261004100000` and `20261004110000`
+  - deploy `product-api`
+  - set `GEMINI_API_KEY` and `GEMINI_MODEL`
+  - allowlist the auth redirects
+  - optionally turn on Google
+- **Never run against real PostgREST:**
+  - the opinion upsert (`on_conflict`, `Prefer: resolution=merge-duplicates`)
+  - the `sport_id::text` cast in write responses
+  - JSON `null` feedback arriving as SQL `NULL`
+- **Live Gemini.** Not called yet:
+  - The response JSON schema (nullable `anyOf`, enums, integer bounds,
+    `date-time`) follows Google's docs but has not been checked against the
+    real API.
+  - No `thinkingConfig` is sent, and `maxOutputTokens` is 16384.
+  - Deno bundling has not been checked.
+- **Device-only behaviour.** Covered only by unit tests with fakes, or by
+  typecheck and lint:
+  - the Google round trip on iOS and Android
+  - Android deep-link timing
+  - web `detectSessionInUrl` on `/auth/callback` and `/auth/reset`
+  - native calendar create, update and delete
+  - the permission dialogs and the new permission text, which needs a native
+    rebuild
+  - Home's `PlanNote` and `BuildFailed`
+  - the Calendar failed state
+  - the empty-catalog note
+  - the chat composer and send hook
+- **Server edge cases:**
+  - Undo and every plan save need `SUPABASE_SERVICE_ROLE_KEY`. The platform
+    injects it; without it, Undo answers a misleading 501 `AI_NOT_CONFIGURED`.
+  - If a week's completed and past sessions already exceed `sessions_per_week`,
+    generation returns 400 without calling Gemini.
+  - Retrying `POST /completions` with the same `request_id` after the feedback
+    changed replays the original receipt, which has the old feedback.
+- **Client edge cases:**
+  - The chat and plan bodies kept for retries live in memory only. After a
+    restart, Try again under the same `request_id` can get a
+    `REQUEST_CONFLICT`.
+  - A PKCE recovery link works only on the device that asked for it.
+  - Without a "seen" marker on this device, `recent_change` shows only a
+    change that made the active version.
+  - The sign-in step reads "Sign in", not "Welcome back".
+- **Calendar export:**
+  - It runs only while the app is open.
+  - Signing out keeps the Movo calendar.
+  - With access revoked, the app cannot delete the Movo calendar.
+- **Copy and mock leftovers:**
+  - The reset-feedback sheet still mentions the assistant summary, which is
+    hidden in Supabase mode.
+  - In mock mode with the demo offline switch on, closing feedback shows the
+    not-saved message.
+  - The mock plans without calendar slots.
+- **Kept in sync by hand:**
+  - `supabase/functions/product-api/exercises.ts` mirrors the mobile
+    `EXERCISES`.
+  - The seed test imports the mobile mock catalog.
+  - Gemini plans only rep-tracked gym exercises, because timed sets are
+    deferred.
 
 ## Local runtime and recovery
 
@@ -333,6 +443,6 @@ To be filled in with exact commands and results as steps land. Planned:
 
 - [ ] Acceptance criteria verified and evidence attached to the PR.
 - [ ] Required checks pass and one teammate approves.
-- [ ] Affected product/development/runtime docs updated.
-- [ ] Secrets and personal data excluded from committed examples and logs.
-- [ ] Known limitations and follow-up work recorded.
+- [x] Affected product/development/runtime docs updated.
+- [x] Secrets and personal data excluded from committed examples and logs.
+- [x] Known limitations and follow-up work recorded (Deferred and not verified).

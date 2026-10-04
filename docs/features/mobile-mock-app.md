@@ -4,6 +4,10 @@ Status: ready for review
 Owner: mobile
 Issue/PR: pending
 
+Since 4 October 2026 the app runs on the Supabase product API by default; see
+[Mobile app on Supabase](mobile-supabase-integration.md). This mock is opt-in
+with `EXPO_PUBLIC_API_MODE=mock`.
+
 ## Problem and user outcome
 
 The design in `design/` describes every mobile screen, but the NestJS application
@@ -18,9 +22,10 @@ and later swap in the real API without rewriting screens.
   feedback 7, chat 8–8.16, You 9–9.7, Calendar 10–10.1); navigation with the
   floating tab bar and the chat button; an in-memory mock backend with a demo
   persona, a rule-based planner and coach, and demo switches for failure states.
-- Deferred: the real API client, Supabase Auth, a real AI planner and coach,
-  lock-screen gym timers (Live Activity / ongoing notification), push
-  notifications, account deletion and data export.
+- Deferred: lock-screen gym timers (Live Activity / ongoing notification),
+  push notifications, account deletion and data export. The real API client,
+  Supabase Auth and the AI planner and coach came later, in
+  [the Supabase integration](mobile-supabase-integration.md).
 - Affected areas: mobile only. No backend, database or shared-contract changes.
 
 ## Acceptance criteria
@@ -43,9 +48,13 @@ and later swap in the real API without rewriting screens.
   exist in the plan exchange (`codex/gemini-plan-contract`) keep its field
   names; everything the design needs beyond it is marked "Proposal" there and
   must be agreed with the backend before moving to `packages/contracts`.
-- Swapping the backend: screens use only the hooks in `src/api/hooks`. Replace
-  `createMockApiClient()` in `src/api/index.ts` with an HTTP client that
-  implements `ApiClient`; hooks, query keys and screens stay as they are.
+- Choosing the backend: screens use only the hooks in `src/api/hooks`.
+  `src/api/index.ts` picks the `ApiClient` from `EXPO_PUBLIC_API_MODE`. The
+  default is the remote adapter (`src/api/remote`) over the Supabase product
+  API; `mock` gives `createMockApiClient()`. Hooks, query keys and screens are
+  the same for both. A Supabase build without its URL or key shows a setup
+  screen and never falls back to the mock. Demo controls and time travel exist
+  only in mock mode.
 - The mock lives in `src/api/mock`: `catalog.ts` (sports and metrics),
   `planner.ts` (weekly plans from the answers), `coach.ts` (the chat rules from
   `design/prototype/chat.jsx`), `summary.ts`, `seed.ts` (the demo persona),
@@ -94,8 +103,11 @@ Run from `apps/mobile` on 3 October 2026, Node 24.21:
 - Requirements: Node `^22.13` or `^24.3+`, npm, Watchman (recommended); Xcode
   for the iOS simulator, Android Studio for the emulator.
 - Install once from the repository root: `npm ci`.
+- Mock mode: copy `apps/mobile/.env.example` to `apps/mobile/.env` and set
+  `EXPO_PUBLIC_API_MODE=mock` (no other value is needed). Without it, the app
+  uses Supabase.
 - Start: `npm start` (Expo dev server), then press `i`, `a` or `w`; or
-  `npm run web` for the browser.
+  `npm run web` for the browser. Restart after changing `.env`.
 - Demo account: `ana@example.com` with any password of 8 or more characters.
   The password `wrong-password` shows the sign-in error. Continue with Google
   signs in a new account (Sam) that goes through onboarding; any other email

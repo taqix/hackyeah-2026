@@ -84,6 +84,27 @@ On a physical mobile device, `localhost` refers to that device. Document the
 backend's reachable development URL, bind address, and Expo network setup when
 the mobile scaffold lands. Test that URL on the actual judging device.
 
+### Mobile environment
+
+The Expo app in `apps/mobile` uses the Supabase product API by default. Copy
+`apps/mobile/.env.example` to `apps/mobile/.env`, which Git ignores, and fill it
+in. Expo bundles every `EXPO_PUBLIC_` value into the app, so never put a secret
+or service-role key there. Restart `expo start` after changing the file.
+
+| Variable | Required | Value |
+| --- | --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL` | yes, in Supabase mode | `https://<project-ref>.supabase.co` |
+| `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes, in Supabase mode | the publishable (`sb_publishable_…`) or legacy anon key |
+| `EXPO_PUBLIC_PRODUCT_API_URL` | no | defaults to `${EXPO_PUBLIC_SUPABASE_URL}/functions/v1/product-api` |
+| `EXPO_PUBLIC_API_MODE` | no | `supabase` (default) or `mock` |
+
+Without the URL or key the app shows a setup screen that lists the missing
+values. It never falls back to the mock. `EXPO_PUBLIC_API_MODE=mock` runs the
+offline demo backend (demo account, Demo controls) and needs no other value; see
+[Mobile app on a mocked API](features/mobile-mock-app.md). Mobile checks, run in
+`apps/mobile`: `npm run typecheck`, `npx eslint src`, `npm test`,
+`npm run test:remote`, `npm run test:calendar`, and `npm run test:activity-import`.
+
 ## Application and data boundaries
 
 - The current proof-of-concept path is the [Supabase product API](features/supabase-product-api.md):
@@ -92,9 +113,11 @@ the mobile scaffold lands. Test that URL on the actual judging device.
   and uses owner-scoped reads plus transactional RPC writes.
   Never trust a client-provided user ID as authorization.
 - RLS enforces owner access; privileged Supabase credentials remain server-only.
-  Product tables and functions are prepared locally and are not deployed.
-- Guest bootstrap and limits remain follow-up work; no real or demo data is seeded
-  by the current product API migrations.
+  The hosted project runs an earlier `product-api`; the 4 October migrations and
+  function changes are not applied yet (see [Runtime status](deployment.md)).
+- Guest bootstrap and limits remain follow-up work. The only seed migration adds
+  the sport catalog and missing profile rows; no users, plans, or demo data are
+  seeded.
 - Keep AI credentials and prompts in the server function. Validate AI output as untrusted
   input and apply changes in a database transaction.
   Backend AI communication, configuration, and prompts live together under
@@ -111,8 +134,10 @@ the corresponding feature. Auth identities remain managed by Supabase Auth.
 
 Available product API checks are `npm run test:supabase`,
 `npm run typecheck:supabase`, and `npm run lint:supabase`. Regenerate its client
-schemas/examples with `npm run schema:product`. The AI adapter is disabled;
-actual Edge/Auth runtime smoke checks and owner deployment remain pending.
+schemas/examples with `npm run schema:product`. The function plans with Gemini
+when `GEMINI_API_KEY` and `GEMINI_MODEL` are set and answers 501
+`AI_NOT_CONFIGURED` otherwise. Actual Edge/Auth runtime smoke checks and owner
+deployment remain pending.
 
 ## Code conventions
 

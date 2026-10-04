@@ -4,8 +4,9 @@
 
 These are the team's agreed target conventions. `develop` already contains an
 Expo SDK 57 starter in `apps/mobile`, npm workspaces, and `package-lock.json`.
-Root commands include `npm start`, `npm run android`, `npm run ios`,
-`npm run web`, `npm run typecheck`, and `npm run lint`. The current web command
+Root commands include `npm start`, `npm run start:hostname`,
+`npm run android`, `npm run ios`, `npm run web`, `npm run typecheck`, and
+`npm run lint`. The current web command
 starts Expo's web target, not the planned standalone React dashboard.
 
 The NestJS backend now serves `GET /health` and has a Dockerfile and Compose
@@ -105,6 +106,28 @@ offline demo backend (demo account, Demo controls) and needs no other value; see
 [Mobile app on a mocked API](features/mobile-mock-app.md). Mobile checks, run in
 `apps/mobile`: `npm run typecheck`, `npx eslint src`, `npm test`,
 `npm run test:remote`, `npm run test:calendar`, and `npm run test:activity-import`.
+
+#### Starting the app for Expo Go
+
+`npm start` (`expo start`) serves Expo Go on the computer's LAN IP. Google
+sign-in and Google Calendar can't return to Expo Go on an IP address:
+Supabase Auth refuses redirects to raw IP hosts and sends the phone to its
+Site URL (`http://localhost:3000`), which can't be reached. The app says so
+before opening Google. To use Google from Expo Go, start the app with a
+hostname:
+
+- `npm run start:hostname`, in `apps/mobile` or at the repository root. It
+  finds the Mac's LAN IPv4 (`en0`, then `en1`) and runs `expo start` with
+  `REACT_NATIVE_PACKAGER_HOSTNAME=<ip>.nip.io`, so Expo Go's links become
+  `exp://<ip>.nip.io:8081/--/…`. Extra arguments go to `expo start`:
+  `npm run start:hostname -- --clear`. A preset
+  `REACT_NATIVE_PACKAGER_HOSTNAME` is used as it is.
+- `npx expo start --tunnel`, when the phone can't resolve `nip.io` (DNS
+  rebinding protection on the router) or isn't on the same network.
+- The development build (`npm run android`, `npm run ios`), whose
+  `hackyeah2026://` links never depend on the host.
+
+Details: [Expo Go and IP addresses](features/mobile-supabase-integration.md#expo-go-and-ip-addresses).
 
 #### Debug logs
 

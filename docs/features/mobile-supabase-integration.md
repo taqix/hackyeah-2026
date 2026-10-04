@@ -36,9 +36,9 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - Calendar:
     - device free time feeds generation and chat, with manual availability as the fallback
     - an opt-in export of planned sessions to a "Movo" device calendar
-    - opt-in [Google Calendar](#google-calendar) on Data and privacy: its
-      free/busy comes first for planning, and the export can go to a "Movo"
-      calendar in Google instead of the device
+    - opt-in [Google Calendar](#google-calendar) on Data and privacy and on
+      onboarding Review: its free/busy comes first for planning, and the
+      export can go to a "Movo" calendar in Google instead of the device
   - The mock stays behind `EXPO_PUBLIC_API_MODE=mock` for offline demos and
     tests. The default is Supabase. Demo controls and time travel only exist in
     mock mode.
@@ -50,7 +50,6 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - timed gym sets
   - boolean/enum metrics
   - account deletion and export
-  - Google Calendar on Review (it is on Data and privacy only)
 - Affected areas: mobile, Edge Function, database migrations, shared contracts.
 
 ## Acceptance criteria
@@ -78,13 +77,18 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - Exported sessions appear in the "Movo" calendar when export is on, and
     disappear when it is off.
 - [ ] **Google sign-in.** Continue with Google works in a development build
-      (`hackyeah2026://`), in Expo Go (`exp://…/--/auth/callback`) and on Expo
-      web (`http://localhost:8081/auth/callback`). Google shows its account
-      chooser, the app greets the person by their Google name, and closing or
-      declining Google stays on Welcome without an error.
+      (`hackyeah2026://`), in Expo Go started with a hostname
+      (`exp://<ip>.nip.io:8081/--/auth/callback` from `npm run start:hostname`,
+      or a tunnel) and on Expo web (`http://localhost:8081/auth/callback`).
+      Google shows its account chooser, the app greets the person by their
+      Google name, and closing or declining Google stays on Welcome without an
+      error. Expo Go on a raw IP address says how to start the app instead of
+      opening Google (see [Expo Go and IP addresses](#expo-go-and-ip-addresses)).
 - [ ] **Google Calendar.**
-  - Connect on Data and privacy asks Google for free/busy and app-created
-    calendars only, and shows the Google email once connected.
+  - Connect on Data and privacy, or on onboarding Review, asks Google for
+    free/busy and app-created calendars only, and shows the Google email once
+    connected. Review offers it first to someone who signed in with Google,
+    and Build plan never waits for it.
   - Connected with Use for planning on, generation and chat send
     `google_calendar` free slots. A failed Google read falls back to the device
     calendar, then to manual slots.
@@ -121,6 +125,8 @@ The app builds them with `Linking.createURL('auth/callback')`. The owner
 allowlists these in Supabase Auth (done on the hosted project). Google
 Calendar uses the same callback; its setup is in
 [Google Cloud and Supabase setup](#google-cloud-and-supabase-setup-owner).
+Expo Go's link only works with a hostname, never a raw IP address; see
+[Expo Go and IP addresses](#expo-go-and-ip-addresses).
 
 ### Mobile architecture
 
@@ -184,7 +190,14 @@ Calendar uses the same callback; its setup is in
   - `PUT /profile` needs the whole answers document (`preferences` is not
     nullable), so sign-up writes no profile. `preferences.save` sends
     `username = profile username ?? session name ?? null`, so the first
-    onboarding save stores it.
+    onboarding save stores it. Google's `full_name` (else `name`) is the
+    session name of a Google account.
+  - A username the server already holds (for example one copied from the
+    metadata at sign-up) is always sent back as it is, so no save replaces
+    it, or sets it to null. Only a missing or blank username takes the
+    session name. Both are trimmed and cut to the contract's 200 characters
+    (`asUsername`, `lib/person-name.ts`) rather than dropped. Switching a sport
+    off keeps the username the same way.
   - Settings › Account › Name changes it (`account.updateName`): `PUT /profile`
     with the new username and the current answers (skipped before
     onboarding), then `updateUser({data: {name, full_name}})`. An empty or
@@ -256,7 +269,8 @@ Calendar uses the same callback; its setup is in
   `queryParams: {prompt: 'select_account'}`, so Google shows its account
   chooser.
   - Development build: `hackyeah2026://auth/callback`.
-  - Expo Go: `exp://<host>:8081/--/auth/callback`.
+  - Expo Go: `exp://<host>:8081/--/auth/callback`, where `<host>` must be a
+    hostname (see below).
   - Expo web: `http://localhost:8081/auth/callback`.
 - **Phone:** `skipBrowserRedirect`, then `WebBrowser.openAuthSessionAsync`.
   - The code is read from the query or the fragment.
@@ -279,10 +293,46 @@ Calendar uses the same callback; its setup is in
   linking). The person lands in their existing account, which from then on has
   both identities. Google's name may replace the metadata name at that sign-in.
 
+#### Expo Go and IP addresses
+
+A plain `expo start` serves Expo Go on the computer's LAN IP, so
+`Linking.createURL` gives `exp://10.0.0.5:8081/--/auth/callback`. Supabase
+Auth refuses any redirect whose host is a raw IP address, even one written
+out exactly in the allowlist. It sends Google's answer to the Site URL
+(`http://localhost:3000`) instead, and the phone shows "This site can't be
+reached". The same link with a hostname matches the existing
+`exp://**/--/auth/callback` entry, so:
+
+- **`npm run start:hostname`** (in `apps/mobile`, or at the repository root)
+  runs `expo start` with `REACT_NATIVE_PACKAGER_HOSTNAME=<LAN IP>.nip.io`
+  (`scripts/start-hostname.cjs`; it prefers `en0`, then `en1`, and skips
+  internal and link-local addresses). Public DNS resolves `10.0.0.5.nip.io`
+  back to `10.0.0.5`, so the phone still loads from the Mac, and the link
+  becomes `exp://10.0.0.5.nip.io:8081/--/auth/callback`. Extra arguments go
+  to `expo start` (`npm run start:hostname -- --clear`). A router with DNS
+  rebinding protection may refuse such answers; then use one of the next two.
+- **`npx expo start --tunnel`** gives `exp://<id>-anonymous-8081.exp.direct/--/…`.
+- **The development build** uses `hackyeah2026://auth/callback`, which never
+  depends on the host.
+
+Before opening Google, `signInWithGoogle` and the Google Calendar connect
+check the redirect (`api/remote/expo-go-redirect.ts`). An `exp://` or
+`exps://` link whose host is an IPv4 or IPv6 literal rejects with
+`ExpoGoIpRedirectError` (code `validation`, not retryable): "Google sign-in
+can't return to Expo Go on an IP address. Start the app with npm run
+start:hostname, use --tunnel, or use the dev build." Welcome shows it without
+Try again; the Google Calendar rows show their own wording of it. Email
+confirmation and password reset links from Expo Go on an IP land on the Site
+URL the same way; they are not checked.
+
 ### Google Calendar
 
-Opt-in, on Data and privacy (`features/settings/google-calendar-rows.tsx`).
-The app calls Google Calendar directly with the person's Google token.
+Opt-in, on Data and privacy (`features/settings/google-calendar-rows.tsx`)
+and on onboarding Review (`features/onboarding/review/calendar-rows.tsx`).
+Both use one hook, `useGoogleCalendarConnect(from)`
+(`features/google-calendar`): whether to offer it, the connection, and
+Connect. The app calls Google Calendar directly with the person's Google
+token.
 
 **Reads and writes**
 
@@ -312,6 +362,7 @@ The app calls Google Calendar directly with the person's Google token.
   - the start time
   - a fingerprint of any older Google token
   - for the `signInWithOAuth` path, the session to restore
+  - the screen it started on (`from`: `privacy` or `review`)
 
   `capture(session)` stores the tokens for the user who tapped Connect. It
   runs from the connect call, the Android deep link (when the sheet reports a
@@ -319,8 +370,12 @@ The app calls Google Calendar directly with the person's Google token.
   sign-in's token that comes back on a reload is never taken.
 - **Another account.** If Google signs in a different Movo account, the
   original session is put back (`setSession`) and the row explains it.
-- **Web.** The page goes to Google, and `/auth/callback` returns to Data and
-  privacy.
+- **Web.** The page goes to Google, and `/auth/callback` returns to the
+  screen the connect started on (`returnTo()`: Data and privacy, or
+  `/onboarding/review`). On Android the callback screen opens over that
+  screen and goes back to it.
+- **Expo Go on an IP address** rejects before anything else, as for Google
+  sign-in: "Google Calendar can't return to Expo Go on an IP address. …".
 
 **Tokens** (`services/google-calendar/tokens.ts`)
 
@@ -406,7 +461,30 @@ They never contain a token, an email or event content.
   - Add sessions to Google Calendar
   - Disconnect Google Calendar (a sheet: disconnect and remove the calendar,
     or keep it)
-- Hidden in mock mode, and while Google sign-in is off.
+- Hidden in mock mode, while Google sign-in is off (`GET /auth/v1/settings`)
+  and while signed out. The providers answer describes the project, so it is
+  kept across sign-in and sign-out and read again at a cold start; when it
+  can't be read, the row is offered.
+
+**UI** (onboarding Review, the calendar step)
+
+- Two rows: "Phone calendar" (the device's access, as before) and "Google
+  Calendar". Without Google sign-in on the project, only the phone row, still
+  labelled "Calendar".
+- Someone who signed in with Google sees Google Calendar first: "Not
+  connected", "You signed in with Google. We only read when you're busy, never
+  what's in your events.", Connect. Others see it second, without the first
+  sentence.
+- Connected: the Google email, "Busy times only, never what's in your
+  events.", a check. Reconnect, Try again and the connect's problems work as
+  on Data and privacy. The choices and Disconnect stay on Data and privacy.
+- Optional: Build plan never waits for it. Connected with Use for planning on
+  (the default), the first plan uses Google's free/busy.
+- **Web.** The page leaves for Google, so Review keeps the onboarding answers
+  in the tab's sessionStorage just before (`stashDraftForRedirect`,
+  `state/onboarding-draft.ts`). The draft starts from them when the page
+  loads again, once, within 30 minutes; only option values the app still
+  offers are restored. The stash is dropped when the page didn't leave.
 
 ### Google Cloud and Supabase setup (owner)
 
@@ -573,6 +651,11 @@ freeze the week.
   `exp://**/--/auth/{callback,reset}` and
   `http://localhost:8081/auth/{callback,reset}`. `site_url` is still
   `http://localhost:3000`.
+- Auth refuses a redirect to a raw IP host even when it is allowlisted
+  exactly, and falls back to `site_url`. Seen on 4 October with Expo Go on
+  Android (`exp://<LAN IP>:8081/--/auth/callback`); the same link with a
+  `nip.io` or `exp.direct` hostname is accepted. See
+  [Expo Go and IP addresses](#expo-go-and-ip-addresses).
 
 ### Open decisions and dependencies (owner)
 
@@ -691,6 +774,44 @@ and the product API are fakes.
   - `npm run typecheck:supabase` and `npm run lint:supabase`: clean.
   - `npm run schema:product`: after a re-run, `git status docs/api` is clean.
 
+### Expo Go hostnames, the username and Google Calendar on Review (4 October, evening)
+
+Run in a worktree of `feat/mobile-full-integration`, with no calls to the
+hosted project, Google or Gemini, and no real account.
+
+- **Mobile** (in `apps/mobile`):
+  - `npm run typecheck` and `npx eslint src`: clean.
+  - `npm run test:remote`: 160 of 160.
+    - `expo-go-redirect.test.ts`: IPv4 and IPv6 literals (bracketed, zoned,
+      IPv4-mapped) against hostnames (`nip.io`, `exp.direct`, `localhost`);
+      only `exp://` and `exps://` links on an IP are refused, never
+      `hackyeah2026://` or `http://localhost:8081`.
+    - `auth.test.ts`: Expo Go on an IP rejects before Supabase or the browser
+      is asked, with the copy and no retry; `nip.io`, a tunnel and the dev
+      build reach Google. The providers are read the same signed in, after
+      sign-out and on a cold start, with the publishable key only.
+    - `google-calendar.test.ts`: the connect refuses an IP before Google and
+      leaves no pending marker; `nip.io` and a tunnel connect. A connect
+      started on Review returns to Review after its marker is gone, and an
+      older marker returns to Data and privacy.
+    - `auth-name.test.ts`: a Google account's first save stores Google's
+      `full_name`; a username the server filled in is kept on every save and
+      sport switch, never replaced or nulled; a blank one takes the session
+      name; a long one is cut to 200 characters, not dropped.
+  - `npm test`: 13 of 13, including `start-hostname.test.mjs` (en0, then
+    en1, then others; loopback, link-local and IPv6 skipped; none offline).
+  - `npm run test:calendar`: 77 of 77 in Europe/Warsaw and in
+    America/Los_Angeles. `npm run test:activity-import`: 26 of 26.
+  - `npm run start:hostname -- --port 8097` (`CI=1`, `EXPO_OFFLINE=1`) served
+    a manifest whose `hostUri` is `<LAN IP>.nip.io:8097`; it was stopped right
+    after. From the repository root, `npm run start:hostname -- --help`
+    reached `expo start --help`.
+- **Not verified here:** the Review rows were not rendered. In this worktree,
+  whose `node_modules` link to the main checkout, Metro finds no routes, so
+  the web export and dev server show only Expo's default page. Expo Go on a
+  phone, `nip.io` on the office network, and the web return to Review with
+  the stashed answers are untested.
+
 ### Deviations from the plan
 
 - **Validation** skips every per-activity check (sport, discovery, gym shape,
@@ -793,7 +914,14 @@ and the product API are fakes.
   - The access token's lifetime is assumed (50 minutes), because Supabase does
     not pass Google's.
   - Free/busy reads the primary calendar only.
-  - Review's calendar row is still device-only.
+  - Review offers Connect only; the choices and Disconnect are on Data and
+    privacy.
+- **Expo Go:**
+  - `npm run start:hostname` relies on public DNS for `nip.io`. A network
+    whose DNS rebinding protection drops private answers can't load the app
+    that way; `--tunnel` or the dev build still work.
+  - Email confirmation and password reset links from Expo Go on an IP still
+    land on the Site URL; only the Google flows check the redirect.
 - **Copy and mock leftovers:**
   - The reset-feedback sheet still mentions the assistant summary, which is
     hidden in Supabase mode.

@@ -10,7 +10,7 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Do powiedzenia:**
 
-> Movo tworzymy dla osób, które chcą zacząć się ruszać albo wrócić do ćwiczeń, ale trudno im utrzymać regularność. Praca, nauka i inne obowiązki sprawiają, że trening często spada na koniec listy. Chcemy pomóc znaleźć wykonalną aktywność na dziś i kolejny krok, kiedy coś nie wyjdzie. Naszą ideę opisuje zdanie: „Fitness that fits your life, not the other way around” — aktywność dopasowana do twojego życia.
+> Movo tworzymy dla osób, które chcą zacząć się ruszać albo wrócić do ćwiczeń, ale trudno im utrzymać regularność. Praca, nauka i inne obowiązki sprawiają, że trening często spada na koniec listy. Chcemy pomóc znaleźć wykonalną aktywność na dziś i kolejny krok, kiedy coś nie wyjdzie. Naszą ideę opisuje zdanie: „Zacznij od tego, na co masz dziś czas”.
 
 **Przejście:** „Dlaczego skupiamy się właśnie na regularności?”
 

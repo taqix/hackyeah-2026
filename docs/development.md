@@ -206,6 +206,17 @@ The source is [Software Mansion's skills repository](https://github.com/software
 - Validate API inputs and return consistent, actionable errors.
 - Make loading, empty, failure, and retry states explicit in both clients.
 - Use accessible labels, keyboard support on web, and usable touch targets.
+- Mobile layout: start every screen with `Screen`. It ends the screen at the
+  software keyboard's top on iOS and Android (`KeyboardAvoider`), so `Content`
+  scrolls to its end with the focused field in view and `BottomBar` rides
+  above the keyboard; a `Sheet` does the same in its own window. Do not add a
+  `KeyboardAvoidingView` or `automaticallyAdjustKeyboardInsets` per screen.
+- Mobile shapes: give a `View` whose fill or border only appears later (a
+  selection ring, a halo) `collapsable={false}`. React Native flattens it while
+  it draws nothing, and Android re-creates it without its `borderRadius`.
+- Mobile focus on the web: `PressableScale` draws the kit's focus ring for
+  keyboard focus only; text fields hide the browser's square outline
+  (`noBrowserOutline`) and draw their own rounded ring.
 - Log operational context without credentials or raw personal chat content.
 - Keep environment templates current and document required versus optional values.
 - Keep installed third-party skills separate from application code; do not reformat

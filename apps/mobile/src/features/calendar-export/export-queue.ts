@@ -6,6 +6,7 @@
  */
 import { useSyncExternalStore } from 'react';
 
+import { debugLog, debugWarn, describeError, errorLabel, startTimer } from '@/lib/debug-log';
 import {
   CalendarError,
   type ExportRange,
@@ -43,10 +44,16 @@ export function syncCalendarExport(sessions: ExportSession[], range: ExportRange
     // Turned off while this waited: the removal queued behind it owns the calendar now.
     if (!isCalendarExportEnabled()) return;
     setStatus('syncing');
+    const took = startTimer();
     try {
-      await syncPlanToCalendar(sessions, range);
+      const result = await syncPlanToCalendar(sessions, range);
+      const { created, updated, deleted } = result;
+      debugLog('calendar', `export sync ${took()}: created ${created}, updated ${updated}, deleted ${deleted}`, {
+        sessions: sessions.length,
+      });
       setStatus('idle');
     } catch (error) {
+      debugWarn('calendar', `✕ export sync ${took()} ${errorLabel(error)}`, () => describeError(error));
       // Access taken away in Settings is not a failure to report here; the row shows it.
       setStatus(isAccessError(error) ? 'idle' : 'failed');
     }
@@ -60,8 +67,10 @@ export function syncCalendarExport(sessions: ExportSession[], range: ExportRange
 export function removeCalendarExport(): Promise<void> {
   return serialize(async () => {
     try {
-      await removeAppCalendar();
+      const removed = await removeAppCalendar();
+      debugLog('calendar', `export calendar ${removed ? 'removed' : 'was already gone'}`);
     } catch (error) {
+      debugWarn('calendar', `✕ export calendar removal ${errorLabel(error)}`, () => describeError(error));
       if (!isAccessError(error)) throw error;
     } finally {
       setStatus('idle');

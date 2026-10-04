@@ -18,7 +18,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -26,12 +26,27 @@ import { apiConfig } from '@/api/config';
 import { queryClient } from '@/api/query-client';
 import { AuthSessionSync } from '@/features/auth/session-sync';
 import { SetupScreen } from '@/features/setup/setup-screen';
+import { debugLog, debugLogsEnabled } from '@/lib/debug-log';
+import { NavigationLogger } from '@/navigation/navigation-logger';
 import { fontFamily, ThemeProvider, useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
 
 /** A Supabase build without its URL or key shows the setup screen, never the mock. */
 const needsSetup = apiConfig.mode === 'supabase' && !apiConfig.configured;
+
+if (debugLogsEnabled) {
+  // Debug lines go to the Metro terminal and DevTools; their warnings must not open LogBox toasts.
+  LogBox.ignoreLogs(['[movo:']);
+  // The mode and which variables are missing; never a key's value.
+  const { productApiUrl, supabaseUrl } = apiConfig;
+  const defaultApi = productApiUrl === `${supabaseUrl}/functions/v1/product-api`;
+  debugLog('app', `start: api=${apiConfig.mode} configured=${apiConfig.configured} platform=${Platform.OS}`, {
+    supabase: supabaseUrl ? supabaseUrl.replace(/^https?:\/\//, '') : 'missing',
+    product_api: !productApiUrl ? 'missing' : defaultApi ? 'default' : productApiUrl,
+    missing: apiConfig.missing,
+  });
+}
 
 // Every weight is its own family on native: register exactly the names in tokens.
 const FONTS = {
@@ -64,6 +79,7 @@ export default function RootLayout() {
             ) : (
               <>
                 <AuthSessionSync />
+                {debugLogsEnabled ? <NavigationLogger /> : null}
                 <RootNavigator />
               </>
             )}

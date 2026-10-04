@@ -1,3 +1,4 @@
+import { debugLog } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { ApiError, type AssistantSummary, type FeedbackOverview } from '../types';
 import type { RemoteContext } from './context';
@@ -79,11 +80,13 @@ export function createRemoteProfile(ctx: RemoteContext): ApiClient['profile'] {
         if (isMissingRoute(error)) throw missingRouteError("We can't change these answers yet. Nothing was changed.", error);
         throw error;
       }
+      debugLog('profile', `✓ opinion ${opinion ?? 'cleared'}`);
       return feedbackOverview(ctx);
     },
     async resetFeedback() {
       try {
-        await ctx.http.post<ClearedDto>('/opinions/reset', {});
+        const result = await ctx.http.post<ClearedDto | null>('/opinions/reset', {});
+        debugLog('profile', `✓ opinions reset: ${result?.cleared ?? '?'} cleared`);
       } catch (error) {
         if (isMissingRoute(error)) throw missingRouteError("We can't reset these answers yet. Nothing was changed.", error);
         throw error;
@@ -112,6 +115,9 @@ export function createRemoteProfile(ctx: RemoteContext): ApiClient['profile'] {
         preferences: { ...preferences, excluded_activity_types: next },
       };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);
+      debugLog('profile', `✓ sport ${sportId} ${excluded ? 'switched off' : 'switched back on'}`, {
+        switched_off: next.length,
+      });
       ctx.data.setProfile(saved, userId);
       return feedbackOverview(ctx);
     },

@@ -27,13 +27,17 @@ export function useSession() {
 
 /** Welcome (1): whether an account uses this email, to ask for its password (1.1) or a new one (1.2). */
 export function useLookupEmail() {
-  return useMutation({ mutationFn: (email: string) => api.auth.lookupEmail(email) });
+  return useMutation({
+    mutationKey: ['auth', 'lookup-email'],
+    mutationFn: (email: string) => api.auth.lookupEmail(email),
+  });
 }
 
 /** 1.1: rejects with `invalid_credentials` on a wrong password (1.3). */
 export function useSignInWithEmail() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['auth', 'sign-in-email'],
     mutationFn: ({ email, password }: { email: string; password: string }) => api.auth.signInWithEmail(email, password),
     onSuccess: (session) => signedIn(queryClient, session),
   });
@@ -46,6 +50,7 @@ export function useSignInWithEmail() {
 export function useSignUpWithEmail() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['auth', 'sign-up-email'],
     mutationFn: ({ email, password }: { email: string; password: string }) => api.auth.signUpWithEmail(email, password),
     onSuccess: (session) => signedIn(queryClient, session),
   });
@@ -55,6 +60,7 @@ export function useSignUpWithEmail() {
 export function useSignInWithGoogle() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['auth', 'sign-in-google'],
     mutationFn: async (): Promise<AuthSession | null> => {
       try {
         return await api.auth.signInWithGoogle();
@@ -71,12 +77,18 @@ export function useSignInWithGoogle() {
 
 /** Forgot password? Sends the reset email. */
 export function useSendPasswordReset() {
-  return useMutation({ mutationFn: (email: string) => api.auth.sendPasswordReset(email) });
+  return useMutation({
+    mutationKey: ['auth', 'password-reset'],
+    mutationFn: (email: string) => api.auth.sendPasswordReset(email),
+  });
 }
 
 /** The new-password screen after a reset link; rejects with weak_password under 8 characters. */
 export function useUpdatePassword() {
-  return useMutation({ mutationFn: (password: string) => api.auth.updatePassword(password) });
+  return useMutation({
+    mutationKey: ['auth', 'update-password'],
+    mutationFn: (password: string) => api.auth.updatePassword(password),
+  });
 }
 
 /** Which sign-in methods are on (Welcome hides Google while it is off). */
@@ -88,6 +100,7 @@ export function useAuthProviders() {
 export function useSignOut() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['auth', 'sign-out'],
     mutationFn: () => api.auth.signOut(),
     onSuccess: () => signedOut(queryClient),
   });

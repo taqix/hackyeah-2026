@@ -1,3 +1,4 @@
+import { debugLog } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import type { Preferences } from '../types';
 import type { RemoteContext } from './context';
@@ -61,7 +62,10 @@ export function createRemotePreferences(ctx: RemoteContext): ApiClient['preferen
       const kept = saved.preferences ?? document;
       if (profile?.preferences && planningFieldsChanged(profile.preferences, kept)) {
         // Only this account's plan in use is re-planned; replanActiveWeek checks that and never rejects.
+        debugLog('profile', 'answers saved; planning fields changed: re-planning the active week in the background');
         void replanActiveWeek(ctx, userId);
+      } else {
+        debugLog('profile', `answers saved${profile?.preferences ? '; the plan is unaffected' : ' (first time)'}`);
       }
       return preferencesFromWire(kept, ids.toApp);
     },

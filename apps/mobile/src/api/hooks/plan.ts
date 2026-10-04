@@ -7,6 +7,7 @@ import { weekToPlanNext } from '@/api/remote/plan/schedule';
 import type { BuildPlanInput, LocalDate, PlanState } from '@/api/types';
 import { useNow } from '@/lib/clock';
 import { toLocalDate } from '@/lib/dates';
+import { debugLog } from '@/lib/debug-log';
 
 import { useSession } from './auth';
 
@@ -60,6 +61,7 @@ export function usePlanState(options?: { enabled?: boolean }) {
 export function useBuildPlan() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['plan', 'build'],
     mutationFn: (input: BuildPlanInput) => api.plan.build(input),
     onSuccess: (state) => {
       queryClient.setQueryData(queryKeys.planState, state);
@@ -90,6 +92,7 @@ export function useEnsureNextWeek(active: boolean) {
     const key = `${userId}:${target}`;
     if (askedWeeks.has(key)) return;
     askedWeeks.add(key);
+    debugLog('plan', `next week due: planning week ${target}`);
     mutate({ week_start: target });
   }, [active, target, userId, mutate]);
 
@@ -134,6 +137,7 @@ export function usePlanVersions() {
 export function useDismissRecentChange() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['plan', 'dismiss-change'],
     mutationFn: () => api.plan.dismissRecentChange(),
     onMutate: () => {
       queryClient.setQueryData<PlanState>(queryKeys.planState, (state) =>

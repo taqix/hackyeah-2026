@@ -1,5 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 
+import { debugLogsEnabled } from '@/lib/debug-log';
+
+import { logQueryActivity } from './query-logging';
 import { isApiError } from './types';
 
 export const queryClient = new QueryClient({
@@ -14,3 +17,6 @@ export const queryClient = new QueryClient({
     mutations: { retry: false },
   },
 });
+
+// Debug builds: queries and mutations in the Metro and DevTools console (see query-logging.ts).
+if (debugLogsEnabled) logQueryActivity(queryClient);

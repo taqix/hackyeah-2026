@@ -4,6 +4,16 @@
  * the network, becomes an `ApiError` with a calm, user-facing message; the
  * server's own code and message stay on `error.cause` (see `serverError`).
  */
+import {
+  debugLog,
+  debugWarn,
+  describeError,
+  shortId,
+  startTimer,
+  summarizeBody,
+  summarizeData,
+  summarizeQuery,
+} from '../../lib/debug-log';
 import { ApiError, type ApiErrorCode } from '../types';
 import type { FetchLike } from './deps';
 import type { WireErrorCode } from './wire';
@@ -180,6 +190,19 @@ function buildUrl(baseUrl: string, path: string, query?: Record<string, QueryVal
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+/** A write's request_id, for debug log lines. */
+function requestIdOf(body: unknown): string | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const id = (body as { request_id?: unknown }).request_id;
+  return typeof id === 'string' ? id : null;
+}
+
+/** The envelope's meta.request_id as a debug tag, when the server sent one. */
+function metaRequestTag(parsed: object): string {
+  const meta = (parsed as { meta?: { request_id?: unknown } }).meta;
+  return typeof meta?.request_id === 'string' ? ` rid=${shortId(meta.request_id)}` : '';
+}
+
 export function createProductApi(options: ProductApiOptions): ProductApi {
   const sleep = options.sleep ?? defaultSleep;
 
@@ -239,13 +262,24 @@ export function createProductApi(options: ProductApiOptions): ProductApi {
     let token: string | null = null;
     let refreshed = false;
     let transportRetries = 0;
+    // Debug builds only: one line per request, response and failure (no headers, no body values).
+    const rid = requestIdOf(body);
+    const label = `${method} ${path}`;
+    const tag = rid ? ` rid=${shortId(rid)}` : '';
+    const attempts = RETRY_BACKOFF_MS.length + 1;
+    const attemptTag = () => (transportRetries ? ` (attempt ${transportRetries + 1}/${attempts})` : '');
+    const queryTag = summarizeQuery(query);
+    debugLog('http', `→ ${label}${queryTag ? ` ${queryTag}` : ''}${tag}`, () => summarizeBody(body));
+    let took = startTimer();
 
     for (;;) {
       try {
         token ??= await accessToken(false);
+        took = startTimer();
         const response = await exchange(method, url, token, payload, timeoutMs);
         if (response.status === 401 && !refreshed) {
           // The access token may have expired between reads: refresh once and resend once.
+          debugLog('http', `↻ 401 ${label} ${took()}${tag}: refreshing the session, then resending once`);
           refreshed = true;
           token = await accessToken(true);
           continue;
@@ -264,15 +298,28 @@ export function createProductApi(options: ProductApiOptions): ProductApi {
           });
         }
         // The envelope is trusted to match the contract: mobile does not validate responses at runtime.
-        return (parsed as { data: T }).data;
+        const data = (parsed as { data: T }).data;
+        const ridTag = tag || metaRequestTag(parsed);
+        debugLog('http', `← ${response.status} ${label} ${took()}${ridTag}${attemptTag()}`, () => ({
+          data: summarizeData(data),
+        }));
+        return data;
       } catch (error) {
         const failure = transportError(error, false);
         const transport = failure.code === 'offline' || failure.code === 'timeout';
         if (post.retryTransport && transport && transportRetries < RETRY_BACKOFF_MS.length) {
-          await sleep(RETRY_BACKOFF_MS[transportRetries]);
+          const wait = RETRY_BACKOFF_MS[transportRetries];
+          const next = `retry ${transportRetries + 2}/${attempts} in ${wait}ms`;
+          debugWarn('http', `↻ ${failure.code} ${label} ${took()}${tag}: ${next}`);
+          await sleep(wait);
           transportRetries += 1;
           continue;
         }
+        const status = serverError(failure)?.status;
+        debugWarn('http', `✕ ${status ?? failure.code} ${label} ${took()}${tag}${attemptTag()}`, () => ({
+          ...describeError(failure),
+          ...(failure.code === 'timeout' ? { timeout_ms: timeoutMs } : {}),
+        }));
         throw failure;
       }
     }

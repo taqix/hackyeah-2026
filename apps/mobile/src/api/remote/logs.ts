@@ -1,4 +1,5 @@
 import { toIsoWithOffset, toLocalDate } from '../../lib/dates';
+import { debugLog, debugWarn, describeError, errorLabel, shortId } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { ApiError, type ActivityLog, type LoggedSet, type SaveFeedbackInput, type UpdateLogInput } from '../types';
 import type { RemoteContext } from './context';
@@ -133,8 +134,13 @@ async function putFeedback(
 ): Promise<ActivityCompletionEntity> {
   const body: UpdateFeedbackDto = { completion_id: completionId, feedback: feedbackToWire(feedback) };
   try {
-    return await ctx.http.put<ActivityCompletionEntity>('/completions/feedback', body);
+    const saved = await ctx.http.put<ActivityCompletionEntity>('/completions/feedback', body);
+    debugLog('logs', `✓ feedback saved on completion=${shortId(completionId)}`);
+    return saved;
   } catch (error) {
+    debugWarn('logs', `✕ feedback on completion=${shortId(completionId)} ${errorLabel(error)}`, () =>
+      describeError(error),
+    );
     if (isMissingRoute(error)) {
       throw missingRouteError("We can't add feedback to a saved session yet. The session itself is saved.", error);
     }
@@ -160,9 +166,11 @@ function saveDraft(
 ): Promise<ActivityCompletionEntity> {
   const state = stateFor(ctx);
   return locked(state, draftId, async () => {
+    debugLog('logs', `→ save ${shortId(draftId)} feedback=${feedback ? 'given' : 'none'}`);
     const draft = await ctx.drafts.get(draftId);
     if (!draft) {
       // Saved meanwhile: another tap, or the start-up flush.
+      debugLog('logs', `${shortId(draftId)} was saved meanwhile: using its completion`);
       const saved = await completionForDraftId(ctx, state, draftId);
       if (!saved) throw new ApiError('not_found', SAVED_ELSEWHERE);
       return feedback && !sameFeedback(saved.feedback, feedbackToWire(feedback))
@@ -195,12 +203,16 @@ function saveDraft(
         ctx.data.invalidate('completions');
         const existing = (await ctx.data.completionByActivityId()).get(draft.activity_id);
         if (!existing) {
+          debugWarn('logs', `✕ save ${shortId(draftId)} ${code}: no saved completion, a new request_id next time`);
           await ctx.drafts.put({ ...current, request_id: ctx.deps.newId(), submission: null });
           throw error;
         }
+        debugLog('logs', `${shortId(draftId)} already saved (${code}): using completion=${shortId(existing.id)}`);
         completion = existing;
       } else {
         // A definite answer (validation, not found) saved nothing: rebuild the body next time.
+        const next = outcomeUnknown(error) ? 'same body resent next time' : 'body rebuilt next time';
+        debugWarn('logs', `✕ save ${shortId(draftId)} ${errorLabel(error)}: ${next}`, () => describeError(error));
         if (!outcomeUnknown(error)) await ctx.drafts.put({ ...current, submission: null });
         throw error;
       }
@@ -208,6 +220,7 @@ function saveDraft(
 
     state.aliases.set(draft.id, completion.id);
     await ctx.drafts.remove(draft.id);
+    debugLog('logs', `✓ saved ${shortId(draft.id)} as completion=${shortId(completion.id)}`);
     ctx.data.invalidate('completions');
     if (feedback && !sameFeedback(completion.feedback, feedbackToWire(feedback))) {
       completion = await putFeedback(ctx, completion.id, feedback);
@@ -229,9 +242,13 @@ async function saveOpinion(ctx: RemoteContext, completion: ActivityCompletionEnt
       opinion: feedback.choose_again,
       last_date: toLocalDate(found.activity.start_at),
     });
+    debugLog('profile', `✓ opinion ${feedback.choose_again} saved for activity=${shortId(completion.activity_id)}`);
   } catch (error) {
     // The answer is saved with the completion's feedback; only the overview list waits for the route.
-    if (isMissingRoute(error)) return;
+    if (isMissingRoute(error)) {
+      debugLog('profile', 'opinion skipped: the server has no opinions route yet (kept in the feedback)');
+      return;
+    }
     throw error;
   }
 }
@@ -252,6 +269,7 @@ export function flushDrafts(ctx: RemoteContext): Promise<void> {
     try {
       const drafts = await ctx.drafts.list();
       if (!drafts.length) return;
+      debugLog('logs', `flush: ${drafts.length} pending draft(s)`);
       const done = await ctx.data.completionByActivityId();
       const now = ctx.deps.now().getTime();
       for (const draft of drafts) {
@@ -259,17 +277,22 @@ export function flushDrafts(ctx: RemoteContext): Promise<void> {
           const saved = done.get(draft.activity_id);
           if (saved || !(await ctx.data.findActivity(draft.activity_id))) {
             if (saved) state.aliases.set(draft.id, saved.id);
+            const why = saved ? 'already saved' : 'no longer in any plan version';
+            debugLog('logs', `flush: dropped ${shortId(draft.id)} (${why})`);
             await ctx.drafts.remove(draft.id);
             continue;
           }
           const age = now - Date.parse(draft.created_at);
           if (draft.submission || !(age < DRAFT_FLUSH_AFTER_MS)) await saveDraft(ctx, draft.id, null);
-        } catch {
+          else debugLog('logs', `flush: ${shortId(draft.id)} waits for feedback (newer than a day)`);
+        } catch (error) {
           // Stays for the next start.
+          debugWarn('logs', `flush: ${shortId(draft.id)} kept for the next start: ${errorLabel(error)}`);
         }
       }
-    } catch {
+    } catch (error) {
       // Signed out or offline: nothing to do until the next start.
+      debugWarn('logs', `flush skipped: ${errorLabel(error)}`);
     } finally {
       state.flushing = null;
     }
@@ -355,6 +378,11 @@ export function createRemoteLogs(ctx: RemoteContext): ApiClient['logs'] {
         submission: null,
       };
       await ctx.drafts.put(draft);
+      debugLog('logs', `draft created ${shortId(draft.id)} source=${input.source}`, () => ({
+        activity_id: shortId(sessionId),
+        sets: draft.sets.length,
+        metrics: Object.keys(draft.metrics).join(',') || 'none',
+      }));
       return logFromDraft(draft);
     },
 
@@ -383,6 +411,8 @@ export function createRemoteLogs(ctx: RemoteContext): ApiClient['logs'] {
           ...(draft.submission ? { request_id: ctx.deps.newId(), submission: null } : {}),
         };
         await ctx.drafts.put(next);
+        const renewed = draft.submission ? ' (new request_id: the body changed after a send)' : '';
+        debugLog('logs', `draft updated ${shortId(id)}${renewed}`);
         return logFromDraft(next);
       });
     },

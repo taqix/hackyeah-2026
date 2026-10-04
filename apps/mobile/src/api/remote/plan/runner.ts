@@ -8,6 +8,7 @@
  * body, captured free time included.
  */
 import { fromLocalDate, toLocalDate, weekdayIndex } from '../../../lib/dates';
+import { debugLog, debugWarn, describeError, errorLabel, shortId, startTimer } from '../../../lib/debug-log';
 import { ApiError, type ApiErrorCode, isApiError, type LocalDate } from '../../types';
 import type { RemoteContext } from '../context';
 import { AI_TIMEOUT_MS, defaultErrorMessage } from '../http';
@@ -164,9 +165,13 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       return await generate(body);
     } catch (error) {
       if (!isApiError(error, 'stale_version')) throw error;
+      debugLog('plan', `↻ ${job.kind} week=${job.weekStart}: version conflict, reading the plan again`);
       data.invalidate('currentPlan', 'history');
       const current = await data.currentPlan();
-      if (current && job.kind !== 'replan' && (await data.weekSnapshots()).has(job.weekStart)) return current;
+      if (current && job.kind !== 'replan' && (await data.weekSnapshots()).has(job.weekStart)) {
+        debugLog('plan', `${job.kind} week=${job.weekStart} planned meanwhile: keeping v${current.version.version}`);
+        return current;
+      }
       const retry: GeneratePlanDto = {
         ...body,
         request_id: deps.newId(),
@@ -174,13 +179,20 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       };
       bodies.set(retry.request_id, retry);
       job.requestId = retry.request_id;
+      debugLog('plan', `↻ ${job.kind} week=${job.weekStart}: resending as rid=${shortId(retry.request_id)}`, {
+        expected_version: retry.expected_version,
+      });
       return generate(retry);
     }
   }
 
   async function settle(job: RunningJob, body: GeneratePlanDto): Promise<ActivePlanDto> {
+    const took = startTimer();
     try {
       const result = await send(job, body);
+      debugLog('plan', `✓ ${job.kind} week=${job.weekStart} ready: v${result.version.version} ${took()}`, () => ({
+        activities: result.version.plan.activities.length,
+      }));
       bodies.delete(body.request_id);
       bodies.delete(job.requestId);
       // A plan built for an account that has since signed out never reaches the next one's cache.
@@ -189,6 +201,9 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       return result;
     } catch (error) {
       const failure = fail(job, error);
+      debugWarn('plan', `✕ ${job.kind} week=${job.weekStart} failed ${took()} ${errorLabel(failure)}`, () =>
+        describeError(failure),
+      );
       if (failure.code !== 'offline' && failure.code !== 'timeout') bodies.delete(job.requestId);
       // A request that timed out may still have been saved: read the plan again.
       data.invalidate('currentPlan', 'history');
@@ -216,11 +231,16 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
           : null;
       const requestId = input.requestId ?? resend ?? deps.newId();
       const running: RunningJob = { ...input, requestId };
+      const again = resend && requestId === resend ? ' (resending after a transport failure)' : '';
+      debugLog('plan', `→ ${input.kind} week=${input.weekStart} rid=${shortId(requestId)}${again}`);
       let body: GeneratePlanDto;
       try {
         body = await prepare(requestId, input.weekStart);
       } catch (error) {
         // Nothing was sent; the failed state or note says so (a calendar error is never empty free time).
+        debugWarn('plan', `✕ ${input.kind} week=${input.weekStart} not sent: ${errorLabel(error)}`, () =>
+          describeError(error),
+        );
         throw fail(running, error);
       }
       if (lastFailure?.userId === input.userId) lastFailure = null;

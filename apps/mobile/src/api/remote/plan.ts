@@ -1,4 +1,5 @@
 import { addDays, startOfWeek, toIsoWithOffset, toLocalDate } from '../../lib/dates';
+import { debugLog } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { ApiError, type LocalDate, type PlanState, type PlannedSession } from '../types';
 import type { RemoteContext } from './context';
@@ -60,7 +61,10 @@ export async function replanActiveWeek(ctx: RemoteContext, userId: string): Prom
     const current = await ctx.data.currentPlan();
     if (!current) return;
     const weekStart = current.version.plan.week_start;
-    if (addDays(weekStart, 6) < toLocalDate(ctx.deps.now())) return;
+    if (addDays(weekStart, 6) < toLocalDate(ctx.deps.now())) {
+      debugLog('plan', `re-plan skipped: week ${weekStart} is over`);
+      return;
+    }
     const job = await runner.start({ userId, weekStart, kind: 'replan' });
     await job.done;
   } catch {

@@ -10,7 +10,7 @@ import {
 } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { checkName } from '../../lib/person-name';
-import { ApiError, isApiError, type AuthProviders, type AuthSession } from '../types';
+import { ApiError, GUEST_NAME, isApiError, isGuest, type AuthProviders, type AuthSession } from '../types';
 import type { RemoteContext } from './context';
 import type { AuthErrorLike, AuthPort, AuthSessionData, RemoteDeps } from './deps';
 import { checkGoogleRedirect, EXPO_GO_IP_SIGN_IN } from './expo-go-redirect';
@@ -30,6 +30,9 @@ const LINK_EXPIRED = 'This link has expired or was opened on another device. Ask
 const TOO_MANY_TRIES = 'Too many tries for now. Wait a minute, then try again.';
 const NOT_FINISHED = "Sign-in didn't finish. Try again.";
 const GOOGLE_NOT_FINISHED = "Google sign-in didn't finish. Try again.";
+const GUEST_OFF = "Guest mode isn't available right now. Sign in with email instead.";
+const ALREADY_SAVED = 'This account already has an email and password.';
+const confirmToSave = (email: string) => `Open the link we sent to ${email} to finish saving your account.`;
 
 /** Asks Google to show its account chooser, so a phone with several Google accounts can pick one. */
 export const GOOGLE_SIGN_IN_PARAMS = { prompt: 'select_account' } as const;
@@ -47,14 +50,29 @@ export class SignInCancelled extends ApiError {
 
 export const isSignInCancelled = (error: unknown): error is SignInCancelled => error instanceof SignInCancelled;
 
+/**
+ * The project has anonymous sign-ins (web guests) switched off. Not
+ * retryable: signing in with email or Google is the way on.
+ */
+export class GuestModeUnavailable extends ApiError {
+  constructor(cause?: unknown) {
+    super('unknown', GUEST_OFF, { retryable: false, cause });
+    this.name = 'GuestModeUnavailable';
+  }
+}
+
+export const isGuestModeUnavailable = (error: unknown): error is GuestModeUnavailable =>
+  error instanceof GuestModeUnavailable;
+
 /* -------------------------------------------------------------- Mapping */
 
 const text = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value.trim() : null);
 
 /**
  * A Supabase session as the app's AuthSession. The name comes from the user
- * metadata: Google's, or the one given at sign-up or in Settings (both write
- * `full_name` and `name`).
+ * metadata: Google's, or the one given at sign-up, to a guest, or in Settings
+ * (all write `full_name` and `name`). A guest is told apart by `is_anonymous`
+ * alone: its app_metadata has no provider and its email is empty.
  */
 export function toAuthSession(session: AuthSessionData): AuthSession {
   const { user } = session;
@@ -63,7 +81,7 @@ export function toAuthSession(session: AuthSessionData): AuthSession {
       id: user.id,
       email: user.email ?? '',
       name: text(user.user_metadata.full_name) ?? text(user.user_metadata.name),
-      provider: user.app_metadata.provider === 'google' ? 'google' : 'email',
+      provider: user.is_anonymous === true ? 'guest' : user.app_metadata.provider === 'google' ? 'google' : 'email',
       created_at: user.created_at,
     },
     access_token: session.access_token,
@@ -155,6 +173,9 @@ export function mapAuthError(error: unknown): ApiError {
   }
   if (code === 'signup_disabled' || code === 'email_provider_disabled') {
     return make('unknown', "New accounts can't be created right now.");
+  }
+  if (code === 'anonymous_provider_disabled' || (!code && /anonymous sign-ins are disabled/i.test(message))) {
+    return new GuestModeUnavailable(error);
   }
   return make('unknown', defaultErrorMessage('unknown'), status !== undefined && status >= 500);
 }
@@ -323,6 +344,9 @@ function withAuthLogging(client: ApiClient['auth']): ApiClient['auth'] {
     signUpWithEmail: (email, password, name) =>
       traced('sign-up (email)', email, () => client.signUpWithEmail(email, password, name), sessionTag),
     signInWithGoogle: () => traced('sign-in (google)', null, () => client.signInWithGoogle(), sessionTag),
+    signInAsGuest: () => traced('sign-in (guest)', null, () => client.signInAsGuest(), sessionTag),
+    upgradeGuest: (email, password) =>
+      traced('save guest (email)', email, () => client.upgradeGuest(email, password), sessionTag),
     sendPasswordReset: (email) => traced('password reset email', email, () => client.sendPasswordReset(email)),
     updatePassword: (password) => traced('new password', null, () => client.updatePassword(password)),
     getProviders: () =>
@@ -345,10 +369,11 @@ function checkPassword(password: string) {
 
 /**
  * Supabase Auth (`ctx.deps.auth`): email and password, Google through PKCE
- * (`deps.openAuthSession`, `deps.redirectUrl('auth/callback')`), password
- * reset and the new password, providers from GET {supabaseUrl}/auth/v1/settings
- * (`deps.fetch` with the publishable key), and sign-out, which also
- * `ctx.data.reset()`s.
+ * (`deps.openAuthSession`, `deps.redirectUrl('auth/callback')`), web guests
+ * (an anonymous sign-in, saved later by adding an email and password to the
+ * same user), password reset and the new password, providers from GET
+ * {supabaseUrl}/auth/v1/settings (`deps.fetch` with the publishable key), and
+ * sign-out, which also `ctx.data.reset()`s.
  */
 export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
   const { deps } = ctx;
@@ -402,8 +427,9 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
     },
 
     async signInWithGoogle() {
-      // Linking.createURL: hackyeah2026://auth/callback in a build, exp://…/--/auth/callback
-      // in Expo Go, http://localhost:8081/auth/callback on the web; all are allowlisted.
+      // hackyeah2026://auth/callback in a build, exp://…/--/auth/callback in Expo Go, and on
+      // the web the page's origin under the app's base URL (…/hackyeah-2026/app/auth/callback
+      // on GitHub Pages, http://localhost:8081/auth/callback locally); all are allowlisted.
       const redirectTo = deps.redirectUrl(CALLBACK_PATH);
       // Expo Go on a LAN IP: Supabase would send Google's answer to the Site URL instead.
       checkGoogleRedirect(redirectTo, EXPO_GO_IP_SIGN_IN);
@@ -436,6 +462,43 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
         }
         throw failure;
       }
+    },
+
+    async signInAsGuest() {
+      // One guest per browser: a session already here (a double tap, a reload) is kept, not left behind.
+      const existing = await readSession(auth);
+      if (existing) return withProfileName(ctx, existing);
+      // An anonymous user gets a normal JWT, so the product API and RLS treat it like any account.
+      // The signup trigger copies the metadata name into the profile's username.
+      const { data, error } = await call(() =>
+        auth.signInAnonymously({ options: { data: { name: GUEST_NAME, full_name: GUEST_NAME } } }),
+      );
+      if (error) throw mapAuthError(error);
+      if (!data.session) throw new ApiError('unknown', NOT_FINISHED);
+      return toAuthSession(data.session);
+    },
+
+    async upgradeGuest(email, password) {
+      const normalized = validEmail(email);
+      checkPassword(password);
+      const current = await call(() => auth.getSession());
+      if (isNetworkError(current.error)) throw mapAuthError(current.error);
+      const stored = current.data.session;
+      if (!stored) throw new ApiError('unauthorized', defaultErrorMessage('unauthorized'));
+      if (!isGuest(toAuthSession(stored).user)) throw new ApiError('validation', ALREADY_SAVED);
+      // The same user keeps its id, so its plan, history and chat stay. Supabase
+      // refuses a password on an anonymous user without an email, so both go together.
+      const { data, error } = await call(() =>
+        auth.updateUser({ email: normalized, password }, { emailRedirectTo: deps.redirectUrl(CALLBACK_PATH) }),
+      );
+      if (error) throw mapAuthError(error);
+      // With email confirmation on, the email waits in new_email and the account
+      // stays a guest until the link is opened (it returns to /auth/callback).
+      const user = data.user;
+      if (!user || user.is_anonymous === true || !user.email) {
+        throw new ApiError('confirmation_required', confirmToSave(normalized));
+      }
+      return withProfileName(ctx, toAuthSession({ ...stored, user }));
     },
 
     async sendPasswordReset(email) {

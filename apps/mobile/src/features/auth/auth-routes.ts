@@ -35,3 +35,9 @@ export function googleErrorMessage(error: unknown): string {
   if (isApiError(error) && error.code !== 'offline' && error.code !== 'timeout') return error.message;
   return requestErrorMessage(error);
 }
+
+/** Continue as guest's one line (web only). */
+export const GUEST_PROMISE = 'Try everything without an account. Your guest plan stays in this browser.';
+
+/** Continue as guest: Auth's own reason (guests switched off, too many tries), else the usual copy. */
+export const guestErrorMessage = googleErrorMessage;

@@ -24,10 +24,16 @@ export type LocalTime = string;
 
 /* ------------------------------------------------------------------ Auth */
 
-export type AuthProvider = 'google' | 'email';
+/**
+ * How the account signs in. `guest`: a web guest (Continue as guest), an
+ * anonymous account with no email or password that lives in one browser
+ * until it is saved with an email (`auth.upgradeGuest`).
+ */
+export type AuthProvider = 'google' | 'email' | 'guest';
 
 export interface User {
   id: string;
+  /** Empty for a guest, which has no email. */
   email: string;
   /**
    * The name the person is greeted by: asked at sign-up, from Google, or set in
@@ -43,6 +49,12 @@ export interface AuthSession {
   /** Supabase access token sent to NestJS. Opaque to the app. */
   access_token: string;
 }
+
+/** A web guest's account: anonymous, kept in this browser until saved with an email. */
+export const isGuest = (user: Pick<User, 'provider'> | null | undefined): boolean => user?.provider === 'guest';
+
+/** The name a new guest is greeted by (Settings › Account › Name changes it). */
+export const GUEST_NAME = 'Guest';
 
 /** Which sign-in methods the server has switched on (Welcome hides Google while it is off). */
 export interface AuthProviders {

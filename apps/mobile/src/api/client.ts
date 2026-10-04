@@ -42,6 +42,23 @@ export interface ApiClient {
      */
     signUpWithEmail(email: string, password: string, name: string): Promise<AuthSession>;
     signInWithGoogle(): Promise<AuthSession>;
+    /**
+     * Continue as guest (web only; the mobile app has no guest entry): signs
+     * in a new anonymous account named "Guest" with no history, which uses the
+     * API like any account and goes through onboarding. Resolves with the
+     * session already signed in, if there is one, instead of making another.
+     * Rejects with GuestModeUnavailable (`remote/auth`) when the server has
+     * guests switched off.
+     */
+    signInAsGuest(): Promise<AuthSession>;
+    /**
+     * Save your progress: adds an email and password to the signed-in guest,
+     * which keeps its plan and history and becomes an email account. Rejects
+     * with confirmation_required when the email has to be confirmed first (the
+     * account stays a guest until then), email_taken, weak_password under 8
+     * characters, validation for a bad email or when the account isn't a guest.
+     */
+    upgradeGuest(email: string, password: string): Promise<AuthSession>;
     sendPasswordReset(email: string): Promise<void>;
     /**
      * Sets a new password for the signed-in account (the password reset link

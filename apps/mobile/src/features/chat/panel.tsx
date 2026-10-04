@@ -21,6 +21,7 @@ import { useNow } from '@/lib/clock';
 import { startOfWeek, toIsoWithOffset } from '@/lib/dates';
 import { sportIcon } from '@/lib/sport-visuals';
 import { routes, type ChatRouteParams } from '@/navigation/routes';
+import { useShellNavigate } from '@/navigation/web/use-shell-navigate';
 import { useTheme } from '@/theme';
 
 import { CoachBubble, FineLine, QuickReplies } from './bubbles';
@@ -79,6 +80,7 @@ function focusAtEnd(input: TextInput | null): boolean {
 
 export function ChatPanel({ params, onClose, variant, openKey, open = true }: ChatPanelProps) {
   const router = useRouter();
+  const shellNavigate = useShellNavigate();
   const { layout } = useTheme();
   const { isDesktop, isMedium, isWide } = useLayout();
   const today = useNow();
@@ -170,7 +172,8 @@ export function ChatPanel({ params, onClose, variant, openKey, open = true }: Ch
   };
   const onSeeWeek = (date: string) => {
     const href = routes.today({ week: startOfWeek(date), day: date });
-    if (dock) showInPage(() => router.navigate(href));
+    // From the dock over a nested page, going back down keeps a single set of tabs.
+    if (dock) showInPage(() => shellNavigate({ href, tab: true }));
     else router.dismissTo(href);
   };
   const onEditLog = (logId: string) => showInPage(() => router.push(routes.log('new', logId)));

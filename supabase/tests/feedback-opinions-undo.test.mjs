@@ -363,3 +363,62 @@ test('plan versions accept the undo origin and still protect logged sessions', a
     await db.close();
   }
 });
+
+test('a log saved against a replaced version locks only the copy the active version has', async () => {
+  const db = await prepare();
+  try {
+    await as(db, 'service_role');
+    const first = await savePlan(db, {
+      expected: 0,
+      requestId: uuid(901),
+      origin: 'generate',
+      plan: week([walk, jog]),
+    });
+    // A revision the device did not know about moves the jog and drops the walk.
+    const movedJog = { ...jog, start_at: '2026-10-08T18:00:00+02:00' };
+    await savePlan(db, {
+      planId: first.plan.id,
+      expected: 1,
+      requestId: uuid(902),
+      origin: 'revise',
+      plan: week([movedJog]),
+    });
+
+    // Both sessions were done offline and saved late, against the version they were logged from.
+    await as(db, 'authenticated', owner);
+    const metrics = JSON.stringify({ duration_minutes: 20 });
+    const completedAt = new Date(Date.now() - 60_000).toISOString();
+    for (const [id, requestId] of [
+      [walkId, uuid(903)],
+      [jogId, uuid(904)],
+    ]) {
+      await db.query(completeSql, [first.version.id, id, requestId, metrics, null, completedAt]);
+    }
+
+    // The week can still change: the planner keeps the active copy of the jog, and the
+    // dropped walk stays dropped.
+    await as(db, 'service_role');
+    const evening = activity(uuid(905), 'Evening walk', '2026-10-09T18:00:00+02:00');
+    const next = await savePlan(db, {
+      planId: first.plan.id,
+      expected: 2,
+      requestId: uuid(906),
+      origin: 'revise',
+      plan: week([movedJog, evening]),
+    });
+    assert.equal(next.version.version, 3);
+    // The active copy of a logged session is still locked.
+    await expectCode(
+      savePlan(db, {
+        planId: first.plan.id,
+        expected: 3,
+        requestId: uuid(907),
+        origin: 'revise',
+        plan: week([{ ...movedJog, duration_minutes: 15 }, evening]),
+      }),
+      'COMPLETED_ACTIVITY_LOCKED',
+    );
+  } finally {
+    await db.close();
+  }
+});

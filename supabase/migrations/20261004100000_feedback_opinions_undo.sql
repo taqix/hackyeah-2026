@@ -397,18 +397,22 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- A completed object in a week is immutable across same-week revisions.
+  -- A completed object in a week is immutable across same-week revisions: every completed
+  -- activity of the active version goes into the next one exactly as the active version has it.
+  -- The active copy is the one the planner keeps. A completion saved against an older version
+  -- after a revision moved or dropped its activity must not lock the week to a copy no new plan has.
   IF v_plan.active_version_id IS NOT NULL THEN
-    IF p_plan->>'week_start' = (SELECT "plan"->>'week_start' FROM public.plan_version WHERE id = v_plan.active_version_id)
-       AND EXISTS (
+    IF EXISTS (
          SELECT 1
-         FROM public.activity_completion c
-         JOIN public.plan_version prior ON prior.id = c.plan_version_id
-         CROSS JOIN LATERAL jsonb_array_elements(prior."plan"->'activities') old_activity
-         WHERE c.profile_id = p_owner
-           AND prior.plan_id = v_plan.id
-           AND prior."plan"->>'week_start' = p_plan->>'week_start'
-           AND old_activity->>'id' = c.activity_id::text
+         FROM public.plan_version current_version
+         CROSS JOIN LATERAL jsonb_array_elements(current_version."plan"->'activities') old_activity
+         WHERE current_version.id = v_plan.active_version_id
+           AND current_version.profile_id = p_owner
+           AND current_version."plan"->>'week_start' = p_plan->>'week_start'
+           AND EXISTS (
+             SELECT 1 FROM public.activity_completion c
+             WHERE c.profile_id = p_owner AND c.activity_id::text = old_activity->>'id'
+           )
            AND NOT EXISTS (
              SELECT 1 FROM jsonb_array_elements(p_plan->'activities') next_activity
              WHERE next_activity = old_activity

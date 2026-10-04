@@ -226,6 +226,12 @@ router has exact paths only.
   `UNDO_LOCKED`.
 - Idempotent by `request_id`.
 
+**Completed activities:** every plan save must keep each completed activity of
+the active version exactly as that version has it. Otherwise the database
+refuses the save, and the API answers 409 `VERSION_CONFLICT`. A completion
+saved late against an older version locks only the active copy, so it cannot
+freeze the week.
+
 **Seed migration:**
 - The working sports are named exactly as in `apps/mobile/src/api/mock/catalog.ts`:
   Walking, Strength (gym), Running, Cycling, Swimming, Mobility and Football.

@@ -246,9 +246,10 @@ router has exact paths only.
   - It re-inserts completed and past activities verbatim.
   - Gym exercises use the exercise IDs of the mock `EXERCISES` library, so the
     app can enrich them.
-- **Validation.** It skips the slot and window checks for activities that are
-  JSON-identical to the previous version of the same week. That makes
-  mid-week revisions possible.
+- **Validation.** It skips the per-activity checks (slot, window, sport and
+  duration) for activities that are JSON-identical to the previous version of
+  the same week. That makes mid-week revisions possible, and lets a same-week
+  regeneration after an answers edit keep past sessions.
 
 ### Hosted project state (FitnessApp, read-only check on 4 October 2026)
 

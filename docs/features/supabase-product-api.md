@@ -8,8 +8,8 @@ Owner: Supabase/API collaborator
 Web and mobile collaborators can build against the same versioned DTOs, entities,
 OpenAPI description, JSON schemas, and synthetic examples. A prepared Edge
 Function implements authenticated profile/catalog/plan/history/chat/completion
-routes. AI integration is a replaceable adapter and is deliberately disabled
-until the Gemini collaborator connects it.
+routes. AI runs through the replaceable `PlanGenerator` adapter: Gemini when its
+secrets are set, otherwise a stub that answers 501 `AI_NOT_CONFIGURED`.
 
 Included: local signup/access fixes, product persistence, request validation,
 immutable plan history, transactional RPCs, completion/feedback, client contracts,
@@ -19,9 +19,8 @@ of the newest chat change, and a sport catalog seed. No users or plans are seede
 
 Deferred: guest demo bootstrap and AI usage limits, extra workout ingestion,
 profile summaries, Auth dashboard settings, web screens, hosting, and deployment.
-These are not working capabilities of this scaffold. The Gemini provider and the
-mobile client are tracked in
-[the mobile Supabase integration](mobile-supabase-integration.md). Existing
+These are not working capabilities of this scaffold. The mobile client is tracked
+in [the mobile Supabase integration](mobile-supabase-integration.md). Existing
 tournament and wearable features are outside this API.
 
 ## Client handoff
@@ -107,9 +106,8 @@ Generation requires the `sport_id` key: pass a decimal-string ID for an explicit
 sport, or `null` for mobile generation from saved preferences. For null selection,
 only enabled, nonexcluded sports are eligible; `selected_only` additionally
 restricts them to `activity_interests`. An empty eligible catalog is a 400 error.
-Valid generated snapshots may contain zero to seven activities. The disconnected
-AI adapter still returns 501; accepting an empty snapshot does not create an AI
-implementation.
+Valid generated snapshots may contain zero to seven activities. Without the
+Gemini secrets the AI routes return 501.
 
 Feedback effort is `easy`, `okay` (Just right), `hard`, or `too_much`.
 `enjoyment` is required but nullable: in this PoC it records "Would you choose
@@ -206,18 +204,56 @@ Runtime configuration names (values supplied by the platform/owner):
 | SUPABASE_PUBLISHABLE_KEY  | `<PUBLISHABLE_KEY>`                 | Client/server                       |
 | SUPABASE_ANON_KEY         | `<LEGACY_ANON_KEY>`                 | Platform fallback only              |
 | SUPABASE_SERVICE_ROLE_KEY | `<SERVER_ONLY_KEY>`                 | Function only; never a client value |
+| GEMINI_API_KEY            | `<GEMINI_API_KEY>`                  | Function secret; never a client value |
+| GEMINI_MODEL              | a model ID from AI Studio           | Function secret; no default model   |
 
-The entry point wires `unavailableGenerator`, so AI routes return 501
-`AI_NOT_CONFIGURED` once prerequisites are valid. Empty/unsupported catalog or
-missing preferences returns 400 first. The owner/AI collaborator replaces
-`provider.ts` through the `PlanGenerator` interface; server validation and atomic
-persistence remain in the handler/store. Provider exceptions return sanitized
-502 failures. This slice does not claim provider usage limits are implemented.
+### AI provider (Gemini)
+
+`index.ts` wires `createGeminiGenerator` (`gemini.ts`) when both `GEMINI_API_KEY`
+and `GEMINI_MODEL` are set; otherwise `unavailableGenerator` answers 501
+`AI_NOT_CONFIGURED`. Empty/unsupported catalog or missing preferences return 400
+first. Set the secrets with:
+
+```sh
+supabase secrets set GEMINI_API_KEY=<GEMINI_API_KEY> GEMINI_MODEL=<MODEL_ID>
+```
+
+Saving AI plans also needs `SUPABASE_SERVICE_ROLE_KEY`, which the hosted platform
+provides to functions.
+
+- **Request.** One `generateContent` call with the system prompt (`prompt.ts`), a
+  JSON context, and a per-call `responseJsonSchema`: generate returns
+  `{activities, summary}`, chat returns `{outcome, activities | null, message}`.
+  The context holds the preferences, eligible sports, the gym exercise library
+  (`exercises.ts`, mirroring the mobile `EXERCISES` IDs), free slots already cut to
+  the preferred window and the future (`schedule.ts`), the week's kept and planned
+  sessions, completion effort, and for chat the recent messages and attached
+  activity. Usernames, emails and feedback notes are never sent.
+- **Retries.** HTTP 408, 429 and 5xx are retried up to three times with jittered
+  backoff, honouring `Retry-After`. Everything, including one re-ask, shares a
+  90-second deadline.
+- **Post-processing.** The adapter sets `week_start` and `timezone`, keeps a
+  returned ID only when it belongs to the same week's previous plan (otherwise a
+  new UUID), and re-inserts completed and past sessions verbatim. It never adjusts
+  a session. When local validation fails, it asks once more with the specific
+  problem, then fails with `INVALID_AI_OUTPUT` (502, retryable).
+- **Errors.** Missing configuration gives 501 `AI_NOT_CONFIGURED`. Unreadable JSON,
+  an incomplete answer (finish reason other than `STOP`) or a blocked prompt give
+  502 `INVALID_AI_OUTPUT`. Other provider failures, including timeouts, become 502
+  `PROVIDER_UNAVAILABLE`. Logs carry status lines only, never prompts or answers.
+- **Validation.** A session identical to the same week's previous version skips the
+  per-activity checks, as completed ones always did. That lets mid-week revisions
+  and same-week regeneration keep past sessions that today's free slots or edited
+  answers no longer cover.
+
+Tests use a fake fetcher with canned answers (`supabase/tests/gemini.test.ts`);
+the live provider has not been called from this repository. This slice does not
+claim provider usage limits are implemented.
 
 Owner steps: review the prepared migrations, apply them to a disposable project,
 verify Auth providers/redirects/email confirmation, run actual local Edge/Deno
-checks, then deploy the function when ready. Real catalog content and Gemini
-configuration are separate tasks. Google and anonymous sign-in enablement were
+checks, then deploy the function when ready. The catalog seed migration supplies
+the sports; the Gemini secrets are set separately. Google and anonymous sign-in enablement were
 not verifiable through the available inspection tools.
 
 The Supabase CLI and Deno executable were unavailable here. Migration files use
@@ -237,7 +273,8 @@ declarations allow TypeScript checks without claiming Deno bundling was tested.
       catalog seed are tested locally.
 - [x] Shared contracts compile and workspace typechecks pass.
 - [ ] Hosted migration/function/Auth verification by owner.
-- [ ] Gemini provider integration and guest AI limits.
+- [x] Gemini provider adapter, tested locally with canned answers.
+- [ ] Live Gemini smoke test by the owner, and guest AI limits.
 - [ ] Browser and Expo smoke journey once clients are integrated.
 - [ ] One teammate approval before merge.
 

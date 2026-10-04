@@ -6,17 +6,19 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useLayout } from '@/components/layout';
 import { Icon, type IconName, PressableScale, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
-/** A coach message on the left, on the soft bubble surface. */
+/** A coach message on the left, on the soft bubble surface (85% of the column at most on the desktop web). */
 export function CoachBubble({ children }: { children: string }) {
   const { colors } = useTheme();
+  const { isDesktop } = useLayout();
   return (
     <View
       accessible
       accessibilityLabel={`Coach: ${children}`}
-      style={[styles.bubble, { backgroundColor: colors.surfaceBubble }]}>
+      style={[styles.bubble, { backgroundColor: colors.surfaceBubble }, isDesktop ? styles.desktopBubble : null]}>
       <Text>{children}</Text>
     </View>
   );
@@ -42,11 +44,11 @@ export function QuickReplies({
           disabled={disabled}
           accessibilityRole="button"
           aria-disabled={disabled}
-          style={({ pressed }) => [
+          style={({ pressed, hovered }) => [
             styles.reply,
             {
               backgroundColor: colors.accentSoft,
-              borderColor: pressed ? colors.accent : colors.accentSoftStrong,
+              borderColor: pressed || hovered ? colors.accent : colors.accentSoftStrong,
               opacity: disabled ? 0.5 : 1,
             },
           ]}>
@@ -100,6 +102,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 6,
   },
+  desktopBubble: { maxWidth: '85%' },
   replies: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   reply: {
     height: 44,

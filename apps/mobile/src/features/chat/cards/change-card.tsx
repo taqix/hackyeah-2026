@@ -124,7 +124,7 @@ function PastChange({ message, onExpand }: { message: ChangeMessage; onExpand: (
       accessibilityLabel={`${title}, ${stampLabel(message.created_at, current)}. ${change.summary}`}
       accessibilityHint="Shows what changed"
       aria-expanded={false}
-      style={({ pressed }) => ({
+      style={({ pressed, hovered }) => ({
         alignSelf: 'stretch',
         flexDirection: 'row',
         alignItems: 'center',
@@ -132,9 +132,9 @@ function PastChange({ message, onExpand }: { message: ChangeMessage; onExpand: (
         paddingVertical: 12,
         paddingHorizontal: 14,
         borderWidth: 1,
-        borderColor: colors.borderSubtle,
+        borderColor: hovered ? colors.borderStrong : colors.borderSubtle,
         borderRadius: radius.md,
-        backgroundColor: pressed ? colors.surfaceSunken : colors.surfaceCard,
+        backgroundColor: pressed || hovered ? colors.surfaceSunken : colors.surfaceCard,
       })}>
       <Disc icon={change.undone ? 'undo-2' : 'check'} tone={change.undone ? 'quiet' : 'accent'} size={28} />
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>

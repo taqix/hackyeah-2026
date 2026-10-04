@@ -15,7 +15,8 @@ Included: local signup/access fixes, product persistence, request validation,
 immutable plan history, transactional RPCs, completion/feedback, client contracts,
 and a deployable function scaffold. Since 4 October it also covers feedback given
 after the log or changed later, mutable "choose again" opinions with reset, Undo
-of the newest chat change, and a sport catalog seed. No users or plans are seeded.
+of the newest chat change, a sport catalog seed, and signup copying the Auth
+name into the profile's `username`. No users or plans are seeded.
 
 Deferred: guest demo bootstrap and AI usage limits, extra workout ingestion,
 profile summaries, Auth dashboard settings, web screens, hosting, and deployment.
@@ -80,7 +81,9 @@ Success is `{data, meta: {contract_version: "1", request_id: UUID | null}}`.
 Failure is `{error: {code, message, retryable}, meta}`. Platform gateway errors
 may arrive before the handler and have a different shape; clients must normalize
 those and network failures. Collections return `[]` when empty. A profile created
-by signup initially has `preferences: null`. No plan is represented by `data: null`,
+by signup initially has `preferences: null`, and its `username` is the name from
+the Auth metadata (Google's name, or the app's email sign-up `data.name`), or
+`null` when there is none. No plan is represented by `data: null`,
 not a fake plan. History is newest first; completions are newest first.
 A saved quiet week has `{plan, version}` with `version.plan.activities: []`;
 it is different from a user who has no saved plan. `GET /schema` also uses the
@@ -172,6 +175,29 @@ table with owner RLS for every operation, and the `undo` version origin.
 name (with a unique index on the lowercased name) and backfills missing
 profiles. Working sports have `generation_enabled = true`; previews do not.
 
+`20261004120000_profile_username_from_auth.sql` makes signup provisioning copy
+the person's name into `profile.username`. Before it, a Google sign-up got a
+profile with `username = NULL`.
+
+- Source: `auth.users.raw_user_meta_data`, the first usable text value of
+  `name`, then `full_name`, then `given_name`. Google sign-ups carry
+  `name`/`full_name`; the app's email sign-up sends `data: {name, full_name}`.
+- Cleaning (one helper, `profile_username_from_metadata`): control characters
+  and every character JavaScript's `trim()` removes collapse to one space; the
+  result is trimmed and cut to 200 UTF-16 code units, the contract's
+  `username` limit. Blank or non-text values give `NULL`. The stored value
+  always passes `ProfileEntity` and `UpdateProfileDto` validation.
+- Signup (`handle_new_user`) inserts `(id, email, username)`. On an existing
+  row it updates the email and fills the username only when it is `NULL`.
+- Later metadata: the `on_auth_user_metadata_updated` trigger (after an update
+  of `raw_user_meta_data`, for example Google refreshing the identity at
+  sign-in) fills the username only while it is `NULL`. A name chosen in the
+  app is never overwritten. A name cleared to `null` in the app can be refilled
+  at a later Google sign-in.
+- Backfill: existing profiles with `username IS NULL` get the cleaned name.
+- The name is best effort: if reading it fails, the username stays `NULL` and
+  the sign-up or sign-in still succeeds.
+
 - `save_plan_version`: server-only, owner-serialized, expected-version checked,
   immutable version insert and active pointer switch in one transaction.
 - `save_chat_reply`: server-only, checked conversation persistence without a revision.
@@ -181,9 +207,11 @@ profiles. Working sports have `generation_enabled = true`; previews do not.
   API checks receipts before an AI call and SQL rechecks under the owner lock.
 
 Internal receipts intentionally have RLS and no client policy/grant. The signup
-function remains SECURITY DEFINER because it provisions a profile from an Auth
-trigger; it uses a fixed empty search path and qualified names, and is not a
-client-callable RPC. All privileged API calls filter by the verified owner.
+and metadata-update functions remain SECURITY DEFINER because they write
+profiles from Auth triggers; they and the name-cleaning helper use a fixed
+empty search path and qualified names, and none is client-callable (execute is
+revoked from `PUBLIC`, `anon`, `authenticated` and `service_role`). All
+privileged API calls filter by the verified owner.
 
 ## Runtime and owner handoff
 
@@ -293,6 +321,9 @@ declarations allow TypeScript checks without claiming Deno bundling was tested.
 ## Acceptance and verification
 
 - [x] Fresh and existing schemas provision profiles through the corrected signup trigger.
+- [x] Signup, later metadata and the backfill fill an empty username from the
+      Auth metadata name without overwriting a chosen one; the stored name passes
+      the profile contract (`supabase/tests/profile-username.test.mjs`).
 - [x] Owner isolation, anonymous denial, and default grants are tested locally.
 - [x] Invalid requests/AI output do not save a plan; current/history empty states are explicit.
 - [x] Version conflicts, idempotent receipts, and preserved completions are tested locally.
@@ -313,8 +344,8 @@ the Supabase test suite passed 21 tests, with no failures or skipped tests.
 Workspace typechecks covered backend, mobile, contracts, and wearable packages.
 Supabase and contracts lint finished without warnings. Scoped `git diff --check`
 passed. These results cover source and disposable local PostgreSQL databases,
-not hosted Supabase or the Deno runtime. After the 4 October extensions the
-Supabase suite passes 30 tests.
+not hosted Supabase or the Deno runtime. After the 4 October extensions and the
+username migration the Supabase suite passes 56 tests.
 
 Creating `feat/supabase-product-api` from `develop` was blocked by local `.git`
 write permissions, including the sandbox escalation attempt. The prepared

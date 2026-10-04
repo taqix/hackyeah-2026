@@ -25,6 +25,10 @@ the `undo` plan version origin. `20261004110000_sport_catalog_seed.sql` is the
 only seed: it upserts the sport catalog by case-insensitive name (names match
 the mobile mock catalog) and adds profile rows for accounts without one. It
 contains no users, plans, or other personal data.
+`20261004120000_profile_username_from_auth.sql` makes signup copy the Auth
+metadata name (`name`, `full_name` or `given_name`, cleaned to the contract's
+username rules) into `profile.username`, fills it later only while it is empty,
+and backfills empty usernames.
 
 The function uses Gemini when both secrets are set, and answers 501
 `AI_NOT_CONFIGURED` otherwise:

@@ -173,6 +173,10 @@ Calendar uses the same callback; its setup is in
   - Sign-up asks for it ("Your name", required, trimmed, 1–50 characters) and
     sends it as Auth metadata (`signUp` `options.data` `{name, full_name}`), so
     the first session carries it. Google keeps its own name.
+  - From `20261004120000` on, signup also copies that name (Google's, or the
+    email sign-up's `name`) into the profile's `username`, cleaned and cut to
+    the contract's 200 characters. Later Auth metadata fills it only while it
+    is empty, so a name changed in Settings is kept.
   - The session name is the metadata's `full_name` or `name`. Without one
     (older accounts), `getSession` and email sign-in fall back to the
     profile's `username`. Auth events keep a name already shown for the same
@@ -532,6 +536,9 @@ freeze the week.
   - `20261003130000` and `20261003140000` (already there)
   - `20261004100000_feedback_opinions_undo` (new)
   - `20261004110000_sport_catalog_seed` (new)
+- To be applied: `20261004120000_profile_username_from_auth`. Signup then
+  copies the Auth metadata name into `profile.username`, and the migration
+  backfills profiles whose username is empty (Google sign-ups so far).
 - The wearable migration `20261003120000` is still not applied, on purpose.
 - The catalog has 22 sports: 7 working (Walking, Strength, Running, Cycling,
   Swimming, Mobility, Football) and 15 previews. Every public table has RLS
@@ -714,7 +721,7 @@ and the product API are fakes.
 ### Deferred and not verified
 
 - **Hosted project (owner).** Steps are in [Runtime status](../deployment.md):
-  - apply `20261004100000` and `20261004110000`
+  - apply `20261004120000` (`20261004100000` and `20261004110000` are applied)
   - deploy `product-api`
   - set `GEMINI_API_KEY` and `GEMINI_MODEL`
   - allowlist the auth redirects

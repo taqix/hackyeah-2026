@@ -22,6 +22,9 @@ Live state after the 4 October 2026 push:
   - Redirects are allowlisted for `hackyeah2026://auth/{callback,reset}`,
     `exp://**/--/auth/{callback,reset}` and
     `http://localhost:8081/auth/{callback,reset}`.
+  - Auth refuses redirects to a raw IP host, even allowlisted ones, and falls
+    back to the Site URL (`http://localhost:3000`). Expo Go needs a hostname:
+    `npm run start:hostname`, `--tunnel`, or the development build.
 
 Remaining owner steps:
 

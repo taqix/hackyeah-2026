@@ -2,54 +2,52 @@
 
 ## Supabase product API
 
-The hosted Supabase project already runs the
-[product API](features/supabase-product-api.md). A read-only check on 4 October
-2026 found:
+The hosted Supabase project (FitnessApp) runs the
+[product API](features/supabase-product-api.md), and the mobile app uses it by
+default; see [Mobile app on Supabase](features/mobile-supabase-integration.md).
 
-- `product-api` version 3 deployed with `verify_jwt = true`
-- migrations up to `20261003140000` applied
-- empty tables
-- no `GEMINI_*` secrets
+Live state after the 4 October 2026 push:
 
-The mobile app uses this project by default; see
-[Mobile app on Supabase](features/mobile-supabase-integration.md). The 4 October
-changes are local only so far: late feedback, opinions, Undo, the catalog seed
-and the Gemini adapter. Local CPU tests cover database rules, the handler and
-the adapter. Real CLI, Deno, Auth and device checks remain owner work.
+- **Migrations:**
+  - Applied up to `20261004110000_sport_catalog_seed`, including
+    `20261004100000_feedback_opinions_undo`.
+  - The wearable migration `20261003120000` is intentionally not applied.
+  - The catalog has 7 working sports and 15 previews.
+- **Function:** `product-api` is redeployed with `verify_jwt = true`. It
+  includes the Gemini adapter, late feedback, opinions, Undo, and Google token
+  refresh (`POST /google/token`).
+- **Secrets:** `GEMINI_API_KEY` and `GEMINI_MODEL` are set.
+- **Auth:**
+  - The Google provider is on, and manual identity linking is on.
+  - Redirects are allowlisted for `hackyeah2026://auth/{callback,reset}`,
+    `exp://**/--/auth/{callback,reset}` and
+    `http://localhost:8081/auth/{callback,reset}`.
 
-Owner steps to bring the hosted project up to date:
+Remaining owner steps:
 
-1. Apply `20261004100000_feedback_opinions_undo.sql` and then
-   `20261004110000_sport_catalog_seed.sql`, after `20261003140000`. Review the
-   wearable migration separately. The seed adds the sport catalog and missing
-   profile rows. Without it, plan generation answers 400.
-2. Deploy the function with `supabase functions deploy product-api`. The
-   gateway may reject valid user JWTs when the project uses new signing keys.
-   In that case, deploy with `--no-verify-jwt`: the handler verifies every token
-   with Auth itself. The platform provides `SUPABASE_SERVICE_ROLE_KEY`, which
-   plan saves and Undo need.
-3. Set the AI secrets with
-   `supabase secrets set GEMINI_API_KEY=<KEY> GEMINI_MODEL=<MODEL_ID>`. There is
-   no default model. Without these secrets, generation and chat answer 501, and
-   the app shows that plan building is not connected yet.
-4. In Auth URL configuration, set the site URL and allowlist these redirects:
-   - `hackyeah2026://auth/callback` and `hackyeah2026://auth/reset`
-   - the Expo Go `exp://…/--/auth/callback` and `exp://…/--/auth/reset` URLs
-   - the web origin's `/auth/callback` and `/auth/reset`
-5. Google: the provider is on, and the app shows Google sign-in while
-   `/auth/v1/settings` reports it as on. For Google Calendar:
-   - enable the Calendar API, and add its two scopes and the test users to
-     the consent screen
-   - turn on manual identity linking
-   - set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`
-   - redeploy `product-api`
-
-   The steps are in [Mobile app on Supabase](features/mobile-supabase-integration.md#google-cloud-and-supabase-setup-owner).
-6. Smoke-test from the app:
+1. **Google token refresh:** set the same Web client the Supabase Google
+   provider uses:
+   `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<ID> GOOGLE_OAUTH_CLIENT_SECRET=<SECRET>`.
+   The Management API exposes only a digest of the secret, so it cannot be
+   copied from Auth settings. Without it, Google Calendar asks the person to
+   reconnect when the access token expires (about an hour).
+2. **Google Cloud:** enable the Google Calendar API. Add the
+   `calendar.freebusy` and `calendar.app.created` scopes and the test users to
+   the consent screen.
+3. **Gateway JWT check:** if the gateway ever rejects valid user tokens (the
+   project signs them with ES256), decide whether to deploy with
+   `--no-verify-jwt`. The handler verifies every token with Auth itself.
+4. **Optional:** enable leaked-password protection in Auth.
+5. **Smoke test** from the app:
    - a new account through onboarding to its first plan
    - a log with feedback
    - a chat change and its Undo
+   - Google sign-in and Google Calendar connect
    - a second account that sees none of the first account's data
+
+Deploy commands (Supabase CLI, no Docker needed):
+`supabase functions deploy product-api --project-ref <REF> --use-api` and
+`supabase secrets set --env-file <file-with-only-the-new-secrets>`.
 
 ## Backend (NestJS)
 

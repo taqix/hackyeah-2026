@@ -1,15 +1,13 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { AccessibilityInfo, Platform, Switch } from 'react-native';
 
-import { isMockMode } from '@/api/config';
-import { useAuthProviders } from '@/api/hooks';
-import { getRemoteRuntime } from '@/api/remote/default';
 import { isApiError } from '@/api/types';
 import { Col } from '@/components/layout';
 import { Button, ListRow, Sheet, Spinner, Text } from '@/components/ui';
 import { removeCalendarExport, removeGoogleCalendarExport, useCalendarExportStatus } from '@/features/calendar-export';
+import { googleCalendarAccount as account, RowNote, shownMessage, useGoogleCalendarConnect } from '@/features/google-calendar';
 import { setCalendarExportEnabled, useCalendarExportSetting } from '@/state/calendar-export';
-import { reloadGoogleCalendar, useGoogleCalendar } from '@/state/google-calendar';
+import { reloadGoogleCalendar } from '@/state/google-calendar';
 import { useTheme } from '@/theme';
 
 import { ConfirmSheet } from './confirm-sheet';
@@ -18,14 +16,9 @@ import { StatusOn } from './status-on';
 const TITLE = 'Google Calendar';
 const PLANNING_TITLE = 'Use for planning';
 const EXPORT_TITLE = 'Add sessions to Google Calendar';
-const CONNECT_FAILED = "Google Calendar didn't connect. Try again.";
 const SAVE_FAILED = "That change didn't save. Try again.";
 const REMOVE_FAILED = "We couldn't remove the Movo calendar from Google. Try again, or delete it in Google Calendar.";
 const PHONE_REMOVE_FAILED = "We couldn't remove the Movo calendar from this phone. Try again.";
-
-const account = () => getRemoteRuntime().googleCalendar;
-const messageOf = (error: unknown, fallback: string) =>
-  isApiError(error) ? error.message : fallback;
 
 /** A failure whose message is already the copy to show. */
 class Shown extends Error {}
@@ -58,19 +51,7 @@ function RowSwitch({
   );
 }
 
-/** A problem with the last action, announced and shown under the rows. */
-function RowNote({ children }: { children: string }) {
-  useEffect(() => {
-    AccessibilityInfo.announceForAccessibility(children);
-  }, [children]);
-  return (
-    <Text variant="bodySm" tone="danger" accessibilityRole="alert" style={{ paddingBottom: 8 }}>
-      {children}
-    </Text>
-  );
-}
-
-type Busy = null | 'connect' | 'planning' | 'export' | 'disconnect';
+type Busy = null | 'planning' | 'export' | 'disconnect';
 
 /**
  * Data and privacy › Google Calendar (opt-in): Connect reads free/busy only,
@@ -78,59 +59,38 @@ type Busy = null | 'connect' | 'planning' | 'export' | 'disconnect';
  * in Google. Connected, it shows the Google email, Use for planning (on by
  * default), Add sessions to Google Calendar (off by default) and Disconnect.
  * When Google stops accepting the connection it offers Reconnect instead of
- * failing quietly. Hidden in mock mode and while Google sign-in is off.
+ * failing quietly. Hidden in mock mode, while Google sign-in is off and while
+ * signed out. Onboarding Review offers the same Connect
+ * (`useGoogleCalendarConnect`).
  */
 export function GoogleCalendarRows() {
-  const providers = useAuthProviders();
-  const google = useGoogleCalendar();
+  const google = useGoogleCalendarConnect('privacy');
   const deviceExport = useCalendarExportSetting();
   const exportStatus = useCalendarExportStatus('google');
   const [busy, setBusy] = useState<Busy>(null);
-  const [note, setNote] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ planning?: boolean; export?: boolean }>({});
   const [sheet, setSheet] = useState<null | 'disconnect' | 'export-off' | 'move-here'>(null);
   const [sheetBusy, setSheetBusy] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
-  const status = google.status;
+  const { status, connecting } = google;
 
-  if (isMockMode || providers.data?.google === false) return null;
-  if (google.loaded && !status && !google.error) return null;
-
-  // A connect that finished away from this screen (the web page after Google, another account) leaves a notice.
-  const shownNote = note ?? google.notice;
-  const clearNotes = () => {
-    setNote(null);
-    if (google.notice) account().setNotice(null);
-  };
+  if (!google.available) return null;
 
   const run = async (kind: Busy, action: () => Promise<void>, fallback: string) => {
     setBusy(kind);
-    clearNotes();
+    google.clearNote();
     try {
       await action();
       await reloadGoogleCalendar();
     } catch (error) {
-      setNote(messageOf(error, fallback));
+      google.setNote(shownMessage(error, fallback));
     } finally {
       setBusy(null);
       setDraft({});
     }
   };
 
-  const connect = async () => {
-    setBusy('connect');
-    clearNotes();
-    try {
-      const result = await account().connect();
-      // Web: the page is on its way to Google; keep the spinner.
-      if (result.status === 'redirecting') return;
-      if (result.status === 'connected') AccessibilityInfo.announceForAccessibility('Google Calendar connected');
-      await reloadGoogleCalendar();
-    } catch (error) {
-      setNote(messageOf(error, CONNECT_FAILED));
-    }
-    setBusy(null);
-  };
+  const connect = () => void google.connect();
 
   const closeSheet = () => {
     if (sheetBusy) return;
@@ -178,25 +138,26 @@ export function GoogleCalendarRows() {
         });
     }, PHONE_REMOVE_FAILED);
 
-  const connected = !!status?.connected;
-  const reconnect = connected && !!status?.needsReconnect;
+  const { connected } = google;
+  const reconnect = google.needsReconnect;
+  const working = busy !== null || connecting;
 
   let right: ReactNode;
-  if (!google.loaded || (busy === 'connect' && !connected)) {
+  if (!google.loaded || (connecting && !connected)) {
     right =
-      busy === 'connect' ? (
+      connecting ? (
         <Button variant="secondary" size="sm" loading accessibilityLabel="Connecting Google Calendar">
           Connect
         </Button>
       ) : (
         <Spinner size={18} accessibilityLabel="Checking Google Calendar" />
       );
-  } else if (google.error && !status) {
+  } else if (google.readFailed && !status) {
     right = (
       <Button
         variant="secondary"
         size="sm"
-        onPress={() => void reloadGoogleCalendar()}
+        onPress={() => void google.reload()}
         accessibilityLabel="Check Google Calendar again">
         Try again
       </Button>
@@ -206,8 +167,8 @@ export function GoogleCalendarRows() {
       <Button
         variant="secondary"
         size="sm"
-        onPress={() => void connect()}
-        loading={busy === 'connect'}
+        onPress={connect}
+        loading={connecting}
         accessibilityLabel="Reconnect Google Calendar">
         Reconnect
       </Button>
@@ -219,7 +180,7 @@ export function GoogleCalendarRows() {
       <Button
         variant="secondary"
         size="sm"
-        onPress={() => void connect()}
+        onPress={connect}
         accessibilityLabel="Connect Google Calendar"
         accessibilityHint="Opens Google to share your busy times with Movo">
         Connect
@@ -228,7 +189,7 @@ export function GoogleCalendarRows() {
   }
 
   let detail = "Busy times only, never what's in your events. It can also add your sessions.";
-  if (google.error) detail = "We couldn't check Google Calendar.";
+  if (google.readFailed) detail = "We couldn't check Google Calendar.";
   else if (reconnect) detail = 'Reconnect Google Calendar to keep planning around it.';
   else if (connected) detail = status?.email ?? 'Connected';
 
@@ -251,7 +212,7 @@ export function GoogleCalendarRows() {
             right={
               <RowSwitch
                 value={planning}
-                disabled={busy !== null || reconnect}
+                disabled={working || reconnect}
                 label={PLANNING_TITLE}
                 hint="Plans fit around your Google busy times"
                 onChange={(value) => {
@@ -271,7 +232,7 @@ export function GoogleCalendarRows() {
             right={
               <RowSwitch
                 value={exporting}
-                disabled={busy !== null || reconnect}
+                disabled={working || reconnect}
                 label={EXPORT_TITLE}
                 hint={exportDetail}
                 onChange={(value) => {
@@ -294,13 +255,13 @@ export function GoogleCalendarRows() {
             detail="Movo stops reading your Google busy times"
             onPress={() => setSheet('disconnect')}
             chevron={false}
-            disabled={busy !== null}
+            disabled={working}
             accessibilityLabel="Disconnect Google Calendar"
             divider
           />
         </>
       ) : null}
-      {shownNote ? <RowNote>{shownNote}</RowNote> : null}
+      {google.note ? <RowNote>{google.note}</RowNote> : null}
 
       <Sheet
         visible={sheet === 'disconnect'}

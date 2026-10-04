@@ -9,6 +9,7 @@ import {
   mapConnectError,
   PENDING_CONNECT_KEY,
 } from '../../src/api/remote/google-calendar';
+import { EXPO_GO_IP_CALENDAR, isExpoGoIpRedirectError } from '../../src/api/remote/expo-go-redirect';
 import { createProductApi } from '../../src/api/remote/http';
 import { isApiError } from '../../src/api/types';
 import { googleSettingsKey } from '../../src/services/google-calendar/settings';
@@ -190,7 +191,7 @@ test('on the web the page goes to Google, and the session that comes back is cap
   assert.deepEqual(await s.account.connect(), { status: 'redirecting' });
   assert.equal(s.oauth[0]?.credentials.options?.skipBrowserRedirect, false);
   assert.equal(s.oauth[0]?.credentials.options?.redirectTo, 'http://localhost:8081/auth/callback');
-  assert.equal(await s.account.returnsToCalendar(), true);
+  assert.equal(await s.account.returnTo(), 'privacy', '/auth/callback goes back to Data and privacy');
 
   // The page loads again; supabase-js reports the session from the URL.
   const session = googleSession();
@@ -198,14 +199,34 @@ test('on the web the page goes to Google, and the session that comes back is cap
   assert.deepEqual([first, second], ['stored', 'stored'], 'two listeners share one capture');
   assert.equal(await s.account.capture(session), 'ignored', 'once stored, the marker is gone');
   assert.equal(s.tokens()?.access_token, 'google-access-1');
-  assert.equal(await s.account.returnsToCalendar(), true);
+  assert.equal(await s.account.returnTo(), 'privacy');
+});
+
+test('a connect started on Review goes back to Review, even after its marker is gone', async () => {
+  const s = setup({ identities: ['google'], deps: { platform: 'web', redirectUrl: (path) => `http://localhost:8081/${path}` } });
+  assert.deepEqual(await s.account.connect({ from: 'review' }), { status: 'redirecting' });
+  assert.equal(JSON.parse(s.storage.items.get(PENDING_CONNECT_KEY)!).from, 'review');
+  assert.equal(await s.account.returnTo(), 'review');
+  assert.equal(await s.account.capture(googleSession()), 'stored');
+  assert.equal(s.storage.items.has(PENDING_CONNECT_KEY), false);
+  assert.equal(await s.account.returnTo(), 'review', 'a capture a moment ago still counts');
+  s.tick(5 * 60_000);
+  assert.equal(await s.account.returnTo(), null, 'later callbacks are ordinary sign-ins');
+
+  // A marker written by an older build has no screen: Data and privacy.
+  const older = setup();
+  await older.storage.setItem(
+    PENDING_CONNECT_KEY,
+    JSON.stringify({ user_id: USER_ID, started_at: new Date('2026-10-05T08:00:00Z').getTime(), restore: null, stale: null }),
+  );
+  assert.equal(await older.account.returnTo(), 'privacy');
 });
 
 test('a plain Google sign-in never stores calendar tokens', async () => {
   const s = setup();
   assert.equal(await s.account.capture(googleSession()), 'ignored');
   assert.equal(s.tokens(), null);
-  assert.equal(await s.account.returnsToCalendar(), false);
+  assert.equal(await s.account.returnTo(), null);
 });
 
 test("the Google token from before the connect (an earlier sign-in) is never taken for the calendar's", async () => {
@@ -307,6 +328,25 @@ test('connect errors read clearly: manual linking off, a Google account taken, o
   await assert.rejects(offline.account.connect(), (error) => isApiError(error, 'offline'));
 
   assert.equal(mapConnectError(authError('unexpected_failure')).message, "Google Calendar didn't connect. Try again.");
+});
+
+test('Expo Go on an IP address stops before Google, since Supabase could not return there', async () => {
+  for (const host of ['10.250.163.235', '[fe80::1]']) {
+    const s = setup({ deps: { redirectUrl: (path) => `exp://${host}:8081/--/${path}` } });
+    await assert.rejects(
+      s.account.connect({ from: 'review' }),
+      (error) => isExpoGoIpRedirectError(error) && isApiError(error, 'validation') && error.message === EXPO_GO_IP_CALENDAR,
+    );
+    assert.deepEqual(s.oauth, [], 'Google never opens');
+    assert.equal(s.storage.items.has(PENDING_CONNECT_KEY), false, 'no connect is pending');
+    assert.equal(await s.account.returnTo(), null);
+  }
+
+  for (const host of ['10.250.163.235.nip.io', 'abc-anonymous-8081.exp.direct']) {
+    const s = setup({ deps: { redirectUrl: (path) => `exp://${host}:8081/--/${path}` } });
+    assert.equal((await s.account.connect()).status, 'connected', host);
+    assert.equal(s.oauth[0]?.credentials.options?.redirectTo, `exp://${host}:8081/--/auth/callback`);
+  }
 });
 
 /* -------------------------------------------------------------- Refresh */

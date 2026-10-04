@@ -8,20 +8,22 @@ import { deviceTimezone, stepIsComplete, useOnboardingDraft } from '@/state/onbo
 import { useTheme } from '@/theme';
 
 import { useBottomBarInset } from './bottom-bar-inset';
-import { useCalendarAccess } from './calendar-access';
-import { CalendarRow } from './calendar-row';
+import { ReviewCalendarRows } from './calendar-rows';
 import { ReviewRows } from './review-rows';
 import { useBuildFirstPlan } from './use-build-first-plan';
 
 /** Room for the one-line failure message above Try again. */
 const FAILURE_LINE = 52;
 
-/** 4 Review (and 4.1, calendar access off): every answer once, calendar access, Build plan. */
+/**
+ * 4 Review (and 4.1, calendar access off): every answer once, the calendars
+ * (the phone's, and Google Calendar where Google sign-in is on), Build plan.
+ * Neither calendar is required to build the plan.
+ */
 export function ReviewScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const [draft] = useOnboardingDraft();
-  const calendar = useCalendarAccess();
   const build = useBuildFirstPlan();
   const complete = ONBOARDING_ORDER.every((section) => stepIsComplete(section, draft));
   const failedInset = useBottomBarInset(FAILURE_LINE);
@@ -36,13 +38,7 @@ export function ReviewScreen() {
         </Col>
         <View>
           <ReviewRows draft={draft} />
-          <CalendarRow
-            access={calendar.access}
-            canAskAgain={calendar.canAskAgain}
-            requesting={calendar.requesting}
-            onConnect={() => void calendar.connect()}
-            onOpenSettings={calendar.openSettings}
-          />
+          <ReviewCalendarRows />
         </View>
         <Row gap={8}>
           <Icon name="globe" size={16} color={colors.textTertiary} />

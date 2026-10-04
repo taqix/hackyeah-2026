@@ -1,7 +1,8 @@
 /**
- * Google Calendar on Data and privacy: connect, the tokens behind it, the two
- * choices (plan around it, add sessions to it) and disconnect. Pure: Auth,
- * storage, fetch and the browser arrive in RemoteDeps, so Node tests use fakes.
+ * Google Calendar on Data and privacy and on onboarding Review: connect, the
+ * tokens behind it, the two choices (plan around it, add sessions to it) and
+ * disconnect. Pure: Auth, storage, fetch and the browser arrive in
+ * RemoteDeps, so Node tests use fakes.
  *
  * Connecting is a Google sign-in through Supabase Auth with the calendar
  * scopes and offline access: `signInWithOAuth` when the account already has a
@@ -36,6 +37,7 @@ import {
 import { ApiError, isApiError } from '../types';
 import { authRedirectParams, CALLBACK_PATH, exchangeAuthCode, mapAuthError } from './auth';
 import type { AuthErrorLike, AuthSessionData, AuthUser, OAuthOptions, RemoteDeps } from './deps';
+import { checkGoogleRedirect, EXPO_GO_IP_CALENDAR } from './expo-go-redirect';
 import { serverError, type ProductApi } from './http';
 import type { GoogleTokenResultDto } from './wire';
 
@@ -67,6 +69,12 @@ export interface GoogleCalendarStatus {
   hasMovoCalendar: boolean;
 }
 
+/**
+ * The screen a connect started on, so a connect that finishes on
+ * /auth/callback (the web page after Google) goes back there.
+ */
+export type GoogleConnectOrigin = 'privacy' | 'review';
+
 export type GoogleConnectResult =
   | { status: 'connected'; email: string | null }
   /** Closed or declined: nothing changed. */
@@ -80,8 +88,13 @@ export type CaptureOutcome = 'stored' | 'ignored' | 'other_account';
 export interface GoogleCalendarAccount {
   /** This account's connection and choices; null when signed out. */
   status(): Promise<GoogleCalendarStatus | null>;
-  /** From an explicit tap on Connect or Reconnect. Rejects with an ApiError whose message is ready to show. */
-  connect(): Promise<GoogleConnectResult>;
+  /**
+   * From an explicit tap on Connect or Reconnect (`from`: the screen, Data and
+   * privacy by default). Rejects with an ApiError whose message is ready to
+   * show, before opening Google when Google could not come back (Expo Go on an
+   * IP address).
+   */
+  connect(options?: { from?: GoogleConnectOrigin }): Promise<GoogleConnectResult>;
   /** Stores the Google tokens of a session that finished a pending connect. Never rejects. */
   capture(session: AuthSessionData): Promise<CaptureOutcome>;
   /** Deletes the tokens (and asks Google to revoke them); optionally removes the Movo calendar from Google first. */
@@ -95,11 +108,14 @@ export interface GoogleCalendarAccount {
   syncExport(sessions: readonly ExportSession[], range: ExportRange): Promise<ExportResult | null>;
   /** Deletes the Movo calendar from Google. False when there was none. */
   removeExportCalendar(): Promise<boolean>;
-  /** Whether /auth/callback belongs to a Google Calendar connect (go back to Data and privacy). */
-  returnsToCalendar(): Promise<boolean>;
-  /** A message for Data and privacy about a connect that finished away from it (web, another account). */
+  /**
+   * Where /auth/callback goes back to when it belongs to a Google Calendar
+   * connect: the screen the connect started on. Null for any other callback.
+   */
+  returnTo(): Promise<GoogleConnectOrigin | null>;
+  /** A message for the connect's screen about a connect that finished away from it (web, another account). */
   notice(): string | null;
-  /** Stores a notice for Data and privacy (a web connect that failed on /auth/callback); null clears it. */
+  /** Stores a notice for the connect's screen (a web connect that failed on /auth/callback); null clears it. */
   setNotice(message: string | null): void;
   /** Forgets a connect in progress (sign-out). */
   forgetPending(): Promise<void>;
@@ -119,6 +135,8 @@ interface PendingConnect {
    * it back (a reload, the app returning to the foreground).
    */
   stale: string | null;
+  /** The screen the connect started on; Data and privacy when missing (a marker from an older build). */
+  from?: GoogleConnectOrigin;
 }
 
 export const PENDING_CONNECT_KEY = 'movo.google-calendar.connect.v1';
@@ -231,6 +249,8 @@ export function createGoogleCalendarAccount(
   const captures = new Map<string, Promise<CaptureOutcome>>();
   let notice: string | null = null;
   let lastCapture = 0;
+  /** The screen of the last connect that finished (stored, or another account), after its marker is gone. */
+  let lastFrom: GoogleConnectOrigin = 'privacy';
 
   const notify = () => {
     for (const listener of listeners) listener();
@@ -300,7 +320,7 @@ export function createGoogleCalendarAccount(
       const value = JSON.parse(raw) as PendingConnect;
       if (typeof value.user_id !== 'string' || typeof value.started_at !== 'number') return null;
       if (now() - value.started_at > PENDING_TTL_MS) return null;
-      return value;
+      return { ...value, from: value.from === 'review' ? 'review' : 'privacy' };
     } catch {
       return null;
     }
@@ -317,6 +337,7 @@ export function createGoogleCalendarAccount(
     // The token from before this connect, brought back by a reload or a refresh event: not the calendar's.
     if (pending.stale && pending.stale === tokenFingerprint(providerToken)) return 'ignored';
     const userId = session.user.id;
+    lastFrom = pending.from ?? 'privacy';
     if (pending.user_id !== userId) {
       // Google signed in a different Movo account: put the person's own session back.
       await clearPending();
@@ -386,8 +407,11 @@ export function createGoogleCalendarAccount(
 
   /* --------------------------------------------------------- Connect */
 
-  async function connect(): Promise<GoogleConnectResult> {
+  async function connect(from: GoogleConnectOrigin): Promise<GoogleConnectResult> {
     notice = null;
+    const redirectTo = deps.redirectUrl(CALLBACK_PATH);
+    // Expo Go on a LAN IP: Supabase would send Google's answer to the Site URL instead.
+    checkGoogleRedirect(redirectTo, EXPO_GO_IP_CALENDAR);
     const { data: current, error: sessionError } = await call(() => auth.getSession());
     if (sessionError) throw mapConnectError(sessionError);
     const session = current.session;
@@ -400,7 +424,6 @@ export function createGoogleCalendarAccount(
     const hint = text(google?.identity_data?.email);
 
     const web = deps.platform === 'web';
-    const redirectTo = deps.redirectUrl(CALLBACK_PATH);
     const oauth: OAuthOptions = {
       redirectTo,
       scopes: GOOGLE_CALENDAR_SCOPE,
@@ -416,8 +439,12 @@ export function createGoogleCalendarAccount(
       started_at: startedAt,
       restore: google ? { access_token: session.access_token, refresh_token: session.refresh_token } : null,
       stale: previousToken ? tokenFingerprint(previousToken) : null,
+      from,
     });
-    debugLog('calendar', `→ google calendar connect (${google ? 'google sign-in' : 'link google'}) on ${deps.platform}`);
+    debugLog(
+      'calendar',
+      `→ google calendar connect (${google ? 'google sign-in' : 'link google'}) on ${deps.platform} from ${from}`,
+    );
 
     let start: Awaited<ReturnType<typeof auth.signInWithOAuth>>;
     try {
@@ -480,10 +507,10 @@ export function createGoogleCalendarAccount(
   }
 
   /** Debug builds: the outcome and how long it took; codes only. */
-  async function tracedConnect(): Promise<GoogleConnectResult> {
+  async function tracedConnect(options: { from?: GoogleConnectOrigin } = {}): Promise<GoogleConnectResult> {
     const took = startTimer();
     try {
-      const result = await connect();
+      const result = await connect(options.from ?? 'privacy');
       debugLog('calendar', `✓ google calendar connect: ${result.status} ${took()}`);
       return result;
     } catch (error) {
@@ -578,8 +605,10 @@ export function createGoogleCalendarAccount(
     freeTimeSource,
     syncExport,
     removeExportCalendar,
-    async returnsToCalendar() {
-      return notice !== null || now() - lastCapture < RECENT_MS || !!(await readPending());
+    async returnTo() {
+      const pending = await readPending();
+      if (pending) return pending.from ?? 'privacy';
+      return notice !== null || now() - lastCapture < RECENT_MS ? lastFrom : null;
     },
     notice: () => notice,
     setNotice(message) {

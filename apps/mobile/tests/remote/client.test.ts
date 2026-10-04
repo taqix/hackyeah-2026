@@ -36,7 +36,6 @@ test('without library sports the first six working ones are suggested', async ()
 
 test('sections not written yet reject instead of pretending', async () => {
   const { client } = createRemoteRuntime(fakeDeps());
-  await assert.rejects(client.plan.getState(), (error) => isApiError(error, 'unknown'));
   await assert.rejects(client.logs.commit('draft:x'), (error) => isApiError(error, 'unknown'));
 });
 

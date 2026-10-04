@@ -43,7 +43,8 @@ export function buildSteps(session: GymSession, sport: SportDefinition | null | 
       description: exercise.description || def?.description || '',
       tracking,
       perSide: def?.per_side ?? false,
-      usesWeight: tracking === 'reps' && (def?.uses_weight ?? false),
+      // An exercise the library doesn't know (a planner's own ID) may use weights: offer the stepper.
+      usesWeight: tracking === 'reps' && (def ? (def.uses_weight ?? false) : true),
       weightStep: def?.weight_step_kg ?? 1,
       restSeconds: def?.rest_seconds ?? DEFAULT_REST_SECONDS,
       sets: Math.max(1, exercise.sets),

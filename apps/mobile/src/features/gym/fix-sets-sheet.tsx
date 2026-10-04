@@ -12,6 +12,8 @@ import { NumberStepper } from './number-stepper';
 
 export type FixTarget = { step: GymStep; sets: LoggedSet[] };
 
+const RING_ROOM = 5;
+
 export type FixSetsSheetProps = {
   log: ActivityLog;
   /** The exercise whose sets are open, or null when closed. */
@@ -48,7 +50,7 @@ function FixBody({ log, target, onClose }: { log: ActivityLog; target: FixTarget
 
   return (
     <>
-      <ScrollView style={styles.list} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
         {draft.map((set, i) => (
           <Col key={set.set_index} gap={8}>
             <Text variant="label" tone="secondary">
@@ -100,7 +102,9 @@ function FixBody({ log, target, onClose }: { log: ActivityLog; target: FixTarget
 }
 
 const styles = StyleSheet.create({
-  list: { flexGrow: 0, flexShrink: 1 },
+  // Room for a focused stepper's ring, which the scroll view would clip (and scroll to).
+  list: { flexGrow: 0, flexShrink: 1, margin: -RING_ROOM },
+  listContent: { gap: 16, padding: RING_ROOM },
   row: { flexDirection: 'row', gap: 8 },
   error: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 4 },
 });

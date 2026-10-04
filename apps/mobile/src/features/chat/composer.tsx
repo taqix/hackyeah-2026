@@ -1,7 +1,7 @@
 import { type ReactNode, type Ref, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Icon, IconButton, type IconName, Text } from '@/components/ui';
+import { Icon, IconButton, type IconName, noBrowserOutline, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 import { FineLine } from './bubbles';
@@ -198,7 +198,8 @@ const styles = StyleSheet.create({
     margin: 0,
     textAlignVertical: 'center',
     backgroundColor: 'transparent',
-    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : null),
+    // The field draws its own focus ring; hide the browser's square one inside it.
+    ...noBrowserOutline,
   },
   inputWithAbout: { paddingLeft: 7 },
   send: { marginBottom: 4 },

@@ -51,7 +51,7 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Pozwól aplikacji sprawdzić terminy w Twoim kalendarzu i dodawać zaplanowane aktywności.",
+          "calendarPermission": "Allow Movo to check when you're busy and add your planned sessions to your calendar.",
           "remindersPermission": false
         }
       ],

@@ -13,10 +13,16 @@ mobile abstraction without exposing Expo shared objects to callers.
 
 - Included: full calendar permissions, calendar discovery, range reads, and adding
   one-time timed or all-day events on iOS and Android.
-- Deferred: calendar UI, automatic plan export, recurring event creation,
-  edits/deletions, background sync, and backend upload.
+- Included since the Supabase integration:
+  - event updates and deletions;
+  - the app's own "Movo" calendar;
+  - an opt-in export of planned sessions (see [Plan export](#plan-export-opt-in));
+  - the connection rows on Review and Data and privacy.
+- Deferred: recurring event creation and background sync. The export runs
+  only while the app is open.
 - Free-slot calculation builds on this API in the separate
-  [calendar availability service](calendar-availability.md).
+  [calendar availability service](calendar-availability.md). Its free time
+  goes to the backend with plan generation and chat.
 - Affected area: mobile only. No API contracts or database changes.
 
 ## Acceptance criteria
@@ -126,12 +132,17 @@ every event as busy. Android's Expo API only reads visible calendars, even with
 explicit IDs; `DeviceCalendar.isVisible` exposes that native flag. Calendars and
 events must already exist/sync on the device; this is not a cloud calendar API.
 
-No arbitrary default calendar is chosen and no calendar is created automatically.
-An empty calendar list is a valid state. Calendar titles and event details stay
-on the device: the service neither logs them nor sends them to NestJS/AI. OS
-permissions belong to the app installation, not a Supabase account. Guest and
-signed-in users therefore require the same explicit OS connection action; a
-future screen must not auto-connect guests or auto-export generated plans.
+No arbitrary default calendar is chosen. The only calendar the app creates is
+its own "Movo" calendar, and only when the person turns the export on. An empty
+calendar list is a valid state. Calendar titles and event details stay on the
+device: the service neither logs them nor sends them to the backend or AI. Only
+free intervals leave the phone (see [calendar availability](calendar-availability.md)).
+OS permissions belong to the app installation, not a Supabase account. The
+app never connects or exports without an explicit tap.
+
+`updateEvent(id, patch)` changes the title, times, notes or time zone of a timed
+event. Start and end change together. `deleteEvent(id)` removes one event. Both
+check access first and are never retried.
 
 Errors: `unavailable`, `permission-denied`, `invalid-input`, `calendar-not-found`,
 `calendar-read-only`, `native-error`. Native errors retain their original
@@ -139,16 +150,63 @@ Errors: `unavailable`, `permission-denied`, `invalid-input`, `calendar-not-found
 can be ambiguous if the OS saved before reporting failure, so check the calendar
 before retrying rather than creating duplicates automatically.
 
+## Plan export (opt-in)
+
+"Add sessions to my calendar" on Data and privacy is an extra beyond the
+design. It is off by default.
+
+- **The setting:** stored per device in AsyncStorage
+  (`movo.calendar-export.v1`, `src/state/calendar-export.ts`).
+- **Turning it on:** asks for calendar access when needed (Settings once the
+  phone stops asking).
+- **Turning it off:** asks first, then deletes the Movo calendar with its
+  events.
+
+The calendar:
+
+- `ensureAppCalendar()` finds the writable calendar titled "Movo", or creates
+  it.
+  - iOS: in the default calendar's source, else the local source.
+  - Android: as a local account calendar, owned by the app.
+- `deleteAppCalendar()` removes only writable "Movo" calendars.
+- The Movo calendar never counts as busy when availability is captured.
+
+How the sync works:
+
+- `syncPlanToCalendar(sessions, range)` (`services/calendar/plan-export.ts`)
+  lists the Movo events in the range.
+- It matches them to sessions by a `movo-activity:<session id>` line at the
+  end of the notes. Each event has the session's title, start, end and
+  description, with the device's time zone.
+- It creates missing events, updates changed ones, and deletes marker events
+  whose session is gone. Duplicates of one marker collapse to one.
+- Events without a marker, and anything outside the range, are left alone.
+- A second run with the same plan writes nothing.
+
+When it runs:
+
+- `<CalendarExportSync />` (`features/calendar-export`) syncs today through
+  `planned_through`. It reads the plan through `usePlanState` and
+  `useSessionsInRange`; skipped sessions are left out.
+- It runs 1.5 s after the plan changes, and again when the app comes back to
+  the foreground.
+- Writes run one at a time, and removal waits for a running sync.
+- Failures stay quiet: the row says it will try again.
+
 ## Verification
 
 Completed locally:
 
 - `npm run typecheck`: passes for the app and isolated Node test graph.
 - `npm run lint`: passes.
-- `npm run test:calendar --workspace=@hackyeah/mobile`: 17 CPU tests pass in
+- `npm run test:calendar --workspace=@hackyeah/mobile`: 62 CPU tests pass in
   each of Europe/Warsaw and America/Los_Angeles. Covers permissions/revocation,
   range boundaries, recurrence keys, chunk deduplication, invalid writes,
   uncertain-save errors, and all-day UTC/local conversion across DST.
+  - `tests/calendar-export.test.ts` runs the export against an in-memory
+    driver (`tests/calendar-fake-driver.ts`). It covers create, update and
+    delete, an idempotent second run, untouched unmarked events, duplicates,
+    removal, and the Movo calendar not counting as busy.
 - `npx expo config --type introspect --json` in `apps/mobile`: verified both
   iOS calendar descriptions and Android READ/WRITE_CALENDAR; no reminders keys.
 - Metro `npx expo export:embed --entry-file .expo/calendar-bundle-check.js
@@ -173,10 +231,13 @@ Device smoke test (pending; use a disposable test calendar):
 5. Revoke permission in Settings and retry: receive permission-denied. Confirm
    empty and read-only calendars do not trigger an accidental write elsewhere.
 6. In Expo Go/web, verify an unavailable state; no calendar prompt or data access.
+7. On Data and privacy, turn on Add sessions to my calendar. A "Movo" calendar
+   appears with the planned sessions. Change the plan in chat: the events
+   follow. Turn it off and confirm: the Movo calendar is gone, other
+   calendars are unchanged.
 
-The repository still contains a starter UI. There is no calendar screen to run
-these steps from yet; invoke the service from the consuming screen or a temporary
-development harness. The full sign-in/plan/chat smoke journey is not implemented.
+Steps 1, 2 and 7 run from Review's Calendar row and Data and privacy. The
+others need a temporary development harness.
 
 ## Deployment and rollback
 

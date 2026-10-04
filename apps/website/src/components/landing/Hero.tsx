@@ -1,25 +1,19 @@
+import { GUEST_ENTRY, SIGN_IN } from "../../appLinks";
 import { Button, Card, Icon } from "../../design-system";
-import { COMFORT_OPTIONS, type ComfortValue } from "../../domain";
+import { COMFORT_OPTIONS, ONBOARDING_QUESTIONS } from "../../domain";
 import type { Breakpoint } from "../../hooks/useMediaQuery";
-import * as route from "../../routing";
 import { Kicker, StepDots } from "../common";
 import { NOTICES } from "./content";
 
-export interface HeroProps {
-  comfort: ComfortValue | null;
-  /** Answering here starts the demo at question 2. */
-  onAnswer: (comfort: ComfortValue) => void;
-  breakpoint: Breakpoint;
-}
-
-/** The first question, asked on the landing page so the demo starts with one tap. */
-function QuestionCard({ comfort, onAnswer, breakpoint }: HeroProps) {
+/** The app's first question, shown on the landing page so trying it starts with one tap:
+    every answer opens the app as a guest. */
+function QuestionCard({ breakpoint }: { breakpoint: Breakpoint }) {
   return (
     <Card padding={breakpoint === "phone" ? 20 : 28}>
       <div className="s-qcard">
         <div className="s-row" style={{ gap: 14 }}>
-          <Kicker style={{ flex: "none" }}>Start here · 1 of {route.LAST_STEP}</Kicker>
-          <StepDots filled={1} />
+          <Kicker style={{ flex: "none" }}>Start here · 1 of {ONBOARDING_QUESTIONS}</Kicker>
+          <StepDots filled={1} total={ONBOARDING_QUESTIONS} />
         </div>
         <div className="s-col" style={{ gap: 8 }}>
           <h2 className="s-h3">How does starting feel?</h2>
@@ -27,12 +21,11 @@ function QuestionCard({ comfort, onAnswer, breakpoint }: HeroProps) {
         </div>
         <div className="s-answers">
           {COMFORT_OPTIONS.map(option => (
-            <button
+            <a
               key={option.value}
-              type="button"
-              className={`s-answer${comfort === option.value ? " is-sel" : ""}`}
-              aria-label={`${option.label}, ${option.description}. Starts the demo.`}
-              onClick={() => onAnswer(option.value)}
+              className="s-answer"
+              href={GUEST_ENTRY}
+              aria-label={`${option.label}, ${option.description}. Opens the app as a guest.`}
             >
               <span className="s-disc44"><Icon name={option.icon} size={20} /></span>
               <span className="s-col" style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -40,16 +33,16 @@ function QuestionCard({ comfort, onAnswer, breakpoint }: HeroProps) {
                 <span className="s-adesc">{option.description}</span>
               </span>
               <span className="s-arrow"><Icon name="arrow-right" size={18} /></span>
-            </button>
+            </a>
           ))}
         </div>
-        <p className="s-cap">Pick one to start the demo.</p>
+        <p className="s-cap">Pick one to start as a guest.</p>
       </div>
     </Card>
   );
 }
 
-export function Hero({ comfort, onAnswer, breakpoint }: HeroProps) {
+export function Hero({ breakpoint }: { breakpoint: Breakpoint }) {
   return (
     <section className="s-hero" aria-labelledby="s-h1">
       <div className="s-hero-intro">
@@ -60,17 +53,15 @@ export function Hero({ comfort, onAnswer, breakpoint }: HeroProps) {
           get a gentle first week, then change it just by asking.
         </p>
         <div className="s-ctas">
-          <Button size="lg" iconRight="arrow-right" onClick={() => route.navigate(route.stepPath(route.FIRST_STEP))}>
-            Try it
-          </Button>
-          <Button size="lg" variant="secondary" icon="calendar" onClick={() => route.navigate(route.SAMPLE)}>
-            See a plan
-          </Button>
+          <Button size="lg" iconRight="arrow-right" href={GUEST_ENTRY}>Try it as a guest</Button>
+          <Button size="lg" variant="secondary" icon="log-in" href={SIGN_IN}>Sign in</Button>
         </div>
-        <p className="s-capline"><Icon name="info" size={16} />Try the demo. No account needed.</p>
+        <p className="s-capline">
+          <Icon name="info" size={16} />No account needed. As a guest, your plan stays in this browser.
+        </p>
       </div>
       <div className="s-hero-card">
-        <QuestionCard comfort={comfort} onAnswer={onAnswer} breakpoint={breakpoint} />
+        <QuestionCard breakpoint={breakpoint} />
       </div>
       <div className="s-hero-notice s-notice">
         <h2 className="s-label" style={{ fontFamily: "var(--font-body)", letterSpacing: 0 }}>Worth noticing</h2>

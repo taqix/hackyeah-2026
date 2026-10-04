@@ -27,11 +27,7 @@ export function useBreakpoint(): Breakpoint {
   return desktop ? "desktop" : tablet ? "tablet" : "phone";
 }
 
-export function usePrefersReducedMotion(): boolean {
-  return useMediaQuery(REDUCED_MOTION_QUERY);
-}
-
-/** The same question outside of rendering, for scroll behaviour and timings. */
+/** Whether the reader has asked for less motion, for scroll behaviour. */
 export function prefersReducedMotion(): boolean {
   return matchMedia(REDUCED_MOTION_QUERY).matches;
 }

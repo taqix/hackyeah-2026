@@ -1,4 +1,4 @@
-/* Fixed content for the phone mockups: a picture of Ana's first week, not live demo state.
+/* Fixed content for the phone mockups: a picture of Ana's first week, not live app data.
    Drawn from design/prototype — Home 5, onboarding 2 and chat 8.3. */
 
 import type { ChangeCardProps } from "../../common";

@@ -1,19 +1,16 @@
-/* On every route: scroll where the reader expects, move focus to the new heading, and
-   name the page. Focus only moves after the first render, so arriving does not steal it. */
+/* On every route: scroll where the reader expects and move focus to the new heading.
+   Focus only moves after the first render, so arriving does not steal it. */
 
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "./useMediaQuery";
 import type { Route } from "../routing";
 
-/** The heading of the page currently shown; each view marks exactly one. */
+/** The page's heading, which the landing page marks once. */
 const PAGE_HEADING = "main h1[data-page-title]";
 
 /** Clearance for the sticky top bar, plus a little air above the heading. */
 const STICKY_HEADER = 64;
 const HEADING_AIR = 32;
-
-const SITE_TITLE = "Movo · Everyone starts somewhere";
-const DEMO_TITLE = "Movo demo";
 
 function scrollBehaviour(immediately: boolean): ScrollBehavior {
   return prefersReducedMotion() || immediately ? "auto" : "smooth";
@@ -38,16 +35,10 @@ function scrollToTop(isFirstRender: boolean): void {
   if (heading && !isFirstRender) heading.focus({ preventScroll: true });
 }
 
-function documentTitle(route: Route): string {
-  if (route.view === "landing") return SITE_TITLE;
-  const heading = document.querySelector(PAGE_HEADING);
-  return heading?.textContent ? `${heading.textContent} · ${DEMO_TITLE}` : DEMO_TITLE;
-}
-
 export interface RouteFocusInput {
   route: Route;
   navigationId: number;
-  /** False while a redirect is pending, when the view on screen is about to be replaced. */
+  /** False while the page is being left for the app, when there is nothing to show. */
   active: boolean;
 }
 
@@ -57,11 +48,10 @@ export function useRouteFocus({ route, navigationId, active }: RouteFocusInput):
     if (!active) return;
     const isFirstRender = firstRender.current;
     firstRender.current = false;
-    /* Wait for the new view to be laid out before measuring or focusing it. */
+    /* Wait for the page to be laid out before measuring or focusing it. */
     const frame = requestAnimationFrame(() => {
       if (route.anchor) scrollToSection(route.anchor, isFirstRender);
       else scrollToTop(isFirstRender);
-      document.title = documentTitle(route);
     });
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps

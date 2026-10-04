@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-import { Icon, PressableScale, Text } from '@/components/ui';
+import { Icon, noBrowserOutline, PressableScale, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 import { formatKg } from './format';
@@ -48,6 +48,7 @@ export function NumberStepper({
 }: NumberStepperProps) {
   const { colors, fontFamily, radius } = useTheme();
   const [draft, setDraft] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const shown = draft ?? (value == null ? '' : decimal ? formatKg(value) : String(value));
   const nudge = (dir: 1 | -1) => {
     const base = value ?? (dir > 0 ? 0 : min);
@@ -80,16 +81,30 @@ export function NumberStepper({
       accessibilityLabel={label}
       style={[
         styles.box,
-        { borderRadius: radius.control, backgroundColor: colors.surfaceCard, borderColor: colors.borderStrong },
+        {
+          borderRadius: radius.control,
+          backgroundColor: colors.surfaceCard,
+          borderColor: focused ? colors.accent : colors.borderStrong,
+        },
       ]}>
+      {/* Typing a number: the Input's accent border and soft ring, around the whole stepper. */}
+      {focused ? (
+        <View style={[styles.ring, { borderRadius: radius.control + 4, borderColor: colors.focusRing }]} />
+      ) : null}
       {button(-1)}
       <View style={styles.middle}>
         <TextInput
           value={shown}
           placeholder="–"
           placeholderTextColor={colors.textTertiary}
-          onFocus={() => setDraft(shown)}
-          onBlur={() => setDraft(null)}
+          onFocus={() => {
+            setFocused(true);
+            setDraft(shown);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            setDraft(null);
+          }}
           onChangeText={(text) => {
             setDraft(text);
             const n = parse(text, decimal);
@@ -131,6 +146,15 @@ const styles = StyleSheet.create({
     padding: 6,
     borderWidth: 1,
   },
+  ring: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    bottom: -5,
+    left: -5,
+    borderWidth: 4,
+    pointerEvents: 'none',
+  },
   button: {
     width: BUTTON,
     height: BUTTON,
@@ -152,5 +176,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     height: 26,
     fontVariant: ['tabular-nums'],
+    // The stepper draws its own focus ring; hide the browser's square one around the number.
+    ...noBrowserOutline,
   },
 });

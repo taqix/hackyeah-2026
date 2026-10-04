@@ -31,6 +31,7 @@ function Hit({ sport, label, added, divider, onPress }: HitProps) {
       onPress={onPress}
       disabled={!pickable}
       scaleTo={0.99}
+      focusRing="inset"
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
       aria-disabled={!pickable} aria-selected={added}
@@ -135,7 +136,8 @@ export function SportSearch({ sports, selected, onAdd }: SportSearchProps) {
 
 const styles = StyleSheet.create({
   clear: { marginRight: -10 },
-  list: { borderWidth: 1, paddingVertical: 4 },
+  // Clips a pressed row's fill to the rounded corners.
+  list: { borderWidth: 1, paddingVertical: 4, overflow: 'hidden' },
   hit: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,7 +1,8 @@
 import { type ReactNode, type Ref, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Icon, IconButton, type IconName, Text } from '@/components/ui';
+import { useBottomEdgePadding } from '@/components/layout';
+import { Icon, IconButton, type IconName, noBrowserOutline, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 import { FineLine } from './bubbles';
@@ -26,8 +27,6 @@ export type ComposerProps = {
   onRemoveAbout: () => void;
   /** Replaces the hint line (an Undo that didn't go through). */
   top?: ReactNode;
-  /** Space under the box: the home indicator, or a little air above the keyboard. */
-  bottomPadding: number;
   inputRef?: Ref<TextInput>;
 };
 
@@ -42,10 +41,11 @@ export function Composer({
   about,
   onRemoveAbout,
   top,
-  bottomPadding,
   inputRef,
 }: ComposerProps) {
   const { colors, layout, type } = useTheme();
+  // Under the box: the home indicator, or a little air above the keyboard (Screen lifts the box onto it).
+  const bottomPadding = useBottomEdgePadding(16);
   const [focused, setFocused] = useState(false);
   // Web textareas don't grow by themselves: follow the content height, back to one line when cleared.
   const [webContentHeight, setWebContentHeight] = useState(0);
@@ -198,7 +198,8 @@ const styles = StyleSheet.create({
     margin: 0,
     textAlignVertical: 'center',
     backgroundColor: 'transparent',
-    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : null),
+    // The field draws its own focus ring; hide the browser's square one inside it.
+    ...noBrowserOutline,
   },
   inputWithAbout: { paddingLeft: 7 },
   send: { marginBottom: 4 },

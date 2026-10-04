@@ -8,6 +8,8 @@ export { Disc, type DiscProps, type DiscTone } from './disc';
 export { Divider, type DividerProps } from './divider';
 export { ExerciseMedia, type ExerciseMediaProps } from './exercise-media';
 export { ExerciseRow, type ExerciseRowProps } from './exercise-row';
+export { FocusRing } from './focus-ring';
+export { noBrowserOutline } from './focus-visible';
 export { Icon, iconNames, type IconName, type IconProps } from './icon';
 export { IconButton, type IconButtonProps, type IconButtonVariant } from './icon-button';
 export { Input, type InputProps } from './input';

@@ -10,7 +10,6 @@ import { Body, Col, Content, H1, Screen } from '@/components/layout';
 import { GateLoading } from '@/navigation/gate-states';
 
 import { MIN_PASSWORD_LENGTH } from './auth-routes';
-import { KeyboardFrame } from './keyboard-frame';
 import { LinkProblem } from './link-problem';
 import { RequestAlert } from './notes';
 import { setRecoveryPending, useRecoveryPending } from './recovery';
@@ -68,48 +67,46 @@ export function ResetPasswordScreen({ params }: { params: AuthRedirectParams }) 
 
   return (
     <Screen>
-      <KeyboardFrame>
-        <Content gap={20} automaticallyAdjustKeyboardInsets={false}>
-          <Col gap={8}>
-            <H1>Set a new password</H1>
-            <Body>{email ? `Pick a new password for ${email}.` : 'Pick a new password for your account.'}</Body>
-          </Col>
-          <Input
-            label="New password"
-            secure
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setTooShort(false);
-              if (update.isError) update.reset();
-            }}
-            hint="At least 8 characters."
-            error={fieldError}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoFocus
-            returnKeyType="go"
-            onSubmitEditing={(event) => submit(event.nativeEvent.text)}
-          />
-          {requestError ? (
-            isApiError(requestError, 'unauthorized') ? (
-              <RequestAlert
-                error={requestError}
-                message="Your reset link has expired. Ask for a new one when you sign in."
-                onRetry={() => submit()}
-                action={{ label: 'Back to sign in', onPress: () => router.replace('/welcome') }}
-              />
-            ) : (
-              <RequestAlert error={requestError} onRetry={() => submit()} />
-            )
-          ) : null}
-          <Button size="lg" fullWidth disabled={!password} loading={update.isPending} onPress={() => submit()}>
-            Save password
-          </Button>
-        </Content>
-      </KeyboardFrame>
+      <Content gap={20}>
+        <Col gap={8}>
+          <H1>Set a new password</H1>
+          <Body>{email ? `Pick a new password for ${email}.` : 'Pick a new password for your account.'}</Body>
+        </Col>
+        <Input
+          label="New password"
+          secure
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            setTooShort(false);
+            if (update.isError) update.reset();
+          }}
+          hint="At least 8 characters."
+          error={fieldError}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoFocus
+          returnKeyType="go"
+          onSubmitEditing={(event) => submit(event.nativeEvent.text)}
+        />
+        {requestError ? (
+          isApiError(requestError, 'unauthorized') ? (
+            <RequestAlert
+              error={requestError}
+              message="Your reset link has expired. Ask for a new one when you sign in."
+              onRetry={() => submit()}
+              action={{ label: 'Back to sign in', onPress: () => router.replace('/welcome') }}
+            />
+          ) : (
+            <RequestAlert error={requestError} onRetry={() => submit()} />
+          )
+        ) : null}
+        <Button size="lg" fullWidth disabled={!password} loading={update.isPending} onPress={() => submit()}>
+          Save password
+        </Button>
+      </Content>
     </Screen>
   );
 }

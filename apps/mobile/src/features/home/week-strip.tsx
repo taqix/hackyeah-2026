@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 
 import type { LocalDate } from '@/api/types';
-import { Icon, Text } from '@/components/ui';
+import { FocusRing, Icon, PressableScale, Text } from '@/components/ui';
 import { formatDayShort, fromLocalDate, weekDates } from '@/lib/dates';
 import { useTheme } from '@/theme';
 
 import { type StripDay, stripDayLabel } from './home-model';
 
 const PULSE = { '50%': { opacity: 0.45 } };
+/** A day's disc. */
+const DISC = 40;
 
 type WeekStripProps = {
   days: StripDay[];
@@ -41,31 +43,44 @@ export function WeekStrip({ days, today, selected, onSelect }: WeekStripProps) {
               ? { bg: 'transparent', fg: colors.accentText }
               : { bg: 'transparent', fg: colors.textTertiary };
         return (
-          <Pressable
+          <PressableScale
             key={day.date}
             disabled={!onSelect}
             onPress={onSelect ? () => onSelect(day.date) : undefined}
+            focusRing="none"
             accessibilityRole={onSelect ? 'button' : undefined}
             accessibilityLabel={stripDayLabel(day, isToday)}
             aria-selected={onSelect ? isSelected : undefined}
             style={styles.day}>
-            <DayLetter date={day.date} isToday={isToday} />
-            <View
-              style={[
-                styles.disc,
-                { backgroundColor: disc.bg },
-                dashed && { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.textTertiary },
-              ]}>
-              <DayNumber date={day.date} color={disc.fg} />
-              {ring ? <View style={[styles.ring, { borderColor: colors.textPrimary }]} /> : null}
-              {day.state === 'done' ? (
-                <View style={[styles.check, { backgroundColor: colors.success, borderColor: colors.bgApp }]}>
-                  <Icon name="check" size={10} strokeWidth={3.25} color={colors.surfaceCard} />
+            {({ focusVisible }) => (
+              <>
+                <DayLetter date={day.date} isToday={isToday} />
+                {/* Not collapsable: a planned or rest day's disc and dot have no fill, so React Native
+                    would flatten them away, and Android re-creates them with only the new fill (a day
+                    done, a session planned): square. */}
+                <View
+                  collapsable={false}
+                  style={[
+                    styles.disc,
+                    { backgroundColor: disc.bg },
+                    dashed && { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.textTertiary },
+                  ]}>
+                  <DayNumber date={day.date} color={disc.fg} />
+                  {ring ? <View style={[styles.ring, { borderColor: colors.textPrimary }]} /> : null}
+                  {day.state === 'done' ? (
+                    <View style={[styles.check, { backgroundColor: colors.success, borderColor: colors.bgApp }]}>
+                      <Icon name="check" size={10} strokeWidth={3.25} color={colors.surfaceCard} />
+                    </View>
+                  ) : null}
+                  {focusVisible ? <FocusRing radius={DISC / 2} /> : null}
                 </View>
-              ) : null}
-            </View>
-            <View style={[styles.dot, { backgroundColor: day.state === 'planned' ? colors.accent : 'transparent' }]} />
-          </Pressable>
+                <View
+                  collapsable={false}
+                  style={[styles.dot, { backgroundColor: day.state === 'planned' ? colors.accent : 'transparent' }]}
+                />
+              </>
+            )}
+          </PressableScale>
         );
       })}
     </View>
@@ -142,9 +157,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   disc: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: DISC,
+    height: DISC,
+    borderRadius: DISC / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

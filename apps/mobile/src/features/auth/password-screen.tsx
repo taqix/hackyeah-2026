@@ -12,7 +12,6 @@ import { nameProblem } from '@/lib/person-name';
 import { useTheme } from '@/theme';
 
 import { type AuthMode, EMAIL_FORMAT_ERROR, MIN_PASSWORD_LENGTH, passwordRoute } from './auth-routes';
-import { KeyboardFrame } from './keyboard-frame';
 import { Legal } from './legal';
 import { RequestAlert, SentNote } from './notes';
 
@@ -128,125 +127,123 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   return (
     <Screen>
       <TopBar left={<BackButton />} />
-      <KeyboardFrame>
-        <Content ref={scrollRef} gap={20} automaticallyAdjustKeyboardInsets={false} onLayout={revealPassword}>
-          <Col gap={8}>
-            <H1>{signingIn ? 'Sign in' : 'Create your account'}</H1>
-            <Body>
-              {signingIn ? 'Enter the password for this email.' : 'Add your name and pick a password to set up your account.'}
-            </Body>
-          </Col>
-          <EmailChip email={email} onChange={changeEmail} />
-          {signingIn ? null : (
-            <Input
-              ref={nameRef}
-              label="Your name"
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                setNameError(null);
-              }}
-              hint="We'll use it to greet you."
-              error={nameError}
-              autoComplete="given-name"
-              textContentType="givenName"
-              autoCapitalize="words"
-              autoCorrect={false}
-              autoFocus
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => passwordRef.current?.focus()}
-            />
-          )}
+      <Content ref={scrollRef} gap={20} onLayout={revealPassword}>
+        <Col gap={8}>
+          <H1>{signingIn ? 'Sign in' : 'Create your account'}</H1>
+          <Body>
+            {signingIn ? 'Enter the password for this email.' : 'Add your name and pick a password to set up your account.'}
+          </Body>
+        </Col>
+        <EmailChip email={email} onChange={changeEmail} />
+        {signingIn ? null : (
           <Input
-            ref={passwordRef}
-            label={signingIn ? 'Password' : 'New password'}
-            secure
-            value={password}
+            ref={nameRef}
+            label="Your name"
+            value={name}
             onChangeText={(text) => {
-              setPassword(text);
-              setTooShort(false);
-              if (account.isError) account.reset();
+              setName(text);
+              setNameError(null);
             }}
-            hint={signingIn ? undefined : 'At least 8 characters.'}
-            error={fieldError}
-            autoComplete={signingIn ? 'current-password' : 'new-password'}
-            textContentType={signingIn ? 'password' : 'newPassword'}
-            autoCapitalize="none"
+            hint="We'll use it to greet you."
+            error={nameError}
+            autoComplete="given-name"
+            textContentType="givenName"
+            autoCapitalize="words"
             autoCorrect={false}
-            autoFocus={signingIn}
-            returnKeyType="go"
-            onFocus={() => {
-              passwordFocused.current = true;
-              revealPassword();
-            }}
-            onBlur={() => {
-              passwordFocused.current = false;
-            }}
-            onSubmitEditing={(event) => submit(event.nativeEvent.text)}
+            autoFocus
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
-          {requestError ? (
-            isApiError(requestError, 'email_taken') ? (
-              <RequestAlert
-                error={requestError}
-                message="An account already uses this email."
-                onRetry={() => submit()}
-                action={{ label: 'Sign in instead', onPress: () => switchMode('sign-in') }}
-              />
-            ) : isApiError(requestError, 'confirmation_required') ? (
-              <RequestAlert error={requestError} message={requestError.message} onRetry={() => submit()} />
-            ) : isApiError(requestError, 'validation') ? (
-              <RequestAlert
-                error={requestError}
-                message={EMAIL_FORMAT_ERROR}
-                onRetry={() => submit()}
-                action={{ label: 'Change email', onPress: changeEmail }}
-              />
-            ) : (
-              <RequestAlert error={requestError} onRetry={() => submit()} />
-            )
-          ) : null}
-          <Col gap={4}>
-            <Button size="lg" fullWidth disabled={!password} loading={account.isPending} onPress={() => submit()}>
-              {signingIn ? 'Sign in' : 'Create account'}
-            </Button>
-            {signingIn ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  loading={reset.isPending}
-                  onPress={sendReset}
-                  style={{ height: 44, alignSelf: 'center' }}>
-                  Forgot password?
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={() => switchMode('sign-up')}
-                  style={{ height: 44, alignSelf: 'center' }}>
-                  New here? Create an account
-                </Button>
-              </>
-            ) : null}
-          </Col>
-          {awaitingConfirmation ? (
-            <Col gap={12}>
-              <SentNote>Check your inbox to confirm, then sign in.</SentNote>
+        )}
+        <Input
+          ref={passwordRef}
+          label={signingIn ? 'Password' : 'New password'}
+          secure
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            setTooShort(false);
+            if (account.isError) account.reset();
+          }}
+          hint={signingIn ? undefined : 'At least 8 characters.'}
+          error={fieldError}
+          autoComplete={signingIn ? 'current-password' : 'new-password'}
+          textContentType={signingIn ? 'password' : 'newPassword'}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoFocus={signingIn}
+          returnKeyType="go"
+          onFocus={() => {
+            passwordFocused.current = true;
+            revealPassword();
+          }}
+          onBlur={() => {
+            passwordFocused.current = false;
+          }}
+          onSubmitEditing={(event) => submit(event.nativeEvent.text)}
+        />
+        {requestError ? (
+          isApiError(requestError, 'email_taken') ? (
+            <RequestAlert
+              error={requestError}
+              message="An account already uses this email."
+              onRetry={() => submit()}
+              action={{ label: 'Sign in instead', onPress: () => switchMode('sign-in') }}
+            />
+          ) : isApiError(requestError, 'confirmation_required') ? (
+            <RequestAlert error={requestError} message={requestError.message} onRetry={() => submit()} />
+          ) : isApiError(requestError, 'validation') ? (
+            <RequestAlert
+              error={requestError}
+              message={EMAIL_FORMAT_ERROR}
+              onRetry={() => submit()}
+              action={{ label: 'Change email', onPress: changeEmail }}
+            />
+          ) : (
+            <RequestAlert error={requestError} onRetry={() => submit()} />
+          )
+        ) : null}
+        <Col gap={4}>
+          <Button size="lg" fullWidth disabled={!password} loading={account.isPending} onPress={() => submit()}>
+            {signingIn ? 'Sign in' : 'Create account'}
+          </Button>
+          {signingIn ? (
+            <>
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="sm"
-                onPress={() => switchMode('sign-in')}
-                style={{ alignSelf: 'flex-start' }}>
-                Sign in
+                loading={reset.isPending}
+                onPress={sendReset}
+                style={{ height: 44, alignSelf: 'center' }}>
+                Forgot password?
               </Button>
-            </Col>
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => switchMode('sign-up')}
+                style={{ height: 44, alignSelf: 'center' }}>
+                New here? Create an account
+              </Button>
+            </>
           ) : null}
-          {reset.isSuccess ? <SentNote>{`We've sent a reset link to ${email}.`}</SentNote> : null}
-          {reset.isError ? <RequestAlert error={reset.error} onRetry={sendReset} /> : null}
-          {signingIn ? null : <Legal lead="By creating an account" />}
-        </Content>
-      </KeyboardFrame>
+        </Col>
+        {awaitingConfirmation ? (
+          <Col gap={12}>
+            <SentNote>Check your inbox to confirm, then sign in.</SentNote>
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={() => switchMode('sign-in')}
+              style={{ alignSelf: 'flex-start' }}>
+              Sign in
+            </Button>
+          </Col>
+        ) : null}
+        {reset.isSuccess ? <SentNote>{`We've sent a reset link to ${email}.`}</SentNote> : null}
+        {reset.isError ? <RequestAlert error={reset.error} onRetry={sendReset} /> : null}
+        {signingIn ? null : <Legal lead="By creating an account" />}
+      </Content>
     </Screen>
   );
 }

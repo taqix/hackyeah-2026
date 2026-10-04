@@ -39,15 +39,13 @@ export function useCalendarAccess() {
     };
   }, []);
 
-  const connect = async () => {
+  /** Asks the OS (from an explicit tap only) and resolves with the outcome. */
+  const connect = async (): Promise<CalendarAccess> => {
     setConnecting(true);
-    try {
-      setAccess(await deviceCalendar.requestPermission());
-    } catch {
-      setAccess({ status: 'error' });
-    } finally {
-      setConnecting(false);
-    }
+    const next = await deviceCalendar.requestPermission().catch((): CalendarAccess => ({ status: 'error' }));
+    setConnecting(false);
+    setAccess(next);
+    return next;
   };
 
   const retry = async () => {
@@ -57,3 +55,5 @@ export function useCalendarAccess() {
 
   return { access, connecting, connect, retry };
 }
+
+export type CalendarAccessControls = ReturnType<typeof useCalendarAccess>;

@@ -1,19 +1,23 @@
 import { type ReactNode, useState } from 'react';
-import { Linking } from 'react-native';
+import { Linking, Platform, Switch } from 'react-native';
 
 import { Button, ListRow, Spinner } from '@/components/ui';
+import { removeCalendarExport, useCalendarExportStatus } from '@/features/calendar-export';
 import { useStepCounter } from '@/hooks/use-step-counter';
+import { setCalendarExportEnabled, useCalendarExportSetting } from '@/state/calendar-export';
+import { useTheme } from '@/theme';
 
+import { ConfirmSheet } from './confirm-sheet';
 import { StatusNote, StatusOn } from './status-on';
-import { useCalendarAccess } from './use-calendar-access';
+import type { CalendarAccessControls } from './use-calendar-access';
 
 function openSystemSettings() {
   Linking.openSettings().catch(() => undefined);
 }
 
 /** Device calendar: On, Connect (explicit tap only), or Settings once the phone stops asking. */
-export function CalendarConnectionRow() {
-  const { access, connecting, connect, retry } = useCalendarAccess();
+export function CalendarConnectionRow({ calendar }: { calendar: CalendarAccessControls }) {
+  const { access, connecting, connect, retry } = calendar;
 
   let right: ReactNode;
   switch (access.status) {
@@ -67,6 +71,94 @@ export function CalendarConnectionRow() {
       }
       right={right}
     />
+  );
+}
+
+const EXPORT_TITLE = 'Add sessions to my calendar';
+
+/**
+ * Opt-in, off by default (an extra beyond the design): planned sessions are
+ * copied into a "Movo" calendar on this phone. Turning it on asks for calendar
+ * access when needed; turning it off removes that calendar after a confirm.
+ */
+export function CalendarExportRow({ calendar }: { calendar: CalendarAccessControls }) {
+  const { colors } = useTheme();
+  const setting = useCalendarExportSetting();
+  const status = useCalendarExportStatus();
+  const [confirmingOff, setConfirmingOff] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const { access } = calendar;
+
+  const turnOn = async () => {
+    if (access.status === 'denied' && !access.canAskAgain) {
+      openSystemSettings();
+      return;
+    }
+    const next = access.status === 'granted' ? access : await calendar.connect();
+    if (next.status === 'granted') setCalendarExportEnabled(true);
+  };
+
+  const closeConfirm = () => {
+    setConfirmingOff(false);
+    setRemoveError(null);
+  };
+
+  const turnOff = async () => {
+    setRemoving(true);
+    setRemoveError(null);
+    setCalendarExportEnabled(false);
+    try {
+      await removeCalendarExport();
+      setConfirmingOff(false);
+    } catch {
+      setRemoveError("We couldn't remove the Movo calendar. Try again, or delete it in your calendar app.");
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  let detail = 'Planned sessions go into a Movo calendar on this phone';
+  if (setting.enabled && access.status === 'denied') {
+    detail = "Calendar access is off, so sessions aren't added";
+  } else if (setting.enabled && status === 'failed') {
+    detail = "We couldn't update your calendar. We'll try again.";
+  }
+
+  let right: ReactNode;
+  if (!setting.loaded || access.status === 'checking') {
+    right = <Spinner size={18} accessibilityLabel="Checking your calendar setting" />;
+  } else if (access.status === 'unavailable') {
+    right = <StatusNote>Not available</StatusNote>;
+  } else {
+    right = (
+      <Switch
+        value={setting.enabled}
+        disabled={calendar.connecting || removing}
+        onValueChange={(value) => (value ? void turnOn() : setConfirmingOff(true))}
+        trackColor={{ false: colors.borderStrong, true: colors.accent }}
+        thumbColor={Platform.OS === 'android' ? colors.surfaceRaised : undefined}
+        ios_backgroundColor={colors.borderStrong}
+        accessibilityLabel={EXPORT_TITLE}
+        accessibilityHint={detail}
+      />
+    );
+  }
+
+  return (
+    <>
+      <ListRow icon="calendar-plus" discSize={36} title={EXPORT_TITLE} detail={detail} right={right} divider />
+      <ConfirmSheet
+        visible={confirmingOff}
+        onClose={closeConfirm}
+        title="Remove the Movo calendar?"
+        description="Your planned sessions come off this phone's calendar. Your plan stays the same."
+        confirmLabel="Remove calendar"
+        onConfirm={() => void turnOff()}
+        busy={removing}
+        error={removeError}
+      />
+    </>
   );
 }
 

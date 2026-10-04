@@ -4,9 +4,13 @@ Build a beginner sport app for inactive adults: preferences, sport suggestions,
 AI-generated multi-day plans, completion, and feedback. Read the relevant docs
 below before changing a feature.
 
-- Monorepo: `apps/backend` (NestJS), `apps/web` (React), `apps/mobile` (Expo).
+- Monorepo: `apps/backend` (NestJS), `apps/web` (React), `apps/mobile` (Expo),
+  `apps/website` (React marketing site and demo, deployed to GitHub Pages).
 - Use TypeScript and shared lint/format rules. Current setup uses npm workspaces;
   pnpm is the agreed target. Follow the migration plan in `docs/development.md`.
+- Follow the [coding principles](docs/code-principles.md): one home per fact, one
+  responsibility per module, a pure domain layer, and no behaviour change in a refactor
+  without evidence.
 - Share API contracts in `packages/contracts`; keep client UI separate.
 - The proof of concept uses Supabase Auth, PostgreSQL/RLS, and Edge Functions
   directly from both clients. See `docs/features/supabase-product-api.md`.
@@ -34,6 +38,7 @@ below before changing a feature.
 
 - [Product scope](docs/product.md)
 - [Development, code conventions, and checks](docs/development.md)
+- [Coding principles: DRY, SOLID, clean code](docs/code-principles.md)
 - [Local runtime status](docs/deployment.md)
 - [Feature and review template](docs/features/TEMPLATE.md)
 - [Grilling session decisions](docs/grilling-summary.md)

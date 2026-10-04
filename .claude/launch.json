@@ -15,6 +15,12 @@
       "autoPort": true
     },
     {
+      "name": "website",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:website"],
+      "port": 4810
+    },
+    {
       "name": "mobile-web",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd apps/mobile && exec npx expo start --web --port 8081"],

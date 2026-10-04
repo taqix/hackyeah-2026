@@ -1,4 +1,5 @@
 import { useEffect, useState, type MouseEvent } from "react";
+import { GUEST_ENTRY, SIGN_IN } from "../../appLinks";
 import { Button } from "../../design-system";
 import * as route from "../../routing";
 import { AppIcon } from "../common";
@@ -30,13 +31,13 @@ function sameSectionAgain(hash: string) {
 }
 
 export interface SiteHeaderProps {
-  hasPlan: boolean;
   theme: Theme;
   onToggleTheme: () => void;
 }
 
-/** The landing page's header. */
-export function SiteHeader({ hasPlan, theme, onToggleTheme }: SiteHeaderProps) {
+/** The landing page's header. On a phone it keeps one short way into the app; the hero
+    right below it offers both. */
+export function SiteHeader({ theme, onToggleTheme }: SiteHeaderProps) {
   const scrolled = useScrolledPast(HAIRLINE_AT);
   return (
     <header className={`s-top${scrolled ? " is-line" : ""}`}>
@@ -48,13 +49,12 @@ export function SiteHeader({ hasPlan, theme, onToggleTheme }: SiteHeaderProps) {
           <a className="s-navlink" href={route.WHATS_INSIDE} onClick={sameSectionAgain(route.WHATS_INSIDE)}>What's inside</a>
         </nav>
         <ThemeButton theme={theme} onToggle={onToggleTheme} />
-        <Button
-          variant="inverse"
-          size="md"
-          iconRight="arrow-right"
-          onClick={() => route.navigate(hasPlan ? route.PLAN : route.stepPath(route.FIRST_STEP))}
-        >
-          {hasPlan ? "Your plan" : "Try it"}
+        <span className="s-only-wide">
+          <Button variant="ghost" size="md" href={SIGN_IN}>Sign in</Button>
+        </span>
+        <Button variant="inverse" size="md" iconRight="arrow-right" href={GUEST_ENTRY}>
+          <span className="s-only-narrow">Try it</span>
+          <span className="s-only-wide">Try it as a guest</span>
         </Button>
       </div>
     </header>

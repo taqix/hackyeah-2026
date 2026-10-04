@@ -1,7 +1,6 @@
 import { useSports } from '@/api/hooks';
 import { Question, Text } from '@/components/ui';
-import { Body, Col, H1, Steps } from '@/components/layout';
-import { ONBOARDING_ORDER } from '@/features/onboarding/step-screen';
+import { Col, useLayout } from '@/components/layout';
 import {
   DiscoveryQuestion,
   isPickable,
@@ -12,28 +11,28 @@ import {
 } from '@/features/preferences/activities';
 import { toggleValue } from '@/state/onboarding-draft';
 
+import { OnboardingHeading } from './heading';
 import type { StepBodyProps } from './types';
 
 const QUESTION = 'What would you like to try?';
 
 /** 3.2 Activities: activity_interests (catalog sport IDs) and discovery_preference. */
 export function ActivitiesStep({ draft, update, mode }: StepBodyProps) {
+  const { isDesktop } = useLayout();
   const sports = useSports();
   const picked = draft.activity_interests;
   const toggle = (id: string) => update({ activity_interests: toggleValue(picked, id) });
 
   return (
-    <Col gap={24}>
+    <Col gap={isDesktop ? 32 : 24}>
       {mode === 'onboarding' ? (
-        <>
-          <Steps step={ONBOARDING_ORDER.indexOf('activities') + 1} total={ONBOARDING_ORDER.length} />
-          <Col gap={8}>
-            <H1>{QUESTION}</H1>
-            <Body>{"Pick any that sound good — or none, and we'll help you explore."}</Body>
-          </Col>
-        </>
+        <OnboardingHeading
+          section="activities"
+          title={QUESTION}
+          body={"Pick any that sound good — or none, and we'll help you explore."}
+        />
       ) : null}
-      <Col gap={12}>
+      <Col gap={isDesktop ? 16 : 12}>
         {mode === 'edit' ? <Question>{QUESTION}</Question> : null}
         {sports.data && !sports.data.some(isPickable) ? (
           // An empty catalog (nothing seeded yet): explain, and let the person go on with explore.

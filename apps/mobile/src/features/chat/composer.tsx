@@ -7,6 +7,7 @@ import { useTheme } from '@/theme';
 
 import { FineLine } from './bubbles';
 import { BUSY_HINT, HINT, OFFLINE_NOTE } from './copy';
+import { useHover } from './hover';
 
 const MAX_INPUT_HEIGHT = 120;
 
@@ -28,6 +29,10 @@ export type ComposerProps = {
   /** Replaces the hint line (an Undo that didn't go through). */
   top?: ReactNode;
   inputRef?: Ref<TextInput>;
+  /** Esc in the box (web): the dock closes. */
+  onEscape?: () => void;
+  /** Desktop page: the box's widest, centred under the thread. */
+  maxWidth?: number;
 };
 
 /** The message box: hint or offline note, the attached session, the field and Send. No voice input. */
@@ -42,6 +47,8 @@ export function Composer({
   onRemoveAbout,
   top,
   inputRef,
+  onEscape,
+  maxWidth,
 }: ComposerProps) {
   const { colors, layout, type } = useTheme();
   // Under the box: the home indicator, or a little air above the keyboard (Screen lifts the box onto it).
@@ -60,6 +67,7 @@ export function Composer({
       style={[
         styles.wrap,
         { paddingHorizontal: layout.gutter, paddingBottom: bottomPadding, backgroundColor: colors.bgApp },
+        maxWidth ? { width: '100%', maxWidth: maxWidth + 2 * layout.gutter, alignSelf: 'center' } : null,
       ]}>
       {offline ? (
         <OfflineNote />
@@ -106,9 +114,17 @@ export function Composer({
                   : undefined
               }
               onKeyPress={(event) => {
-                // Web: Enter sends, Shift+Enter adds a line. Phones keep Return for new lines.
-                if (Platform.OS !== 'web' || event.nativeEvent.key !== 'Enter') return;
-                if ((event.nativeEvent as { shiftKey?: boolean }).shiftKey) return;
+                // Web: Enter sends, Shift+Enter adds a line, Esc closes the dock. Phones keep Return for new lines.
+                if (Platform.OS !== 'web') return;
+                const key = event.nativeEvent as { key: string; shiftKey?: boolean; isComposing?: boolean; keyCode?: number };
+                // Enter that confirms an input method's composition (accents, CJK) isn't a send; Safari says 229.
+                if (key.isComposing || key.keyCode === 229) return;
+                if (key.key === 'Escape' && onEscape) {
+                  event.preventDefault();
+                  onEscape();
+                  return;
+                }
+                if (key.key !== 'Enter' || key.shiftKey) return;
                 event.preventDefault();
                 if (canSend) onSend();
               }}
@@ -142,6 +158,7 @@ export function Composer({
 /** What the message is about, when chat opens from a session. */
 function AboutChip({ icon, label, onRemove }: ComposerAbout & { onRemove: () => void }) {
   const { colors, fontFamily } = useTheme();
+  const { hovered, hoverProps } = useHover();
   return (
     <View style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
       <Icon name={icon} size={14} color={colors.accentText} />
@@ -151,11 +168,15 @@ function AboutChip({ icon, label, onRemove }: ComposerAbout & { onRemove: () => 
         {label}
       </Text>
       <Pressable
+        {...hoverProps}
         onPress={onRemove}
         hitSlop={10}
         accessibilityRole="button"
         accessibilityLabel={`Remove ${label}`}
-        style={({ pressed }) => [styles.chipClose, pressed ? { backgroundColor: colors.accentSoftStrong } : null]}>
+        style={({ pressed }) => [
+          styles.chipClose,
+          pressed || hovered ? { backgroundColor: colors.accentSoftStrong } : null,
+        ]}>
         <Icon name="x" size={14} color={colors.accentText} />
       </Pressable>
     </View>

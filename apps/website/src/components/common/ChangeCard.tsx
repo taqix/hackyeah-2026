@@ -1,5 +1,4 @@
 import { Button, Icon } from "../../design-system";
-import type { RevisionSummary } from "../../domain";
 import { Fine } from "./Fine";
 
 /** One value as it was and as it is now. */
@@ -20,49 +19,23 @@ export interface ChangeCardRow {
 
 /** An applied chat change, as the app's own chat shows it (mobile 8.3). */
 export interface ChangeCardProps {
-  time?: string;
   summary?: string;
   rows: ChangeCardRow[];
-  /** What the change left alone, which is the promise the demo makes. */
+  /** What the change left alone, which is the promise the app makes. */
   kept?: string;
-  undone?: boolean;
-  onUndo?: (() => void) | null;
-  onSeePlan?: (() => void) | null;
+  onUndo?: () => void;
+  onSeePlan?: () => void;
   seeLabel?: string;
 }
 
-function UndoneCard() {
-  return (
-    <section className="s-change" aria-label="Change undone">
-      <div className="s-chead">
-        <div className="s-row" style={{ gap: 10 }}>
-          <span className="s-rdisc is-neutral"><Icon name="undo-2" size={16} strokeWidth={2} /></span>
-          <span className="s-sub" style={{ flex: 1 }}>Change undone</span>
-        </div>
-        <p className="s-bodysm">Back to how it was.</p>
-      </div>
-    </section>
-  );
-}
-
-export function ChangeCard({
-  time = "Just now",
-  summary,
-  rows,
-  kept,
-  undone,
-  onUndo,
-  onSeePlan,
-  seeLabel = "See plan",
-}: ChangeCardProps) {
-  if (undone) return <UndoneCard />;
+export function ChangeCard({ summary, rows, kept, onUndo, onSeePlan, seeLabel = "See plan" }: ChangeCardProps) {
   return (
     <section className="s-change" aria-label="Plan updated">
       <div className="s-chead">
         <div className="s-row" style={{ gap: 10 }}>
           <span className="s-rdisc"><Icon name="check" size={16} strokeWidth={2} /></span>
           <span className="s-sub" style={{ flex: 1 }}>Plan updated</span>
-          <span className="s-cap">{time}</span>
+          <span className="s-cap">Just now</span>
         </div>
         {summary ? <p className="s-bodysm">{summary}</p> : null}
       </div>
@@ -99,9 +72,4 @@ export function ChangeCard({
       </div>
     </section>
   );
-}
-
-/** A chat change summary as change-card rows: one day, one before-and-after. */
-export function summaryRows(summary: RevisionSummary): ChangeCardRow[] {
-  return summary.rows.map(row => ({ day: row.day, date: row.date, diffs: [{ from: row.from, to: row.to }] }));
 }

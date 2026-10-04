@@ -24,11 +24,13 @@ export function GoogleButton({ onPress, loading = false, disabled = false }: Goo
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
-      aria-disabled={inactive} aria-busy={loading}
-      style={({ pressed }) => [
+      aria-disabled={inactive}
+      aria-busy={loading}
+      style={({ pressed, hovered }) => [
         styles.base,
         {
-          backgroundColor: pressed ? colors.surfaceSunken : colors.surfaceCard,
+          // The kit's secondary Button: one surface step down while pressed or hovered (web).
+          backgroundColor: pressed || hovered ? colors.surfaceSunken : colors.surfaceCard,
           borderColor: colors.borderStrong,
           opacity: disabled ? 0.4 : 1,
         },

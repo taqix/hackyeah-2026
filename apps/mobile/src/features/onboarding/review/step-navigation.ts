@@ -1,7 +1,7 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 
 import type { PreferenceSection } from '@/api/types';
-import { nextOnboardingRoute } from '@/features/onboarding/step-screen';
+import { nextOnboardingRoute } from '@/features/onboarding/order';
 
 /** A step opened from a Review row; `from=review` lets that step come straight back. */
 export function reviewStepRoute(section: PreferenceSection): Href {

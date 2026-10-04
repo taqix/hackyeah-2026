@@ -39,8 +39,13 @@ export interface AuthErrorLike {
 
 export interface AuthUser {
   id: string;
+  /** Empty (or missing) for an anonymous user. */
   email?: string;
+  /** An email waiting for confirmation (a guest adding one with confirmation on). */
+  new_email?: string;
   created_at: string;
+  /** A guest: signed in anonymously, with no email or password yet. Its app_metadata has no provider. */
+  is_anonymous?: boolean;
   /** `provider` is `email` or `google`. */
   app_metadata: { provider?: string; [key: string]: unknown };
   /** Google fills `full_name`/`name`. */
@@ -114,6 +119,12 @@ export interface AuthPort {
     options?: OAuthOptions;
   }): Promise<{ data: { url: string | null }; error: AuthErrorLike | null }>;
   /**
+   * A new anonymous user (web guests), with `data` as its user metadata.
+   * Fails with `anonymous_provider_disabled` while the project has anonymous
+   * sign-ins switched off.
+   */
+  signInAnonymously(credentials?: { options?: { data?: object } }): Promise<AuthResult>;
+  /**
    * Links Google to the signed-in user (PKCE). Needs manual linking switched
    * on in Supabase Auth, else `manual_linking_disabled`.
    */
@@ -127,7 +138,15 @@ export interface AuthPort {
   setSession(tokens: { access_token: string; refresh_token: string }): Promise<AuthResult>;
   exchangeCodeForSession(authCode: string): Promise<AuthResult>;
   resetPasswordForEmail(email: string, options?: { redirectTo?: string }): Promise<{ error: AuthErrorLike | null }>;
-  updateUser(attributes: { password?: string; data?: object }): Promise<{
+  /**
+   * Changes the signed-in user. An email (with a password) on an anonymous
+   * user makes it permanent at once with confirmation off; with it on, the
+   * email waits in `new_email` until its link (to `emailRedirectTo`) is opened.
+   */
+  updateUser(
+    attributes: { email?: string; password?: string; data?: object },
+    options?: { emailRedirectTo?: string },
+  ): Promise<{
     data: { user: AuthUser | null };
     error: AuthErrorLike | null;
   }>;

@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 import type { AuthRedirectParams } from '@/api/remote/auth';
 import { getRemoteRuntime } from '@/api/remote/default';
 import { connectErrorMessage } from '@/api/remote/google-calendar';
+import { useLayout } from '@/components/layout';
 import { GateLoading } from '@/navigation/gate-states';
 
+import { AuthWaiting } from './auth-frame';
 import { LinkProblem } from './link-problem';
 import { useAuthRedirect } from './use-auth-redirect';
 import { useCalendarReturn } from './use-calendar-return';
@@ -26,6 +28,12 @@ export function AuthCallbackScreen({ params }: { params: AuthRedirectParams }) {
   const settled = redirect.status !== 'working';
   const origin = calendar === 'privacy' || calendar === 'review' ? calendar : null;
   const toCalendar = origin !== null && settled;
+  const { isDesktop } = useLayout();
+  const waiting = isDesktop ? (
+    <AuthWaiting title={origin ? 'Connecting Google Calendar' : 'Signing you in'} />
+  ) : (
+    <GateLoading />
+  );
 
   useEffect(() => {
     if (!toCalendar || !origin) return;
@@ -37,7 +45,7 @@ export function AuthCallbackScreen({ params }: { params: AuthRedirectParams }) {
     else router.replace(CONNECT_SCREENS[origin]);
   }, [toCalendar, origin, redirect, params.error, router]);
 
-  if (toCalendar || (calendar === 'checking' && redirect.status !== 'skipped')) return <GateLoading />;
+  if (toCalendar || (calendar === 'checking' && redirect.status !== 'skipped')) return waiting;
   switch (redirect.status) {
     case 'skipped':
     case 'done':
@@ -45,7 +53,7 @@ export function AuthCallbackScreen({ params }: { params: AuthRedirectParams }) {
     case 'cancelled':
       return <Redirect href="/welcome" />;
     case 'working':
-      return <GateLoading />;
+      return waiting;
     case 'failed':
       return <LinkProblem title="We couldn't sign you in" error={redirect.error} onRetry={redirect.retry} />;
   }

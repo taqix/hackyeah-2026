@@ -20,7 +20,7 @@ export const DB_SCHEMA = 1;
 
 export interface MockAccount {
   user: User;
-  /** Null for Google accounts. */
+  /** Null for Google accounts and guests. */
   password: string | null;
 }
 

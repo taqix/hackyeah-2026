@@ -61,9 +61,9 @@ type Busy = null | 'planning' | 'export' | 'disconnect';
  * When Google stops accepting the connection it offers Reconnect instead of
  * failing quietly. Hidden in mock mode, while Google sign-in is off and while
  * signed out. Onboarding Review offers the same Connect
- * (`useGoogleCalendarConnect`).
+ * (`useGoogleCalendarConnect`). `first`: it opens its list, so no hairline above.
  */
-export function GoogleCalendarRows() {
+export function GoogleCalendarRows({ first = false }: { first?: boolean }) {
   const google = useGoogleCalendarConnect('privacy');
   const deviceExport = useCalendarExportSetting();
   const exportStatus = useCalendarExportStatus('google');
@@ -200,7 +200,7 @@ export function GoogleCalendarRows() {
 
   return (
     <>
-      <ListRow icon="calendar-days" discSize={36} title={TITLE} detail={detail} right={right} divider />
+      <ListRow icon="calendar-days" discSize={36} title={TITLE} detail={detail} right={right} divider={!first} />
       {connected ? (
         <>
           <ListRow

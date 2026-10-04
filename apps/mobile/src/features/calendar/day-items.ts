@@ -19,7 +19,12 @@ export type MarkState = 'done' | 'planned' | 'unlogged' | 'skipped';
 
 export function markState(item: DayItem, today: LocalDate): MarkState {
   if (item.kind === 'extra') return 'done';
-  const state = sessionDayState(item.session, today);
+  return sessionMarkState(item.session, today);
+}
+
+/** A plan session's mark: today's stays planned until the day is over. */
+export function sessionMarkState(session: PlannedSession, today: LocalDate): MarkState {
+  const state = sessionDayState(session, today);
   return state === 'today' ? 'planned' : state;
 }
 

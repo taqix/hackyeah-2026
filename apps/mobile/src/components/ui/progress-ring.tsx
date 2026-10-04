@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Platform, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -29,7 +29,13 @@ export type ProgressRingProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Accent arc on a hairline track; eases to a new value (600 ms, skipped under reduced motion). */
+const IS_WEB = Platform.OS === 'web';
+
+/**
+ * Accent arc on a hairline track; eases to a new value (600 ms, skipped under
+ * reduced motion). Vector all the way, so it stays crisp at any size; pass a
+ * thicker `stroke` with a larger `size`.
+ */
 export function ProgressRing({ value, size = 56, stroke = 5, label, children, accessibilityLabel, style }: ProgressRingProps) {
   const { colors, fontFamily, motion } = useTheme();
   const reduced = useReducedMotion();
@@ -50,6 +56,10 @@ export function ProgressRing({ value, size = 56, stroke = 5, label, children, ac
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(v * 100) }}
+      // React Native Web reads the value from aria-* only.
+      aria-valuemin={IS_WEB ? 0 : undefined}
+      aria-valuemax={IS_WEB ? 100 : undefined}
+      aria-valuenow={IS_WEB ? Math.round(v * 100) : undefined}
       style={[{ width: size, height: size }, style]}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
         <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={colors.borderSubtle} strokeWidth={stroke} />

@@ -2,8 +2,9 @@ import { useRouter } from 'expo-router';
 
 import { isApiError } from '@/api/types';
 import { Button } from '@/components/ui';
-import { Body, Col, Content, H1, Screen } from '@/components/layout';
+import { Body, Col, H1 } from '@/components/layout';
 
+import { AuthFrame } from './auth-frame';
 import { requestErrorMessage } from './auth-routes';
 
 type LinkProblemProps = {
@@ -23,27 +24,25 @@ export function LinkProblem({ title, error, message, onRetry }: LinkProblemProps
   const text = message ?? (isApiError(error) && !connection ? error.message : requestErrorMessage(error));
 
   return (
-    <Screen>
-      <Content gap={20}>
-        <Col gap={8} accessibilityRole="alert">
-          <H1>{title}</H1>
-          <Body>{text}</Body>
-        </Col>
-        <Col gap={8}>
-          {connection && onRetry ? (
-            <Button size="lg" fullWidth icon="refresh-cw" onPress={onRetry}>
-              Try again
-            </Button>
-          ) : null}
-          <Button
-            size="lg"
-            fullWidth
-            variant={connection && onRetry ? 'secondary' : 'primary'}
-            onPress={() => router.replace('/welcome')}>
-            Back to sign in
+    <AuthFrame gap={20}>
+      <Col gap={8} accessibilityRole="alert">
+        <H1>{title}</H1>
+        <Body>{text}</Body>
+      </Col>
+      <Col gap={8}>
+        {connection && onRetry ? (
+          <Button size="lg" fullWidth icon="refresh-cw" onPress={onRetry}>
+            Try again
           </Button>
-        </Col>
-      </Content>
-    </Screen>
+        ) : null}
+        <Button
+          size="lg"
+          fullWidth
+          variant={connection && onRetry ? 'secondary' : 'primary'}
+          onPress={() => router.replace('/welcome')}>
+          Back to sign in
+        </Button>
+      </Col>
+    </AuthFrame>
   );
 }

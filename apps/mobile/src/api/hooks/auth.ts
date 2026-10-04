@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { api } from '@/api';
 import { queryKeys } from '@/api/query-keys';
 import { isSignInCancelled } from '@/api/remote/auth';
-import type { AuthSession } from '@/api/types';
+import type { Account, AuthSession } from '@/api/types';
 
 /** Everything cached except the session and the providers belongs to one user. */
 const isUserData = (key: readonly unknown[]) => key[0] !== 'auth';
@@ -73,6 +73,41 @@ export function useSignInWithGoogle() {
     },
     onSuccess: (session) => {
       if (session) signedIn(queryClient, session);
+    },
+  });
+}
+
+/**
+ * Continue as guest (web only): signs in a new anonymous account named Guest,
+ * which the gate then sends to onboarding. Rejects with GuestModeUnavailable
+ * when the server has guests switched off.
+ */
+export function useSignInAsGuest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ['auth', 'sign-in-guest'],
+    mutationFn: () => api.auth.signInAsGuest(),
+    onSuccess: (session) => signedIn(queryClient, session),
+  });
+}
+
+/**
+ * Save your progress: adds an email and password to the signed-in guest. The
+ * person, plan and history stay the same, so only the session and the account
+ * are read again. Rejects with confirmation_required (check the inbox),
+ * email_taken, weak_password or validation.
+ */
+export function useUpgradeGuest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ['auth', 'upgrade-guest'],
+    mutationFn: ({ email, password }: { email: string; password: string }) => api.auth.upgradeGuest(email, password),
+    onSuccess: (session) => {
+      queryClient.setQueryData(queryKeys.session, session);
+      queryClient.setQueryData<Account>(queryKeys.account, (account) =>
+        account ? { ...account, user: session.user } : account,
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.account });
     },
   });
 }

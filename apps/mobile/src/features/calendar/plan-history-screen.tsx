@@ -1,22 +1,26 @@
 import { StyleSheet, View } from 'react-native';
 
 import { usePlanVersions } from '@/api/hooks';
-import type { PlanVersion } from '@/api/types';
-import { BackButton, Body, Col, Content, Row, Screen, TopBar } from '@/components/layout';
+import { BackButton, Body, Col, Content, Row, Screen, TopBar, useLayout } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
-import { useOpenChat } from '@/navigation/open-chat';
 
+import { PlanHistoryDesktopScreen } from './plan-history-desktop';
 import { EmptyState, LoadError } from './states';
+import { useVersionAction } from './use-version-action';
 import { VersionEntry } from './version-entry';
 
-/** 10.1 — Plan history: every accepted plan is a version, newest first; the active one is in use. */
+/**
+ * 10.1 — Plan history: every accepted plan is a version, newest first; the
+ * active one is in use. The desktop web shows a timeline beside the chosen version.
+ */
 export function PlanHistoryScreen() {
-  const versions = usePlanVersions();
-  const openChat = useOpenChat();
+  const { isDesktop } = useLayout();
+  return isDesktop ? <PlanHistoryDesktopScreen /> : <PhonePlanHistoryScreen />;
+}
 
-  // Chat and undo versions point back to the change card in the conversation.
-  const actionFor = (version: PlanVersion) =>
-    version.chat_message_id ? { label: 'See the chat', hint: 'Opens the chat', onPress: () => openChat() } : null;
+function PhonePlanHistoryScreen() {
+  const versions = usePlanVersions();
+  const actionFor = useVersionAction();
 
   return (
     <Screen>

@@ -1,26 +1,35 @@
 import { useRouter } from 'expo-router';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { usePlanState, usePlanVersions, useSessionsInRange } from '@/api/hooks';
-import type { LocalDate, PlanStatus } from '@/api/types';
-import { Col, Content, H1, Kicker, Row, Screen, Section } from '@/components/layout';
-import { Icon, IconButton, Skeleton, Text } from '@/components/ui';
+import { usePlanState } from '@/api/hooks';
+import { Col, Content, H1, Kicker, Row, Screen, useLayout } from '@/components/layout';
+import { IconButton, Skeleton, Text } from '@/components/ui';
 import { useNow } from '@/lib/clock';
-import { diffDays, formatDayLong, formatLongDate, formatMonthYear, fromLocalDate, MONTHS_LONG, startOfWeek, toLocalDate } from '@/lib/dates';
+import { formatLongDate, formatMonthYear, toLocalDate } from '@/lib/dates';
 import { useBottomClearance } from '@/navigation/bottom-clearance';
 import { routes } from '@/navigation/routes';
-import { useTheme } from '@/theme';
 
 import { Agenda } from './agenda';
-import { groupByDay } from './day-items';
-import { addMonths, clampMonth, dayOfMonth, isInMonth, monthEnd, monthOf } from './month';
+import { CalendarDesktopScreen } from './calendar-desktop';
+import { headerKicker } from './calendar-labels';
 import { Legend, MonthGrid } from './month-grid';
-import { EmptyState, LoadError } from './states';
-import { VersionEntry } from './version-entry';
+import { NoPlanYet } from './no-plan-yet';
+import { PlanHistorySection } from './plan-history-section';
+import { PrivacyNote } from './privacy-note';
+import { LoadError } from './states';
+import { type CalendarBounds, useCalendarMonth } from './use-calendar-month';
 
-/** 10 — Calendar: a month of sessions only, the selected day, and the plan version in use. */
+/**
+ * 10 — Calendar: a month of sessions only, the selected day, and the plan
+ * version in use. The desktop web lays the same out as a board beside the day.
+ */
 export function CalendarScreen() {
+  const { isDesktop } = useLayout();
+  return isDesktop ? <CalendarDesktopScreen /> : <PhoneCalendarScreen />;
+}
+
+function PhoneCalendarScreen() {
   const plan = usePlanState();
   const router = useRouter();
   const today = toLocalDate(useNow());
@@ -52,32 +61,9 @@ export function CalendarScreen() {
   );
 }
 
-/** "Wednesday, 21 October · Week 3" */
-function headerKicker(today: LocalDate, firstWeekStart: LocalDate | null): string {
-  const date = `${formatDayLong(today)}, ${dayOfMonth(today)} ${MONTHS_LONG[fromLocalDate(today).getMonth()]}`;
-  if (!firstWeekStart || today < firstWeekStart) return date;
-  const week = Math.floor(diffDays(firstWeekStart, startOfWeek(today)) / 7) + 1;
-  return `${date} · Week ${week}`;
-}
-
-type CalendarBodyProps = { today: LocalDate; firstWeekStart: LocalDate; plannedThrough: LocalDate };
-
-function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBodyProps) {
-  const { colors } = useTheme();
-  // The month pages back to the first week and stops at the last planned day.
-  const minMonth = monthOf(firstWeekStart);
-  const maxMonth = monthOf(plannedThrough) < minMonth ? minMonth : monthOf(plannedThrough);
-  const [pickedMonth, setPickedMonth] = useState<LocalDate | null>(null);
-  const [pickedDay, setPickedDay] = useState<LocalDate | null>(null);
-  const month = clampMonth(pickedMonth ?? monthOf(today), minMonth, maxMonth);
-  const selected = pickedDay && isInMonth(pickedDay, month) ? pickedDay : defaultDay(month, today, firstWeekStart);
-
-  const range = useSessionsInRange(month, monthEnd(month));
-  const days = range.data ? groupByDay(range.data.sessions, range.data.extras) : undefined;
-  const canGoBack = month > minMonth;
-  const canGoForward = month < maxMonth;
-  const previous = addMonths(month, -1);
-  const next = addMonths(month, 1);
+function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBounds) {
+  const calendar = useCalendarMonth({ today, firstWeekStart, plannedThrough });
+  const { month, selected, days, range, previous, next, canGoBack, canGoForward } = calendar;
 
   return (
     <>
@@ -91,7 +77,7 @@ function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBodyPro
             size="sm"
             accessibilityLabel={canGoBack ? `Previous month, ${formatMonthYear(previous)}` : 'No earlier sessions'}
             disabled={!canGoBack}
-            onPress={() => setPickedMonth(previous)}
+            onPress={() => calendar.showMonth(previous)}
           />
           <IconButton
             icon="chevron-right"
@@ -100,7 +86,7 @@ function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBodyPro
               canGoForward ? `Next month, ${formatMonthYear(next)}` : `Planned up to ${formatLongDate(plannedThrough)}`
             }
             disabled={!canGoForward}
-            onPress={() => setPickedMonth(next)}
+            onPress={() => calendar.showMonth(next)}
           />
         </Row>
         <MonthGrid
@@ -109,7 +95,7 @@ function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBodyPro
           today={today}
           plannedThrough={plannedThrough}
           selected={selected}
-          onSelect={setPickedDay}
+          onSelect={calendar.select}
         />
         <Legend />
       </Col>
@@ -124,114 +110,9 @@ function CalendarBody({ today, firstWeekStart, plannedThrough }: CalendarBodyPro
           plannedThrough={plannedThrough}
         />
       )}
-      <Row gap={10} style={styles.privacy}>
-        <View style={styles.privacyIcon}>
-          <Icon name="eye-off" size={16} color={colors.textSecondary} />
-        </View>
-        <Text variant="bodySm" style={styles.privacyText}>
-          Only your sessions show here. We read when you&apos;re busy, never what&apos;s in your calendar. Plans go one
-          week ahead.
-        </Text>
-      </Row>
+      <PrivacyNote />
       <PlanHistorySection />
     </>
-  );
-}
-
-/** Today in its month; an earlier month opens on its first day of the plan, a later one on the 1st. */
-function defaultDay(month: LocalDate, today: LocalDate, firstWeekStart: LocalDate): LocalDate {
-  if (isInMonth(today, month)) return today;
-  if (isInMonth(firstWeekStart, month)) return firstWeekStart;
-  return month;
-}
-
-/** The version in use, with a link to every version (10.1). */
-function PlanHistorySection() {
-  const router = useRouter();
-  const versions = usePlanVersions();
-
-  if (versions.isPending) {
-    return (
-      <Col gap={14} style={styles.history}>
-        <Skeleton width={120} height={18} />
-        <Row gap={14} style={styles.historySkeleton}>
-          <Skeleton width={32} height={32} radius={16} />
-          <Col gap={8} style={styles.grow}>
-            <Skeleton width="40%" height={14} />
-            <Skeleton width="56%" height={10} />
-            <Skeleton width="90%" height={12} />
-          </Col>
-        </Row>
-      </Col>
-    );
-  }
-  if (versions.isError) {
-    return (
-      <Col gap={14} style={styles.history}>
-        <Section>Plan history</Section>
-        <LoadError
-          title="Plan history won't load."
-          onRetry={() => void versions.refetch()}
-          retrying={versions.isFetching}
-          quiet
-        />
-      </Col>
-    );
-  }
-  const list = versions.data;
-  const inUse = list.find((v) => v.active) ?? list[0];
-  if (!inUse) return null;
-
-  return (
-    <Col gap={14} style={styles.history}>
-      <View style={styles.historyHeader}>
-        <Section>Plan history</Section>
-        <Text variant="caption" tabular>
-          {list.length} {list.length === 1 ? 'version' : 'versions'}
-        </Text>
-      </View>
-      <VersionEntry
-        version={inUse}
-        last
-        action={{
-          label: 'See every version',
-          hint: 'Opens the plan history',
-          onPress: () => router.push('/plan-history'),
-        }}
-      />
-    </Col>
-  );
-}
-
-function NoPlanYet({ status, onToday }: { status: PlanStatus; onToday: () => void }) {
-  const action = { label: 'Go to Today', onPress: onToday };
-  if (status === 'building') {
-    return (
-      <EmptyState
-        icon="calendar-clock"
-        title="Your first plan is on its way."
-        body="Its sessions show here once it's ready. This takes about a minute."
-        action={action}
-      />
-    );
-  }
-  if (status === 'failed') {
-    return (
-      <EmptyState
-        icon="calendar-x"
-        title="No sessions yet."
-        body="Your first plan isn't built yet. Today shows why, and lets you try again."
-        action={action}
-      />
-    );
-  }
-  return (
-    <EmptyState
-      icon="calendar-days"
-      title="No sessions yet."
-      body="Your sessions show here once your first plan is ready. Plans go one week ahead."
-      action={action}
-    />
   );
 }
 
@@ -257,12 +138,5 @@ const styles = StyleSheet.create({
   header: { minWidth: 0 },
   monthBar: { marginRight: -6, minHeight: 36 },
   monthLabel: { flex: 1 },
-  privacy: { alignItems: 'flex-start' },
-  privacyIcon: { marginTop: 2 },
-  privacyText: { flex: 1 },
-  history: { marginTop: 8 },
-  historyHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
-  historySkeleton: { alignItems: 'flex-start' },
-  grow: { flex: 1 },
   skeleton: { gap: 20 },
 });

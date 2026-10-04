@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import type { ChatMessage, SessionRef } from '@/api/types';
+import { useLayout } from '@/components/layout';
 import { Icon, PressableScale, Text } from '@/components/ui';
 import { useNow } from '@/lib/clock';
 import { sportIcon } from '@/lib/sport-visuals';
@@ -14,11 +15,22 @@ import { Fine } from './parts';
 type UserText = Extract<ChatMessage, { kind: 'text' }>;
 type CoachText = Extract<ChatMessage, { kind: 'reply' }>;
 
-/** Coach on the left on a soft surface, you on the right in the accent. Tells screen readers who said it. */
+/**
+ * Coach on the left on a soft surface, you on the right in the accent. Tells
+ * screen readers who said it. On the desktop web both keep to 85% of the
+ * column, so a line stays easy to read in a wide thread.
+ */
 function Bubble({ me, text, context, foot }: { me: boolean; text: string; context?: ReactNode; foot?: ReactNode }) {
   const { colors } = useTheme();
+  const { isDesktop } = useLayout();
   return (
-    <View style={{ alignSelf: me ? 'flex-end' : 'flex-start', maxWidth: me ? '85%' : '92%', alignItems: me ? 'flex-end' : 'flex-start', gap: 6 }}>
+    <View
+      style={{
+        alignSelf: me ? 'flex-end' : 'flex-start',
+        maxWidth: me || isDesktop ? '85%' : '92%',
+        alignItems: me ? 'flex-end' : 'flex-start',
+        gap: 6,
+      }}>
       {context}
       <View
         accessible
@@ -73,13 +85,13 @@ function Option({ label, disabled, onPress }: { label: string; disabled: boolean
       accessibilityRole="button"
       accessibilityLabel={label}
       aria-disabled={disabled}
-      style={({ pressed }) => ({
+      style={({ pressed, hovered }) => ({
         height: 44,
         paddingHorizontal: 16,
         justifyContent: 'center',
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: pressed ? colors.accent : colors.accentSoftStrong,
+        borderColor: pressed || hovered ? colors.accent : colors.accentSoftStrong,
         backgroundColor: colors.accentSoft,
         opacity: disabled ? 0.4 : 1,
       })}>
@@ -112,16 +124,18 @@ function QuietOption({
         accessibilityLabel={note ? `${label}. ${note}` : label}
         aria-disabled={disabled}
         style={{ minHeight: 44, justifyContent: 'center', opacity: disabled ? 0.4 : 1 }}>
-        <Text
-          style={{
-            fontFamily: fontFamily.bodySemibold,
-            fontSize: 15,
-            lineHeight: 18,
-            color: colors.textSecondary,
-            textDecorationLine: 'underline',
-          }}>
-          {label}
-        </Text>
+        {({ hovered }) => (
+          <Text
+            style={{
+              fontFamily: fontFamily.bodySemibold,
+              fontSize: 15,
+              lineHeight: 18,
+              color: hovered ? colors.textPrimary : colors.textSecondary,
+              textDecorationLine: 'underline',
+            }}>
+            {label}
+          </Text>
+        )}
       </PressableScale>
       {note ? (
         <Text variant="caption" tone="secondary" importantForAccessibility="no" accessibilityElementsHidden>

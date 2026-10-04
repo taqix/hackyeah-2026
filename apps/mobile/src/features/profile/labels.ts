@@ -33,7 +33,7 @@ export function statementIcon(statement: SummaryStatement): IconName {
 }
 
 /** 'today', 'yesterday', 'Monday' within the week, else '19 Oct'. */
-function whenText(value: string, today: Date): string {
+export function whenText(value: string, today: Date): string {
   const days = diffDays(toLocalDate(value), toLocalDate(today));
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';

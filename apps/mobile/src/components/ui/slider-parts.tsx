@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { type SemanticColors, useTheme } from '@/theme';
 
+import { FOCUS_RING_OFFSET, FOCUS_RING_WIDTH } from './focus-ring';
 import { Icon, type IconName } from './icon';
 import { Text } from './text';
+import { webStyle } from './web-style';
 
 /** Thumb diameter. Its centre stops THUMB/2 short of each end; ticks follow it. */
 export const THUMB = 28;
@@ -41,6 +43,49 @@ export function centreOf(index: number, width: number, count: number) {
   'worklet';
   return THUMB / 2 + (count > 1 ? index / (count - 1) : 0) * (width - THUMB);
 }
+
+/**
+ * The step a key moves a thumb to on the web (WAI-ARIA slider): arrows by one,
+ * Page Up and Page Down by a fifth of the scale (at least two), Home and End
+ * to the ends. Null for any other key.
+ */
+export function keyStep(key: string, index: number, count: number): number | null {
+  const page = Math.max(2, Math.round((count - 1) / 5));
+  const clamp = (next: number) => Math.max(0, Math.min(count - 1, next));
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      return clamp(index + 1);
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      return clamp(index - 1);
+    case 'PageUp':
+      return clamp(index + page);
+    case 'PageDown':
+      return clamp(index - page);
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
+}
+
+/** The kit's focus ring on a thumb while the slider has keyboard focus (web). */
+export function thumbFocus(colors: SemanticColors, visible: boolean): ViewStyle | null {
+  return visible
+    ? {
+        outlineStyle: 'solid',
+        outlineWidth: FOCUS_RING_WIDTH,
+        outlineOffset: FOCUS_RING_OFFSET,
+        outlineColor: colors.focusRing,
+      }
+    : null;
+}
+
+/** The track takes clicks anywhere on it: a pointer cursor says so (web). */
+export const TRACK_CURSOR = webStyle({ cursor: 'pointer' });
 
 /** The value spelled out above the track, with its icon. Hidden: the slider reads it out. */
 export function SliderValue({ icon, children }: { icon?: IconName; children: ReactNode }) {

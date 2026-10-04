@@ -21,6 +21,7 @@ import { answersSentence } from '../../lib/preference-options';
 import { sessionLocalDate, sessionMinutes, sessionStart, sortSessions } from '../../lib/sessions';
 import {
   ApiError,
+  GUEST_NAME,
   type Account,
   type ActivityLog,
   type AssistantSummary,
@@ -65,6 +66,8 @@ export const BUILD_MS = 3_000;
 export const GOOGLE_EMAIL = 'sam@gmail.example';
 /** The one password that is always wrong, to show 1.3. */
 export const WRONG_PASSWORD = 'wrong-password';
+/** Saving a guest with an email at this domain answers as if the email had to be confirmed first. */
+export const CONFIRM_FIRST_DOMAIN = 'confirm.example';
 const FAILURE_MESSAGE = 'Something went wrong on our side. Your answers are saved, so trying again only takes a moment.';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -418,6 +421,33 @@ export function createBackend(deps: BackendDeps) {
         const acc =
           db().accounts.find((a) => a.user.email === GOOGLE_EMAIL) ?? createAccount(GOOGLE_EMAIL, null, 'Sam', 'google');
         db().session_user_id = acc.user.id;
+        return sessionFor(acc.user);
+      },
+      /** A fresh account with no email, password or history; a session already signed in is kept. */
+      signInAsGuest(): AuthSession {
+        const d = db();
+        const current = d.accounts.find((a) => a.user.id === d.session_user_id);
+        if (current) return sessionFor(current.user);
+        const acc = createAccount('', null, GUEST_NAME, 'guest');
+        d.session_user_id = acc.user.id;
+        return sessionFor(acc.user);
+      },
+      upgradeGuest(email: string, password: string): AuthSession {
+        const acc = account();
+        if (acc.user.provider !== 'guest') {
+          throw new ApiError('validation', 'This account already has an email and password.');
+        }
+        const e = validateEmail(email);
+        if (password.length < 8) throw new ApiError('weak_password', 'Use at least 8 characters.');
+        if (db().accounts.some((a) => a.user.email === e)) {
+          throw new ApiError('email_taken', 'An account already uses this email.');
+        }
+        if (e.endsWith(`@${CONFIRM_FIRST_DOMAIN}`)) {
+          throw new ApiError('confirmation_required', `Open the link we sent to ${e} to finish saving your account.`);
+        }
+        acc.user.email = e;
+        acc.user.provider = 'email';
+        acc.password = password;
         return sessionFor(acc.user);
       },
       sendPasswordReset(email: string): void {

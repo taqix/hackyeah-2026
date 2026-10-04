@@ -2,19 +2,17 @@
 
 > Built during **HackYeah 2026**.
 
-Movo is a **mobile app** currently in active development. The mobile app is not available for download yet, but a **web app preview** is available and working.
-
-In the future, Movo will also be available as a full **web app**, with a look similar to the current preview.
+Movo is a sport app for beginners, built as one Expo app for phones and the web. The mobile app is not available for download yet; the **web app** runs in the browser.
 
 ---
 
 ## Project status
 
-| Component        | Status                       |
-| ---------------- | ---------------------------- |
-| Web app preview  | Done                         |
-| Mobile app       | Not available yet            |
-| Web app          | Not available yet            |
+| Component    | Status                                                  |
+| ------------ | ------------------------------------------------------- |
+| Landing page | Live at https://taqix.github.io/hackyeah-2026/          |
+| Web app      | Live at https://taqix.github.io/hackyeah-2026/app/      |
+| Mobile app   | Not available yet                                       |
 
 The project idea, technology stack, and full setup instructions will be expanded as development progresses.
 
@@ -22,9 +20,11 @@ The project idea, technology stack, and full setup instructions will be expanded
 
 ## Requirements
 
-To access the web app preview, all you need is the preview link:
+To use Movo, open the web app in a browser, then sign in or continue as a guest:
 
-> https://taqix.github.io/hackyeah-2026/
+> https://taqix.github.io/hackyeah-2026/app/
+
+How the site is built and deployed: [GitHub Pages](docs/deployment.md#github-pages-landing-page-and-web-app).
 
 ---
 

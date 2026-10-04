@@ -3,12 +3,19 @@ import { useRouter } from 'expo-router';
 import type { LocalDate, PlanState, PlanWeek, Preferences, SportDefinition } from '@/api/types';
 import { Col } from '@/components/layout';
 import { DayHero, StepCountCard } from '@/features/home/hero';
-import { activityLabel } from '@/lib/preference-options';
-import { addDays, diffDays, formatWeekRange, joinAnd, relativeWeekLabel, startOfWeek, weekdayIndex } from '@/lib/dates';
+import { addDays, diffDays, formatWeekRange, relativeWeekLabel, startOfWeek, weekdayIndex } from '@/lib/dates';
 import { useOpenChat } from '@/navigation/open-chat';
 
 import { ChangePlan } from './change-plan';
-import { isWeekDone, listTitle, nextSessionAfter, primarySession, stripDays } from './home-model';
+import {
+  isWeekDone,
+  listTitle,
+  nextSessionAfter,
+  primarySession,
+  stripDays,
+  switchedOff,
+  switchedOffNote,
+} from './home-model';
 import { PlanLoadError, QuietWeekHero, WeekSkeleton } from './plan-states';
 import { WeekList } from './week-list';
 import { WeekNav } from './week-nav';
@@ -126,19 +133,4 @@ export function PlanWeekView({
       )}
     </>
   );
-}
-
-/** The sports she picked that feedback has switched off, by name. */
-function switchedOff(preferences: Preferences, sports: SportDefinition[] | undefined): string[] {
-  return preferences.activity_interests
-    .filter((id) => preferences.excluded_activity_types.includes(id))
-    .map((id) => activityLabel(id, sports));
-}
-
-/** "Walk and Run are both switched off in your choices." */
-function switchedOffNote(names: string[]): string | null {
-  if (!names.length) return null;
-  if (names.length === 1) return `${names[0]} is switched off in your choices.`;
-  const all = names.length === 2 ? 'both' : 'all';
-  return `${joinAnd(names)} are ${all} switched off in your choices.`;
 }

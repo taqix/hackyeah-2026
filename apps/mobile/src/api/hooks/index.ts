@@ -10,11 +10,13 @@ export {
   useLookupEmail,
   useSendPasswordReset,
   useSession,
+  useSignInAsGuest,
   useSignInWithEmail,
   useSignInWithGoogle,
   useSignOut,
   useSignUpWithEmail,
   useUpdatePassword,
+  useUpgradeGuest,
 } from './auth';
 export { useSports, useSport } from './catalog';
 export { useChatMessages, useSendChatMessage, useUndoChatMessage, type SendChatMessageInput } from './chat';

@@ -4,41 +4,20 @@ import { StyleSheet, View } from 'react-native';
 
 import { useLog, usePlannedSession, useSport } from '@/api/hooks';
 import { type GymExercise, isGymSession, type PlannedSession, type SportDefinition } from '@/api/types';
-import { BackButton, Body, BottomBar, Col, Content, H1, Kicker, Row, Screen, Section, TopBar } from '@/components/layout';
-import { Badge, Button, ExerciseRow, Icon, IconButton, Sheet, SuggestionCard, Text } from '@/components/ui';
+import { BackButton, Body, BottomBar, Col, Content, H1, Kicker, Row, Screen, Section, TopBar, useLayout } from '@/components/layout';
+import { Badge, Button, ExerciseRow, IconButton, Sheet, SuggestionCard, Text } from '@/components/ui';
 import { useNow } from '@/lib/clock';
-import { diffDays, formatDayDate, relativeDayName, toLocalDate } from '@/lib/dates';
 import { sessionStart, sessionTimeLabel } from '@/lib/sessions';
 import { sportIcon, sportName } from '@/lib/sport-visuals';
 import { useOpenChat } from '@/navigation/open-chat';
 import { routes } from '@/navigation/routes';
-import { useTheme } from '@/theme';
 
 import { WorkoutError, WorkoutLoading } from '../screen-state';
+import { ActivityDesktop } from './activity-desktop';
+import { dayLabel, Note } from './activity-parts';
 import { LoggedCard } from './logged-card';
 import { MoreSheet } from './more-sheet';
 import { coachTip, exerciseDetail, exerciseIcon } from './workout-text';
-
-/** 'Today', 'Tomorrow', 'Friday' within the week around today; 'Fri 18 Sep' further away. */
-function dayLabel(start: Date, today: Date): string {
-  const days = diffDays(toLocalDate(today), toLocalDate(start));
-  return Math.abs(days) < 7 ? relativeDayName(start, today) : formatDayDate(start);
-}
-
-/** A small line with an icon under the plan: the watch note, or how the gym rows work. */
-function Note({ icon, children }: { icon: 'watch' | 'info'; children: string }) {
-  const { colors } = useTheme();
-  return (
-    <Row gap={10} style={styles.note}>
-      <View style={styles.noteIcon}>
-        <Icon name={icon} size={16} color={colors.textSecondary} />
-      </View>
-      <Text variant="bodySm" style={styles.noteText}>
-        {children}
-      </Text>
-    </Row>
-  );
-}
 
 /** What the session holds: the plan's parts, or the gym exercises (a tap shows how each is done). */
 function PlanList({
@@ -86,6 +65,7 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
   const router = useRouter();
   const openChat = useOpenChat();
   const today = useNow();
+  const { isDesktop } = useLayout();
   const logQuery = useLog(session.log_id);
   const [moreOpen, setMoreOpen] = useState(false);
   // Kept after closing so the sheet keeps its text while it slides away.
@@ -103,6 +83,54 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
   const day = dayLabel(sessionStart(session), today);
   const tip = coachTip(session.sport_id);
   const adjust = () => openChat({ aboutSessionId: session.id });
+  const name = sportName(sport ? [sport] : null, session.sport_id);
+  const switchedNotice =
+    switched === null
+      ? null
+      : switched
+        ? `${name} is switched off. Future plans leave it out.`
+        : `${name} is back on. Future plans can include it.`;
+
+  const sheets = (
+    <>
+      <MoreSheet
+        visible={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        title={session.title}
+        sportId={session.sport_id}
+        sportLabel={label}
+        onChanged={setSwitched}
+      />
+      <Sheet
+        visible={exerciseOpen}
+        onClose={() => setExerciseOpen(false)}
+        title={exercise?.name}
+        description={exercise ? exerciseDetail(exercise, sport) : undefined}
+        showClose>
+        {exercise?.description ? <Body>{exercise.description}</Body> : null}
+      </Sheet>
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <Screen>
+        <ActivityDesktop
+          session={session}
+          sport={sport}
+          log={{
+            data: logQuery.data,
+            isPending: logQuery.isPending,
+            isError: logQuery.isError,
+            refetch: () => void logQuery.refetch(),
+          }}
+          switchedNotice={switchedNotice}
+          onMore={() => setMoreOpen(true)}
+        />
+        {sheets}
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -124,12 +152,10 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
         </Col>
         {session.description ? <Body>{session.description}</Body> : null}
 
-        {switched !== null ? (
+        {switchedNotice !== null ? (
           <View accessibilityRole="summary" accessibilityLiveRegion="polite">
             <Text variant="bodySm" tone="secondary">
-              {switched
-                ? `${sportName(sport ? [sport] : null, session.sport_id)} is switched off. Future plans leave it out.`
-                : `${sportName(sport ? [sport] : null, session.sport_id)} is back on. Future plans can include it.`}
+              {switchedNotice}
             </Text>
           </View>
         ) : null}
@@ -226,22 +252,7 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
         )}
       </BottomBar>
 
-      <MoreSheet
-        visible={moreOpen}
-        onClose={() => setMoreOpen(false)}
-        title={session.title}
-        sportId={session.sport_id}
-        sportLabel={label}
-        onChanged={setSwitched}
-      />
-      <Sheet
-        visible={exerciseOpen}
-        onClose={() => setExerciseOpen(false)}
-        title={exercise?.name}
-        description={exercise ? exerciseDetail(exercise, sport) : undefined}
-        showClose>
-        {exercise?.description ? <Body>{exercise.description}</Body> : null}
-      </Sheet>
+      {sheets}
     </Screen>
   );
 }
@@ -261,8 +272,5 @@ export function ActivityScreen({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   badges: { marginTop: 4, flexWrap: 'wrap' },
-  note: { alignItems: 'flex-start' },
-  noteIcon: { marginTop: 2 },
-  noteText: { flex: 1 },
   grow: { flex: 1 },
 });

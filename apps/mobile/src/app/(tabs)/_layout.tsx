@@ -6,6 +6,7 @@ import { useStepCounterTracking } from '@/hooks/use-step-counter';
 import { FloatingTabBar } from '@/navigation/floating-tab-bar';
 import { GateError, GateLoading } from '@/navigation/gate-states';
 import { useAccountState } from '@/navigation/use-account-state';
+import { useShellVisible } from '@/navigation/web/shell-visibility';
 import { useTheme } from '@/theme';
 
 /** Tabs need a session and saved answers. */
@@ -29,13 +30,15 @@ function TabsNavigator() {
   // Steps are read only once the person reaches the app, not during sign-in or onboarding.
   useStepCounterTracking();
   const { colors } = useTheme();
+  // The desktop web's sidebar takes the floating tab bar's place.
+  const sidebar = useShellVisible();
 
   return (
     <>
       {/* Copies planned sessions to the Movo calendar once the person turns that on. */}
       <CalendarExportSync />
       <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
+        tabBar={(props) => (sidebar ? null : <FloatingTabBar {...props} />)}
         screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bgApp } }}>
         <Tabs.Screen name="index" options={{ title: 'Today' }} />
         <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />

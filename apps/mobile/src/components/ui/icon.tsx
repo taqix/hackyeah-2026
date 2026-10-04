@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
@@ -80,6 +81,8 @@ import {
   Timer,
   Trash2,
   TreePine,
+  TrendingDown,
+  TrendingUp,
   Undo2,
   UserRound,
   Watch,
@@ -99,6 +102,7 @@ import { useTheme } from '@/theme';
  */
 const ICONS = {
   activity: Activity,
+  'arrow-down': ArrowDown,
   'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,
   'arrow-up': ArrowUp,
@@ -178,6 +182,8 @@ const ICONS = {
   timer: Timer,
   'trash-2': Trash2,
   'tree-pine': TreePine,
+  'trending-down': TrendingDown,
+  'trending-up': TrendingUp,
   'undo-2': Undo2,
   'user-round': UserRound,
   watch: Watch,

@@ -7,20 +7,24 @@ import { PressableScale } from './pressable-scale';
 
 export type CardVariant = 'default' | 'sunken' | 'accent' | 'outline';
 
-function surface(variant: CardVariant, theme: Theme): ViewStyle {
+/** Points a pressable default card rises while the mouse is over it (web). */
+const HOVER_LIFT = 2;
+
+/** The variant's surface; `hovered` (web only) is its hover step: a firmer edge, a step of tint, or a lift. */
+function surface(variant: CardVariant, theme: Theme, hovered = false): ViewStyle {
   const { colors, shadows } = theme;
   switch (variant) {
     case 'sunken':
-      return { backgroundColor: colors.surfaceSunken, borderColor: 'transparent' };
+      return { backgroundColor: colors.surfaceSunken, borderColor: hovered ? colors.borderStrong : 'transparent' };
     case 'accent':
-      return { backgroundColor: colors.accentSoft, borderColor: 'transparent' };
+      return { backgroundColor: hovered ? colors.accentSoftStrong : colors.accentSoft, borderColor: 'transparent' };
     case 'outline':
-      return { backgroundColor: 'transparent', borderColor: colors.borderStrong };
+      return { backgroundColor: hovered ? colors.hoverWash : 'transparent', borderColor: colors.borderStrong };
     default:
       return {
         backgroundColor: colors.surfaceCard,
-        borderColor: colors.borderSubtle,
-        ...shadows[1],
+        borderColor: hovered ? colors.borderStrong : colors.borderSubtle,
+        ...shadows[hovered ? 2 : 1],
       };
   }
 }
@@ -30,7 +34,7 @@ export type CardProps = {
   variant?: CardVariant;
   /** 20 by default (card padding). */
   padding?: number;
-  /** Makes the whole card a button with the card press scale (0.99). */
+  /** Makes the whole card a button with the card press scale (0.99); on the web it lifts under the mouse. */
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -50,10 +54,11 @@ export function Card({ children, variant = 'default', padding = 20, onPress, acc
     <PressableScale
       onPress={onPress}
       scaleTo={theme.motion.pressScaleCard}
+      lift={variant === 'default' ? HOVER_LIFT : 0}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      style={[base, surface(variant, theme), style]}>
+      style={({ hovered }) => [base, surface(variant, theme, hovered), style]}>
       {children}
     </PressableScale>
   );

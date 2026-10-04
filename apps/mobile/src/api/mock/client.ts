@@ -82,6 +82,8 @@ export function createMockApiClient(): ApiClient {
       signInWithEmail: (email, password) => call(() => backend.auth.signInWithEmail(email, password)),
       signUpWithEmail: (email, password, name) => call(() => backend.auth.signUpWithEmail(email, password, name)),
       signInWithGoogle: () => call(() => backend.auth.signInWithGoogle()),
+      signInAsGuest: () => call(() => backend.auth.signInAsGuest()),
+      upgradeGuest: (email, password) => call(() => backend.auth.upgradeGuest(email, password)),
       sendPasswordReset: (email) => call(() => backend.auth.sendPasswordReset(email)),
       updatePassword: (password) => call(() => backend.auth.updatePassword(password)),
       getProviders: () => call(() => backend.auth.getProviders()),

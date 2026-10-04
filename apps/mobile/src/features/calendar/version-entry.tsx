@@ -1,23 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
-import type { PlanVersion, PlanVersionSource } from '@/api/types';
+import type { PlanVersion } from '@/api/types';
 import { Col, Row } from '@/components/layout';
-import { Badge, Disc, Icon, type IconName, Text, TextLink } from '@/components/ui';
-import { formatDayDate, formatTime } from '@/lib/dates';
+import { Badge, Disc, Icon, Text, TextLink } from '@/components/ui';
 import { useTheme } from '@/theme';
 
-const SOURCES: Record<PlanVersionSource, { label: string; icon: IconName }> = {
-  first_plan: { label: 'First plan', icon: 'sprout' },
-  weekly_plan: { label: 'Weekly plan', icon: 'calendar-range' },
-  chat: { label: 'From chat', icon: 'message-circle' },
-  undo: { label: 'Undo', icon: 'undo-2' },
-  answers: { label: 'Your answers', icon: 'sliders-horizontal' },
-};
-
-/** "Sun 18 Oct, 19:02" */
-function versionWhen(version: PlanVersion): string {
-  return `${formatDayDate(version.created_at)}, ${formatTime(version.created_at)}`;
-}
+import { VERSION_SOURCES, versionWhen } from './version-source';
 
 type VersionEntryProps = {
   version: PlanVersion;
@@ -29,7 +17,7 @@ type VersionEntryProps = {
 /** One version of the plan: where it came from, when, its summary, and what was done in it. */
 export function VersionEntry({ version, last, action }: VersionEntryProps) {
   const { colors } = useTheme();
-  const source = SOURCES[version.source];
+  const source = VERSION_SOURCES[version.source];
   return (
     <View style={styles.entry}>
       <View style={styles.rail}>

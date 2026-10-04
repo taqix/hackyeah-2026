@@ -8,6 +8,7 @@ import { useTheme } from '@/theme';
 
 import { useBottomBarPadding } from './bottom-bar';
 import { useKeyboardLifted } from './keyboard-avoider';
+import { DESKTOP_CONTENT_MAX_WIDTH, DESKTOP_GUTTER, useLayout } from './responsive';
 
 /** Space to leave for a BottomBar above its safe-area padding: 20 fade + 56 button + 36 air. */
 export const BOTTOM_BAR_CLEARANCE = 112;
@@ -28,6 +29,11 @@ export type ContentProps = Omit<ScrollViewProps, 'contentContainerStyle' | 'chil
   bottomInset?: BottomInset;
   /** false renders a plain View with the same padding (fixed screens). */
   scroll?: boolean;
+  /**
+   * Desktop web only: the widest the content grows before it centers
+   * (1160 by default; forms pass a narrower one, `'none'` fills the page).
+   */
+  maxWidth?: number | 'none';
   contentContainerStyle?: StyleProp<ViewStyle>;
   ref?: Ref<ScrollView>;
 };
@@ -42,6 +48,7 @@ export function Content({
   gap = 24,
   bottomInset = 'safe',
   scroll = true,
+  maxWidth = DESKTOP_CONTENT_MAX_WIDTH,
   contentContainerStyle,
   style,
   ref,
@@ -49,6 +56,7 @@ export function Content({
   ...rest
 }: ContentProps) {
   const { layout } = useTheme();
+  const { isDesktop } = useLayout();
   const insets = useSafeAreaInsets();
   const lifted = useKeyboardLifted();
   const barPadding = useBottomBarPadding();
@@ -56,17 +64,29 @@ export function Content({
   const scrollRef = useRef<ScrollView | null>(null);
   const viewport = useRef(0);
 
+  // The desktop web has a sidebar instead of the floating tab bar.
+  const inset: BottomInset = isDesktop && bottomInset === 'tabBar' ? 'safe' : bottomInset;
   const bottom =
-    typeof bottomInset === 'number'
-      ? bottomInset
-      : bottomInset === 'tabBar'
+    typeof inset === 'number'
+      ? inset
+      : inset === 'tabBar'
         ? layout.tabBarClearance + Math.max(0, insets.bottom - 24)
-        : bottomInset === 'bottomBar'
+        : inset === 'bottomBar'
           ? BOTTOM_BAR_CLEARANCE + barPadding
-          : (lifted ? 0 : insets.bottom) + 24;
+          : (lifted ? 0 : insets.bottom) + (isDesktop ? 48 : 24);
   // What covers the end of the viewport: the bar the bottom padding makes room for.
-  const cover = bottomInset === 'safe' ? 0 : bottom;
-  const padding: ViewStyle = { paddingHorizontal: layout.gutter, paddingTop: 8, paddingBottom: bottom, gap };
+  const cover = inset === 'safe' ? 0 : bottom;
+  const padding: ViewStyle = isDesktop
+    ? {
+        paddingHorizontal: DESKTOP_GUTTER,
+        paddingTop: 32,
+        paddingBottom: bottom,
+        gap,
+        width: '100%',
+        alignSelf: 'center',
+        ...(maxWidth === 'none' ? null : { maxWidth: maxWidth + DESKTOP_GUTTER * 2 }),
+      }
+    : { paddingHorizontal: layout.gutter, paddingTop: 8, paddingBottom: bottom, gap };
 
   /** Scrolls the focused field (if it is in this scroll view) above the keyboard and any bottom bar. */
   const revealFocused = () => {

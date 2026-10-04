@@ -3,7 +3,7 @@ import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { palette, type SemanticColors, useTheme } from '@/theme';
 
 import { Icon, type IconName } from './icon';
-import { PressableScale } from './pressable-scale';
+import { PressableScale, type PressState } from './pressable-scale';
 import { Spinner } from './spinner';
 import { Text } from './text';
 
@@ -16,22 +16,38 @@ const SIZES = {
   lg: { height: 56, paddingX: 26, font: 18, icon: 20, gap: 10 },
 } as const;
 
-type Look = { bg: string; fg: string; border: string };
+type Look = { bg: string; fg: string; border: string; opacity?: number };
 
-/** components.js Button variants; `pressed` stands in for the web hover/press step. */
-function look(variant: ButtonVariant, colors: SemanticColors, pressed: boolean): Look {
+/**
+ * components.js Button variants. On a phone `pressed` stands in for the hover
+ * step; on the web a mouse over the button takes it (README › Hover), and a
+ * fill-less ghost washes over whatever surface it sits on.
+ */
+function look(variant: ButtonVariant, colors: SemanticColors, { pressed, hovered }: PressState): Look {
   switch (variant) {
     case 'secondary':
-      return { bg: pressed ? colors.surfaceSunken : colors.surfaceCard, fg: colors.textPrimary, border: colors.borderStrong };
+      return {
+        bg: pressed || hovered ? colors.surfaceSunken : colors.surfaceCard,
+        fg: colors.textPrimary,
+        border: colors.borderStrong,
+      };
     case 'ghost':
-      return { bg: pressed ? colors.surfaceSunken : 'transparent', fg: colors.textPrimary, border: 'transparent' };
+      return {
+        bg: hovered ? colors.hoverWash : pressed ? colors.surfaceSunken : 'transparent',
+        fg: colors.textPrimary,
+        border: 'transparent',
+      };
     case 'inverse':
-      return { bg: colors.surfaceInverse, fg: colors.textInverse, border: 'transparent' };
+      return { bg: colors.surfaceInverse, fg: colors.textInverse, border: 'transparent', opacity: hovered ? 0.88 : 1 };
     case 'light':
       // On SuggestionCard: the hero is dark in both themes, so the button stays paper on ink.
-      return { bg: pressed ? palette.paper100 : palette.paper0, fg: palette.ink900, border: 'transparent' };
+      return { bg: pressed || hovered ? palette.paper100 : palette.paper0, fg: palette.ink900, border: 'transparent' };
     default:
-      return { bg: pressed ? colors.accentPressed : colors.accent, fg: colors.textOnAccent, border: 'transparent' };
+      return {
+        bg: pressed ? colors.accentPressed : hovered ? colors.accentHover : colors.accent,
+        fg: colors.textOnAccent,
+        border: 'transparent',
+      };
   }
 }
 
@@ -80,8 +96,8 @@ export function Button({
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       aria-disabled={inactive} aria-busy={loading}
-      style={({ pressed }) => {
-        const v = look(variant, colors, pressed);
+      style={(state) => {
+        const v = look(variant, colors, state);
         return [
           styles.base,
           {
@@ -89,14 +105,14 @@ export function Button({
             paddingHorizontal: s.paddingX,
             backgroundColor: v.bg,
             borderColor: v.border,
-            opacity: disabled ? 0.4 : 1,
+            opacity: disabled ? 0.4 : (v.opacity ?? 1),
           },
           fullWidth ? styles.full : null,
           style,
         ];
       }}>
-      {({ pressed }) => {
-        const v = look(variant, colors, pressed);
+      {(state) => {
+        const v = look(variant, colors, state);
         return (
           <View style={[styles.row, { gap: s.gap }]}>
             {loading ? (

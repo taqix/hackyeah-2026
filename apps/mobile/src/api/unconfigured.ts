@@ -18,6 +18,8 @@ export function createUnconfiguredApiClient(missing: string[]): ApiClient {
       signInWithEmail: fail,
       signUpWithEmail: fail,
       signInWithGoogle: fail,
+      signInAsGuest: fail,
+      upgradeGuest: fail,
       sendPasswordReset: fail,
       updatePassword: fail,
       getProviders: fail,

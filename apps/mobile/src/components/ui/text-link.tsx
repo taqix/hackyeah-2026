@@ -17,10 +17,12 @@ export type TextLinkProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** A small text button: 44 high so it is easy to hit, no fill. */
+/**
+ * A small text button: 44 high so it is easy to hit, no fill. On the web the
+ * mouse underlines an accent link and darkens a quiet one (base.css a:hover).
+ */
 export function TextLink({ children, onPress, tone = 'accent', icon, accessibilityHint, style }: TextLinkProps) {
   const { colors, fontFamily, radius } = useTheme();
-  const color = tone === 'accent' ? colors.accentText : colors.textSecondary;
   const trailing = icon === undefined ? (tone === 'accent' ? 'arrow-right' : null) : icon;
   return (
     <PressableScale
@@ -33,17 +35,24 @@ export function TextLink({ children, onPress, tone = 'accent', icon, accessibili
         { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, borderRadius: radius.xs },
         style,
       ]}>
-      <Text
-        style={{
-          fontFamily: fontFamily.bodySemibold,
-          fontSize: 14,
-          lineHeight: 18,
-          color,
-          textDecorationLine: tone === 'quiet' ? 'underline' : 'none',
-        }}>
-        {children}
-      </Text>
-      {trailing ? <Icon name={trailing} size={16} color={color} /> : null}
+      {({ hovered }) => {
+        const color = tone === 'accent' ? colors.accentText : hovered ? colors.textPrimary : colors.textSecondary;
+        return (
+          <>
+            <Text
+              style={{
+                fontFamily: fontFamily.bodySemibold,
+                fontSize: 14,
+                lineHeight: 18,
+                color,
+                textDecorationLine: tone === 'quiet' || hovered ? 'underline' : 'none',
+              }}>
+              {children}
+            </Text>
+            {trailing ? <Icon name={trailing} size={16} color={color} /> : null}
+          </>
+        );
+      }}
     </PressableScale>
   );
 }

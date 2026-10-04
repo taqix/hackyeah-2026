@@ -9,16 +9,23 @@ import { Button, Icon, Skeleton, SuggestionCard, Text } from '@/components/ui';
 import { capitalize } from '@/lib/dates';
 import { useTheme } from '@/theme';
 
+import { useHeroSize } from './hero/hero-size';
 import { StateCard, StateCardNote } from './state-card';
 import { WorkingBar } from './working-bar';
 
 /** 5.7: the first plan is being generated, right after onboarding's Build plan. */
 export function BuildingHero({ answers }: { answers: string | null }) {
+  const large = useHeroSize() === 'lg';
   const body = `${answers ? `${capitalize(answers)}. ` : ''}This takes about a minute.`;
   return (
     <>
       <View role="status" accessibilityLiveRegion="polite">
-        <SuggestionCard tone="sage" kicker="Your first week" title="Building your week." body={body}>
+        <SuggestionCard
+          tone="sage"
+          size={large ? 'lg' : 'md'}
+          kicker="Your first week"
+          title="Building your week."
+          body={body}>
           <WorkingBar label="Building your plan" />
         </SuggestionCard>
       </View>

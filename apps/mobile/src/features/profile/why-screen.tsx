@@ -1,13 +1,19 @@
 import { type Href, useRouter } from 'expo-router';
+import { View } from 'react-native';
 
 import { useAssistantSummary } from '@/api/hooks';
 import type { SummaryEvidence, SummaryStatement } from '@/api/types';
 import { Button, type DiscTone, type IconName, ListRow, Skeleton, Text } from '@/components/ui';
-import { BackButton, Body, Col, Content, H1, Kicker, Screen, TopBar } from '@/components/layout';
+import { BackButton, Body, Col, Content, H1, Kicker, Screen, TopBar, useLayout } from '@/components/layout';
 import { SECTION_META } from '@/lib/preference-options';
 import { routes } from '@/navigation/routes';
 
+import { BackLink, PanelCard, Reveal, Split } from './panel';
 import { ErrorState, InfoCaption, RowsSkeleton } from './pieces';
+
+const TITLE_SUMMARY = 'How we see you';
+const NEVER_A_NO = 'Only your answers count. A busy or skipped day never counts as a no.';
+const NEVER_CHANGES = 'The summary never changes anything. Change the answer behind it, and the summary follows.';
 
 /** Where a stored fact is changed: its answer in Profile › Edit, its session, or Your feedback. */
 function evidenceTarget(evidence: SummaryEvidence): { href: Href; hint: string } {
@@ -29,49 +35,90 @@ function evidenceLook(evidence: SummaryEvidence, statement: SummaryStatement): {
 export function WhyScreen({ statementId }: { statementId: string }) {
   const router = useRouter();
   const summary = useAssistantSummary();
+  const { isDesktop } = useLayout();
   const statement = summary.data?.statements.find((s) => s.id === statementId);
 
+  const body = summary.isPending ? (
+    <Col gap={20} accessible accessibilityLabel="Loading">
+      <Col gap={10}>
+        <Skeleton width="40%" height={12} />
+        <Skeleton height={24} />
+        <Skeleton width="65%" height={24} />
+      </Col>
+      <RowsSkeleton count={3} disc={32} />
+    </Col>
+  ) : summary.isError ? (
+    <>
+      <H1>Why we think this</H1>
+      <ErrorState title="We couldn't load the summary" onRetry={() => void summary.refetch()} />
+    </>
+  ) : !statement ? (
+    <>
+      <H1>Why we think this</H1>
+      <Body>Our assistant has rewritten the summary since, so this statement is gone.</Body>
+      <Button
+        variant="secondary"
+        onPress={() => router.replace('/profile/summary')}
+        style={{ alignSelf: 'flex-start' }}>
+        See the summary
+      </Button>
+    </>
+  ) : isDesktop ? (
+    <DesktopStatement statement={statement} />
+  ) : (
+    <Statement statement={statement} />
+  );
+
+  if (isDesktop) {
+    return (
+      <Screen>
+        <Content gap={24} maxWidth={960}>
+          <BackLink label={TITLE_SUMMARY} href="/profile/summary" />
+          {body}
+        </Content>
+      </Screen>
+    );
+  }
   return (
     <Screen>
       <TopBar left={<BackButton />} />
-      <Content gap={20}>
-        {summary.isPending ? (
-          <Col gap={20} accessible accessibilityLabel="Loading">
-            <Col gap={10}>
-              <Skeleton width="40%" height={12} />
-              <Skeleton height={24} />
-              <Skeleton width="65%" height={24} />
-            </Col>
-            <RowsSkeleton count={3} disc={32} />
-          </Col>
-        ) : summary.isError ? (
-          <>
-            <H1>Why we think this</H1>
-            <ErrorState title="We couldn't load the summary" onRetry={() => void summary.refetch()} />
-          </>
-        ) : !statement ? (
-          <>
-            <H1>Why we think this</H1>
-            <Body>Our assistant has rewritten the summary since, so this statement is gone.</Body>
-            <Button
-              variant="secondary"
-              onPress={() => router.replace('/profile/summary')}
-              style={{ alignSelf: 'flex-start' }}>
-              See the summary
-            </Button>
-          </>
-        ) : (
-          <Statement statement={statement} />
-        )}
-      </Content>
+      <Content gap={20}>{body}</Content>
     </Screen>
   );
 }
 
+/** What a statement rests on: from feedback, or the one answer to change. */
+function statementFacts(statement: SummaryStatement) {
+  return {
+    fromFeedback: statement.evidence.some((e) => e.kind !== 'answer'),
+    answerSection: statement.evidence.find((e) => e.kind === 'answer' && e.section)?.section ?? null,
+  };
+}
+
+function EvidenceRows({ statement }: { statement: SummaryStatement }) {
+  const router = useRouter();
+  return statement.evidence.map((evidence, i) => {
+    const target = evidenceTarget(evidence);
+    const look = evidenceLook(evidence, statement);
+    return (
+      <ListRow
+        key={evidence.id}
+        icon={look.icon}
+        discTone={look.tone}
+        discSize={32}
+        title={evidence.title}
+        detail={evidence.detail}
+        divider={i > 0}
+        onPress={() => router.push(target.href)}
+        accessibilityHint={target.hint}
+      />
+    );
+  });
+}
+
 function Statement({ statement }: { statement: SummaryStatement }) {
   const router = useRouter();
-  const fromFeedback = statement.evidence.some((e) => e.kind !== 'answer');
-  const answerSection = statement.evidence.find((e) => e.kind === 'answer' && e.section)?.section ?? null;
+  const { fromFeedback, answerSection } = statementFacts(statement);
 
   return (
     <>
@@ -83,29 +130,11 @@ function Statement({ statement }: { statement: SummaryStatement }) {
         <Text variant="caption">{statement.source_label}</Text>
       </Col>
       <Col gap={0}>
-        {statement.evidence.map((evidence, i) => {
-          const target = evidenceTarget(evidence);
-          const look = evidenceLook(evidence, statement);
-          return (
-            <ListRow
-              key={evidence.id}
-              icon={look.icon}
-              discTone={look.tone}
-              discSize={32}
-              title={evidence.title}
-              detail={evidence.detail}
-              divider={i > 0}
-              onPress={() => router.push(target.href)}
-              accessibilityHint={target.hint}
-            />
-          );
-        })}
+        <EvidenceRows statement={statement} />
       </Col>
       <Col gap={10}>
-        {fromFeedback ? <InfoCaption>Only your answers count. A busy or skipped day never counts as a no.</InfoCaption> : null}
-        <InfoCaption>
-          The summary never changes anything. Change the answer behind it, and the summary follows.
-        </InfoCaption>
+        {fromFeedback ? <InfoCaption>{NEVER_A_NO}</InfoCaption> : null}
+        <InfoCaption>{NEVER_CHANGES}</InfoCaption>
       </Col>
       {fromFeedback ? (
         <Button variant="secondary" size="lg" fullWidth onPress={() => router.push('/profile/feedback')}>
@@ -116,6 +145,64 @@ function Statement({ statement }: { statement: SummaryStatement }) {
           Change this answer
         </Button>
       ) : null}
+    </>
+  );
+}
+
+/** Desktop: the statement as the page title, its facts in a card, and how to change them beside it. */
+function DesktopStatement({ statement }: { statement: SummaryStatement }) {
+  const router = useRouter();
+  const { fromFeedback, answerSection } = statementFacts(statement);
+
+  return (
+    <>
+      <Reveal>
+        <Col gap={8} style={{ maxWidth: 720 }}>
+          <Kicker>Why we think this</Kicker>
+          <Text variant="h1" accessibilityRole="header">
+            {statement.text}
+          </Text>
+          <Text variant="caption">{statement.source_label}</Text>
+        </Col>
+      </Reveal>
+      <Split
+        stickySide
+        sideBasis={260}
+        main={
+          <Reveal order={1}>
+            <PanelCard title="What it comes from" gap={4}>
+              <View>
+                <EvidenceRows statement={statement} />
+              </View>
+            </PanelCard>
+          </Reveal>
+        }
+        side={
+          <Reveal order={2} style={{ gap: 16 }}>
+            <Col gap={10}>
+              {fromFeedback ? <InfoCaption>{NEVER_A_NO}</InfoCaption> : null}
+              <InfoCaption>{NEVER_CHANGES}</InfoCaption>
+            </Col>
+            {fromFeedback ? (
+              <Button
+                variant="secondary"
+                icon="heart"
+                onPress={() => router.push('/profile/feedback')}
+                style={{ alignSelf: 'flex-start' }}>
+                Change feedback
+              </Button>
+            ) : answerSection ? (
+              <Button
+                variant="secondary"
+                icon="pencil"
+                onPress={() => router.push(routes.profileEdit(answerSection))}
+                style={{ alignSelf: 'flex-start' }}>
+                Change this answer
+              </Button>
+            ) : null}
+          </Reveal>
+        }
+      />
     </>
   );
 }

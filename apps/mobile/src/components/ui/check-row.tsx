@@ -14,7 +14,10 @@ export type CheckRowProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** One option of a "pick any" list: a square check, same rhythm as the Radio row. */
+/**
+ * One option of a "pick any" list: a square check, same rhythm as the Radio
+ * row. On the web a mouse over it darkens the empty box, or deepens the fill.
+ */
 export function CheckRow({ label, checked, onPress, disabled = false, style }: CheckRowProps) {
   const { colors, fontFamily } = useTheme();
   return (
@@ -30,20 +33,24 @@ export function CheckRow({ label, checked, onPress, disabled = false, style }: C
         disabled ? { opacity: 0.45 } : null,
         style,
       ]}>
-      <View
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: 7,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: checked ? colors.accent : colors.surfaceCard,
-          borderWidth: checked ? 0 : 1.5,
-          borderColor: colors.borderStrong,
-        }}>
-        {checked ? <Icon name="check" size={15} strokeWidth={2.5} color={colors.textOnAccent} /> : null}
-      </View>
-      <Text style={{ flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 16, lineHeight: 21 }}>{label}</Text>
+      {({ hovered }) => (
+        <>
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 7,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: checked ? (hovered ? colors.accentHover : colors.accent) : colors.surfaceCard,
+              borderWidth: checked ? 0 : 1.5,
+              borderColor: hovered ? colors.textTertiary : colors.borderStrong,
+            }}>
+            {checked ? <Icon name="check" size={15} strokeWidth={2.5} color={colors.textOnAccent} /> : null}
+          </View>
+          <Text style={{ flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 16, lineHeight: 21 }}>{label}</Text>
+        </>
+      )}
     </PressableScale>
   );
 }

@@ -170,8 +170,9 @@ Welcome (1): **Continue with Google**, or an email address and **Continue with
 email**. One field for everyone: if an account uses the email, 1.1 asks for its
 password, with **Forgot password?**; if not, 1.2 asks for a new one and creates
 the account. A wrong password says so in the field (1.3). **Change** goes back
-to the email. Supabase Auth covers both ways. There is no guest entry on mobile;
-the website demo keeps one.
+to the email. Supabase Auth covers both ways. There is no guest entry on the
+phone apps; the web app offers **Continue as guest**, an anonymous account on
+the real API that starts at onboarding.
 
 The app also asks a new email account for **Your name** above the new password
 on 1.2 (required, up to 50 characters), and Today and the You tab greet by it.

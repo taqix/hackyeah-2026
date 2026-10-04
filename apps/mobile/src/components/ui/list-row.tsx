@@ -4,6 +4,7 @@ import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme';
 
 import { Disc, type DiscTone } from './disc';
+import { HoverBand } from './hover-band';
 import { Icon, type IconName } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
@@ -35,7 +36,10 @@ export type ListRowProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** A row in a list: Review, You, Settings, Privacy. With onPress it opens another screen. */
+/**
+ * A row in a list: Review, You, Settings, Privacy. With onPress it opens
+ * another screen; on the web a soft band shows under the mouse.
+ */
 export function ListRow({
   title,
   label,
@@ -95,7 +99,12 @@ export function ListRow({
       accessibilityHint={accessibilityHint}
       aria-disabled={disabled}
       style={rowStyle}>
-      {content}
+      {({ hovered }) => (
+        <>
+          <HoverBand visible={hovered} rowStyle={style} />
+          {content}
+        </>
+      )}
     </PressableScale>
   );
 }

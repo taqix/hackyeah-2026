@@ -2,7 +2,17 @@
  * Pure reading of a plan week for Home (design/prototype/home.jsx): which week
  * and day are shown, what each strip day holds, and the small copy around them.
  */
-import type { ActivityLog, Felt, IsoDateTime, LocalDate, PlannedSession, PlanState, PlanWeek } from '@/api/types';
+import type {
+  ActivityLog,
+  Felt,
+  IsoDateTime,
+  LocalDate,
+  PlannedSession,
+  PlanState,
+  PlanWeek,
+  Preferences,
+  SportDefinition,
+} from '@/api/types';
 import {
   addDays,
   diffDays,
@@ -10,11 +20,13 @@ import {
   formatDayLong,
   formatTime,
   fromLocalDate,
+  joinAnd,
   MONTHS_LONG,
   startOfWeek,
   toLocalDate,
   weekdayIndex,
 } from '@/lib/dates';
+import { activityLabel } from '@/lib/preference-options';
 import { nextPlannedSession, sessionLocalDate, sessionsOn, sessionStart } from '@/lib/sessions';
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -164,4 +176,19 @@ export function weekRows(week: PlanWeek): WeekRow[] {
 /** "This week", "Last week", "Next week", or "Week of 28 Sep – 4 Oct". */
 export function listTitle(word: string | null, range: string): string {
   return word ? word.charAt(0).toUpperCase() + word.slice(1) : `Week of ${range}`;
+}
+
+/** The sports she picked that feedback has switched off, by name (5.11's note). */
+export function switchedOff(preferences: Preferences, sports: SportDefinition[] | undefined): string[] {
+  return preferences.activity_interests
+    .filter((id) => preferences.excluded_activity_types.includes(id))
+    .map((id) => activityLabel(id, sports));
+}
+
+/** "Walk and Run are both switched off in your choices." */
+export function switchedOffNote(names: string[]): string | null {
+  if (!names.length) return null;
+  if (names.length === 1) return `${names[0]} is switched off in your choices.`;
+  const all = names.length === 2 ? 'both' : 'all';
+  return `${joinAnd(names)} are ${all} switched off in your choices.`;
 }

@@ -32,7 +32,7 @@ function startAuthSync(queryClient: QueryClient): () => void {
         ? {
             user: shortId(session.user.id),
             email: maskEmail(session.user.email),
-            provider: session.user.app_metadata.provider ?? 'email',
+            provider: session.user.is_anonymous ? 'guest' : (session.user.app_metadata.provider ?? 'email'),
           }
         : { signed_in: false },
     );

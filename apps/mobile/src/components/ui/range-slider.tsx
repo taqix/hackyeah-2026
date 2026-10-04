@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { type AccessibilityActionEvent, type StyleProp, View, type ViewStyle } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { type AccessibilityActionEvent, Platform, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -11,20 +11,27 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@/theme';
 
+import { noBrowserOutline } from './focus-visible';
 import type { IconName } from './icon';
 import {
   centreOf,
   indexAt,
   indexOf,
+  keyStep,
   SLIDER_HEIGHT,
   type SliderRange,
   SliderValue,
   stepCount,
   THUMB,
+  thumbFocus,
   Ticks,
   Track,
+  TRACK_CURSOR,
   trackStyles,
 } from './slider-parts';
+import { useWebKeyboard, type WebKeyEvent } from './web-keyboard';
+
+const IS_WEB = Platform.OS === 'web';
 
 export type RangeValue = readonly [number, number];
 
@@ -51,7 +58,8 @@ const NONE = -1;
 /**
  * A window on one track (onboarding RangeSlider): two thumbs, whole steps, at
  * least one step apart. A drag or tap moves the nearer thumb. Each thumb is
- * its own adjustable element for screen readers.
+ * its own adjustable element for screen readers. On the web the mouse drags
+ * or clicks the same way, and each thumb is a tab stop the arrow keys move.
  */
 export function RangeSlider({
   label,
@@ -72,6 +80,23 @@ export function RangeSlider({
   const ia = indexOf(range, a);
   const ib = Math.max(ia + 1, indexOf(range, b));
   const [width, setWidth] = useState(0);
+  const [focused, setFocused] = useState<0 | 1 | null>(null);
+  const startThumb = useRef<View>(null);
+  const endThumb = useRef<View>(null);
+
+  /** Moves one end from the keyboard, keeping the window at least one step wide. */
+  const keyMove = (which: 0 | 1) => (event: WebKeyEvent) => {
+    const next = keyStep(event.key, which === 0 ? ia : ib, count);
+    if (next === null) return;
+    event.preventDefault();
+    const i = which === 0 ? Math.min(next, ib - 1) : ia;
+    const j = which === 1 ? Math.max(next, ia + 1) : ib;
+    if (i !== ia || j !== ib) onChange([range.min + i * range.step, range.min + j * range.step]);
+  };
+  const ringOn = (which: 0 | 1) => (visible: boolean) =>
+    setFocused((current) => (visible ? which : current === which ? null : current));
+  useWebKeyboard(startThumb, { onKeyDown: keyMove(0), onFocusVisibleChange: ringOn(0) });
+  useWebKeyboard(endThumb, { onKeyDown: keyMove(1), onFocusVisibleChange: ringOn(1) });
 
   const trackWidth = useSharedValue(0);
   const startIndex = useSharedValue(ia);
@@ -171,6 +196,7 @@ export function RangeSlider({
     trackStyles.thumb,
     shadows[1],
     { backgroundColor: colors.surfaceCard, borderColor: colors.accent, opacity: width > 0 ? 1 : 0 },
+    noBrowserOutline,
   ];
   const actions = [{ name: 'increment' }, { name: 'decrement' }];
   const lower = label.toLowerCase();
@@ -187,7 +213,7 @@ export function RangeSlider({
             trackWidth.set(w);
             setWidth(w);
           }}
-          style={{ height: SLIDER_HEIGHT }}>
+          style={[{ height: SLIDER_HEIGHT }, TRACK_CURSOR]}>
           <Track />
           <Animated.View style={[trackStyles.fill, { pointerEvents: 'none', backgroundColor: colors.accent }, fillStyle]} />
           <Ticks
@@ -198,22 +224,35 @@ export function RangeSlider({
             on={(v) => v === a || v === b}
           />
           <Animated.View
+            ref={startThumb}
             accessible
             accessibilityRole="adjustable"
             accessibilityLabel={`${thumbLabels[0]} ${lower}`}
             accessibilityValue={{ min: range.min, max: range.max, now: a, text: formatValue(a) }}
             accessibilityActions={actions}
             onAccessibilityAction={adjust(0)}
-            style={[thumbBase, { zIndex: ia > mid ? 3 : 2 }, startStyle]}
+            // React Native Web reads the value from aria-* only, and needs the tab stop spelled out.
+            tabIndex={IS_WEB ? 0 : undefined}
+            aria-valuemin={IS_WEB ? range.min : undefined}
+            aria-valuemax={IS_WEB ? range.max : undefined}
+            aria-valuenow={IS_WEB ? a : undefined}
+            aria-valuetext={IS_WEB ? formatValue(a) : undefined}
+            style={[thumbBase, { zIndex: ia > mid ? 3 : 2 }, thumbFocus(colors, focused === 0), startStyle]}
           />
           <Animated.View
+            ref={endThumb}
             accessible
             accessibilityRole="adjustable"
             accessibilityLabel={`${thumbLabels[1]} ${lower}`}
             accessibilityValue={{ min: range.min, max: range.max, now: b, text: formatValue(b) }}
             accessibilityActions={actions}
             onAccessibilityAction={adjust(1)}
-            style={[thumbBase, { zIndex: ib < mid ? 3 : 2 }, endStyle]}
+            tabIndex={IS_WEB ? 0 : undefined}
+            aria-valuemin={IS_WEB ? range.min : undefined}
+            aria-valuemax={IS_WEB ? range.max : undefined}
+            aria-valuenow={IS_WEB ? b : undefined}
+            aria-valuetext={IS_WEB ? formatValue(b) : undefined}
+            style={[thumbBase, { zIndex: ib < mid ? 3 : 2 }, thumbFocus(colors, focused === 1), endStyle]}
           />
         </View>
       </GestureDetector>

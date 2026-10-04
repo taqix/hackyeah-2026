@@ -3,7 +3,7 @@ import { deviceCalendar } from './device-calendar';
 
 export const deviceCalendarAvailability = createCalendarAvailabilityService(deviceCalendar);
 export { createCalendarAvailabilityService } from './availability';
-export { deviceCalendar } from './device-calendar';
+export { deviceCalendar, deviceCalendarSupported } from './device-calendar';
 export { APP_CALENDAR_TITLE, CalendarError, isAppCalendar } from './types';
 export {
   captureAvailability,

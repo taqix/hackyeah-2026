@@ -64,6 +64,27 @@ export function session(userId = USER_ID, token = 'token-1'): AuthSessionData {
   };
 }
 
+export const GUEST_ID = '00000000-0000-4000-8000-000000000003';
+
+/**
+ * A guest's session as hosted Supabase answers an anonymous sign-in:
+ * `is_anonymous`, an empty email and no provider in app_metadata.
+ */
+export function guestSession(metadata: object = { name: 'Guest', full_name: 'Guest' }): AuthSessionData {
+  return {
+    access_token: 'guest-token',
+    refresh_token: 'guest-refresh',
+    user: {
+      id: GUEST_ID,
+      email: '',
+      is_anonymous: true,
+      created_at: '2026-10-04T10:00:00Z',
+      app_metadata: {},
+      user_metadata: { ...metadata },
+    },
+  };
+}
+
 /** An in-memory Auth: `current` is the session; refreshSession hands out `refreshed`. */
 export function fakeAuth(initial: AuthSessionData | null = session()) {
   const state = { current: initial, refreshed: null as AuthSessionData | null, refreshCalls: 0 };
@@ -72,6 +93,10 @@ export function fakeAuth(initial: AuthSessionData | null = session()) {
     getSession: async () => ({ data: { session: state.current }, error: null }),
     signInWithPassword: async () => result(state.current),
     signUp: async () => result(state.current),
+    signInAnonymously: async (credentials) => {
+      state.current = guestSession(credentials?.options?.data);
+      return result(state.current);
+    },
     signInWithOAuth: async () => ({ data: { url: null }, error: null }),
     linkIdentity: async () => ({ data: { url: null }, error: null }),
     getUserIdentities: async () => ({

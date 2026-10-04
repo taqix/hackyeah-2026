@@ -4,6 +4,7 @@ import type { ChatMessage, LocalDate } from '@/api/types';
 import { toLocalDate } from '@/lib/dates';
 
 import { ChatMessageView, DayBreak, ProblemCard, UpdatingCard } from './cards';
+import { Entrance } from './entrance';
 import { dayBreakLabel, messageDay } from './labels';
 import type { PendingMessage } from './use-chat-send';
 
@@ -20,6 +21,12 @@ export type ThreadMessagesProps = {
   onEditLog: (logId: string) => void;
   onRetry: () => void;
   onEdit: () => void;
+  /**
+   * Desktop: what arrives while the thread is open eases in (your message as
+   * you send it, Updating, the coach's answer). A stored message of yours
+   * replaces the one already shown, so it never does.
+   */
+  animate?: boolean;
 };
 
 /**
@@ -39,6 +46,7 @@ export function ThreadMessages({
   onEditLog,
   onRetry,
   onEdit,
+  animate = false,
 }: ThreadMessagesProps) {
   const todayDate = toLocalDate(today);
   const showBreaks = messages.some((m) => messageDay(m) !== todayDate);
@@ -56,35 +64,43 @@ export function ThreadMessages({
         return (
           <Fragment key={message.id}>
             {breakAt(index, day) ? <DayBreak label={dayBreakLabel(day, today)} /> : null}
-            <ChatMessageView
-              message={message}
-              isLatest={message.id === latestCoachId}
-              busy={busy}
-              folded={message.kind === 'change' && day < todayDate}
-              onQuickReply={onQuickReply}
-              onUndo={onUndo}
-              onSeeWeek={onSeeWeek}
-              onEditLog={onEditLog}
-            />
+            <Entrance animate={animate && message.role === 'coach'}>
+              <ChatMessageView
+                message={message}
+                isLatest={message.id === latestCoachId}
+                busy={busy}
+                folded={message.kind === 'change' && day < todayDate}
+                onQuickReply={onQuickReply}
+                onUndo={onUndo}
+                onSeeWeek={onSeeWeek}
+                onEditLog={onEditLog}
+              />
+            </Entrance>
           </Fragment>
         );
       })}
       {pending && pendingMessage ? (
         <>
           {showBreaks && lastDay !== todayDate ? <DayBreak label={dayBreakLabel(todayDate, today)} /> : null}
-          <ChatMessageView
-            message={pendingMessage}
-            isLatest={false}
-            busy
-            onQuickReply={onQuickReply}
-            onUndo={onUndo}
-            onSeeWeek={onSeeWeek}
-            onEditLog={onEditLog}
-          />
+          <Entrance animate={animate}>
+            <ChatMessageView
+              message={pendingMessage}
+              isLatest={false}
+              busy
+              onQuickReply={onQuickReply}
+              onUndo={onUndo}
+              onSeeWeek={onSeeWeek}
+              onEditLog={onEditLog}
+            />
+          </Entrance>
           {pending.status === 'sending' || pending.status === 'sent' ? (
-            <UpdatingCard />
+            <Entrance key="updating" animate={animate}>
+              <UpdatingCard />
+            </Entrance>
           ) : (
-            <ProblemCard kind={pending.status} onRetry={onRetry} onEdit={onEdit} />
+            <Entrance key="problem" animate={animate}>
+              <ProblemCard kind={pending.status} onRetry={onRetry} onEdit={onEdit} />
+            </Entrance>
           )}
         </>
       ) : null}

@@ -3,6 +3,9 @@
 How we write code in this repository. These are the rules a reviewer may hold a change to,
 with the reasoning behind each one and examples from `apps/website`, which was refactored
 to follow them. They apply to every workspace; the examples are TypeScript and React.
+The examples name the website's former demo layer (`domain/`, `demo/`), removed on
+4 October 2026 when the landing page started linking to the real web app; read it at commit
+`fa6c5e4^` (`git show fa6c5e4^:apps/website/src/domain/catalog.ts`).
 
 Two rules of thumb sit above all of the others:
 

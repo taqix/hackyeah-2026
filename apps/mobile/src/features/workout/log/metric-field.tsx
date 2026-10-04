@@ -11,6 +11,8 @@ export type MetricFieldProps = {
   value: FieldValue;
   error?: string;
   onChange: (value: FieldValue) => void;
+  /** Enter in a typed field (the desktop web's keyboard submit). */
+  onSubmit?: () => void;
 };
 
 const YES_NO = [
@@ -33,7 +35,7 @@ function FieldError({ error }: { error?: string }) {
  * schema allows fractions), a boolean is yes/no, a string enum is chips, any
  * other string a text field.
  */
-export function MetricField({ metric, value, error, onChange }: MetricFieldProps) {
+export function MetricField({ metric, value, error, onChange, onSubmit }: MetricFieldProps) {
   const s = metric.value_schema;
   const label = fieldLabel(metric);
 
@@ -88,6 +90,7 @@ export function MetricField({ metric, value, error, onChange }: MetricFieldProps
       inputMode={numeric ? (s.type === 'integer' ? 'numeric' : 'decimal') : 'text'}
       keyboardType={numeric ? (s.type === 'integer' ? 'number-pad' : 'decimal-pad') : 'default'}
       returnKeyType="done"
+      onSubmitEditing={onSubmit}
       maxLength={s.type === 'string' ? s.maxLength : 8}
     />
   );

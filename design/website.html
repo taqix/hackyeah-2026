@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Movo · Everyone starts somewhere</title>
 <meta name="description" content="Movo is a sport app for beginners: a few calm questions, a gentle first week, and a plan you change just by asking.">
 <script>/* theme init — plain JS, runs before paint */
@@ -299,7 +299,7 @@ button.s-wrow:hover{background:var(--surface-sunken)}
 .s-range:focus-visible{outline:none}
 .s-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px var(--focus-ring)}
 .s-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px var(--focus-ring)}
-.s-compose{display:flex;align-items:center;gap:8px}
+.s-compose{display:flex;align-items:center;gap:8px;flex:none}
 .s-input{flex:1;min-width:0;height:52px;padding:0 20px;border-radius:var(--radius-pill);border:1px solid var(--border-strong);background:var(--surface-card);color:var(--text-primary);font:var(--type-body);outline:none;transition:border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)}
 .s-input::placeholder{color:var(--text-tertiary)}
 .s-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--focus-ring)}
@@ -314,14 +314,14 @@ button.s-wrow:hover{background:var(--surface-sunken)}
 @keyframes s-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes s-sheet{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 @media (max-width:767px){
-  .s-dialog{margin:auto 0 0;width:100%;max-width:none;max-height:92dvh;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
+  .s-dialog{margin:auto 0 var(--kb-offset,0px);bottom:var(--kb-offset,0px);width:100%;max-width:none;max-height:calc(92dvh - var(--kb-offset,0px));border-radius:var(--radius-xl) var(--radius-xl) 0 0}
   .s-dialog[open]{animation-name:s-sheet}
-  .s-dlg-in{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .s-dlg-in{padding-bottom:max(16px,calc(24px + env(safe-area-inset-bottom) - var(--kb-offset,0px)))}
 }
-.s-chatsheet{margin:auto auto 0;width:min(100%,720px);max-width:none;height:88dvh;max-height:none;border-radius:var(--radius-xl) var(--radius-xl) 0 0;overflow:hidden}
+.s-chatsheet{margin:auto auto var(--kb-offset,0px);bottom:var(--kb-offset,0px);width:min(100%,720px);max-width:none;height:min(88dvh,calc(100dvh - var(--kb-offset,0px)));max-height:calc(100dvh - var(--kb-offset,0px));border-radius:var(--radius-xl) var(--radius-xl) 0 0;overflow:hidden;transition:margin-bottom var(--dur-fast) var(--ease-out),height var(--dur-fast) var(--ease-out),bottom var(--dur-fast) var(--ease-out)}
 .s-chatsheet[open]{animation-name:s-sheet}
 .s-chatsheet .s-chat{flex:1;min-height:0;height:auto}
-.s-chatsheet .s-dlg-in{height:100%;padding:20px 20px calc(16px + env(safe-area-inset-bottom))}
+.s-chatsheet .s-dlg-in{height:100%;box-sizing:border-box;padding:20px 20px max(16px,calc(16px + env(safe-area-inset-bottom) - var(--kb-offset,0px)))}
 .s-dhead{display:flex;align-items:flex-start;gap:14px}
 .s-dhead .s-dtitle{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .s-drow{display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 0;border-bottom:1px solid var(--border-subtle)}
@@ -1779,8 +1779,19 @@ function SiteDialog({ open, onClose, className, labelledBy, children, focusAfter
   }, []);
   useEffect(() => {
     const d = ref.current;
-    if (open && !d.open) { opener.current = document.activeElement; d.showModal(); }
-    if (!open && d.open) d.close();
+    if (open && !d.open) {
+      opener.current = document.activeElement;
+      d.showModal();
+      if (window.visualViewport) {
+        const vv = window.visualViewport;
+        const kb = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+        document.documentElement.style.setProperty("--kb-offset", Math.round(kb) + "px");
+      }
+    }
+    if (!open && d.open) {
+      d.close();
+      document.documentElement.style.setProperty("--kb-offset", "0px");
+    }
   }, [open]);
   return (
     <dialog ref={ref} className={"s-dialog " + (className || "")} aria-labelledby={labelledBy} onClick={e => { if (e.target === ref.current) ref.current.close(); }}>
@@ -1872,6 +1883,13 @@ function SessionDialogBody({ plan, offset, mode, ticked, setTicked, onMarkDone, 
 function ChatBody({ plan, chat, busy, chipsList, onSend, onUndo, onStartOver, bp, onSeePlan, onClose, inDialog }) {
   const [text, setText] = useState("");
   const logRef = useRef(null);
+  const inputRef = useRef(null);
+  const handleFocus = () => {
+    setTimeout(() => {
+      if (inputRef.current) inputRef.current.scrollIntoView({ block: "nearest", inline: "nearest" });
+      if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+    }, 120);
+  };
   /* New messages never jump the view to the end. If the first new one is out of sight,
      bring its top into view and let the reader scroll on from there. */
   useEffect(() => {
@@ -1937,7 +1955,7 @@ function ChatBody({ plan, chat, busy, chipsList, onSend, onUndo, onStartOver, bp
         </div>
       ) : null}
       <form className="s-compose" onSubmit={submit}>
-        <input className="s-input" aria-label="Ask for a change" placeholder="Ask for a change…" maxLength={140} value={text} disabled={busy} onChange={e => setText(e.target.value)} />
+        <input ref={inputRef} onFocus={handleFocus} className="s-input" aria-label="Ask for a change" placeholder="Ask for a change…" maxLength={140} value={text} disabled={busy} onChange={e => setText(e.target.value)} />
         <IconButton variant="primary" icon="arrow-up" label="Send" disabled={!text.trim() || busy} onClick={submit} />
       </form>
     </div>
@@ -2070,6 +2088,23 @@ function App() {
     const obs = new MutationObserver(() => setTheme(document.documentElement.dataset.theme || "light"));
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
+  }, []);
+  /* Virtual keyboard avoidance on mobile */
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const update = () => {
+      const vv = window.visualViewport;
+      const kb = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      document.documentElement.style.setProperty("--kb-offset", Math.round(kb) + "px");
+      document.documentElement.style.setProperty("--vv-height", Math.round(vv.height) + "px");
+    };
+    window.visualViewport.addEventListener("resize", update);
+    window.visualViewport.addEventListener("scroll", update);
+    update();
+    return () => {
+      window.visualViewport.removeEventListener("resize", update);
+      window.visualViewport.removeEventListener("scroll", update);
+    };
   }, []);
   let redirect = null;
   if (route.view === "step") {

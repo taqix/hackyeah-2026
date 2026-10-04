@@ -5,8 +5,9 @@
 import { View } from 'react-native';
 
 import { Col, Row } from '@/components/layout';
-import { Button, Skeleton, SuggestionCard, Text } from '@/components/ui';
+import { Button, Icon, Skeleton, SuggestionCard, Text } from '@/components/ui';
 import { capitalize } from '@/lib/dates';
+import { useTheme } from '@/theme';
 
 import { StateCard, StateCardNote } from './state-card';
 import { WorkingBar } from './working-bar';
@@ -30,6 +31,11 @@ export function BuildingHero({ answers }: { answers: string | null }) {
 
 type BuildFailedProps = {
   message: string | null;
+  /**
+   * The plan assistant is not connected yet (ai_unavailable): not something
+   * that went wrong, so it reads as waiting, and nothing retries on its own.
+   */
+  unavailable: boolean;
   answers: string | null;
   retrying: boolean;
   retryFailed: boolean;
@@ -38,14 +44,22 @@ type BuildFailedProps = {
 };
 
 /** 5.8: generation failed. No partial plan; the answers are kept. */
-export function BuildFailed({ message, answers, retrying, retryFailed, onRetry, onReviewAnswers }: BuildFailedProps) {
+export function BuildFailed({
+  message,
+  unavailable,
+  answers,
+  retrying,
+  retryFailed,
+  onRetry,
+  onReviewAnswers,
+}: BuildFailedProps) {
   return (
     <>
       <StateCard
         alert
-        icon="calendar-x"
+        icon={unavailable ? 'calendar-clock' : 'calendar-x'}
         kicker="Your first week"
-        title="Plan didn't build."
+        title={unavailable ? 'Plan not built yet.' : "Plan didn't build."}
         body={
           message ?? 'Something went wrong on our side. Your answers are saved, so trying again only takes a moment.'
         }
@@ -83,6 +97,34 @@ export function NoPlanYet({ building, failed, onBuild }: { building: boolean; fa
       />
       {failed ? <RetryError /> : null}
     </>
+  );
+}
+
+/**
+ * A weekly plan or a re-plan from saved answers that didn't go through, above
+ * the week it left as it was. Not an error state: the plan still works.
+ */
+export function PlanNote({ message }: { message: string }) {
+  const { colors, radius } = useTheme();
+  return (
+    <View
+      role="status"
+      accessibilityLiveRegion="polite"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+        padding: 14,
+        borderRadius: radius.card,
+        backgroundColor: colors.surfaceSunken,
+      }}>
+      <View style={{ marginTop: 2 }}>
+        <Icon name="info" size={16} color={colors.info} />
+      </View>
+      <Text variant="bodySm" style={{ flex: 1 }}>
+        {message}
+      </Text>
+    </View>
   );
 }
 

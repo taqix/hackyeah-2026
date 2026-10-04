@@ -1,4 +1,4 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
@@ -6,6 +6,7 @@ import { RefreshControl } from 'react-native-gesture-handler';
 import {
   useBuildPlan,
   useDismissRecentChange,
+  useEnsureNextWeek,
   usePlanState,
   usePreferences,
   useSession,
@@ -25,7 +26,15 @@ import { useTheme } from '@/theme';
 import { HomeHeader } from './home-header';
 import { changedWhen, firstName, headerKicker, resolveSelection } from './home-model';
 import { PlanUpdated } from './plan-updated';
-import { BuildFailed, BuildingHero, HeaderSkeleton, NoPlanYet, PlanLoadError, WeekSkeleton } from './plan-states';
+import {
+  BuildFailed,
+  BuildingHero,
+  HeaderSkeleton,
+  NoPlanYet,
+  PlanLoadError,
+  PlanNote,
+  WeekSkeleton,
+} from './plan-states';
 import { PlanWeekView } from './plan-week';
 import { WeekStripLoading } from './week-strip';
 
@@ -54,6 +63,9 @@ export function HomeScreen() {
   const nextWeek = useWeek(nextWeekStart, { enabled: ready && canNext });
 
   const build = useBuildPlan();
+  const focused = useIsFocused();
+  // Plans go one week ahead: from the last planned day, Home plans the next week.
+  useEnsureNextWeek(focused);
   const openChat = useOpenChat();
   const recentChange = plan?.recent_change ?? null;
   const dismissChange = useDismissWhenLeft(!!recentChange);
@@ -119,6 +131,7 @@ export function HomeScreen() {
         {header}
         <BuildFailed
           message={plan.failure_message}
+          unavailable={plan.failure_code === 'ai_unavailable'}
           answers={answers}
           retrying={build.isPending}
           retryFailed={build.isError}
@@ -149,6 +162,7 @@ export function HomeScreen() {
             }}
           />
         ) : null}
+        {plan.failure_message ? <PlanNote message={plan.failure_message} /> : null}
         <PlanWeekView
           plan={plan}
           today={today}

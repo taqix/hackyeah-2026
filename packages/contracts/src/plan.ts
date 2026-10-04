@@ -44,6 +44,19 @@ function nonBlank(text: string, label: string) {
   if (!text.trim()) reject(`${label} must not be blank.`);
 }
 
+function validateSafeText(text: string, label: string) {
+  nonBlank(text, label);
+  if (/<\/?(?:[a-z][a-z0-9]*)\b[^>]*>/i.test(text)) {
+    reject(`${label} must not contain HTML tags.`);
+  }
+  if (/\[[^\]]+\]\([^\)]+\)/.test(text)) {
+    reject(`${label} must not contain markdown links.`);
+  }
+  if (/(?:https?:\/\/|ftp:\/\/|javascript:|data:|\/\/[a-z0-9])/i.test(text)) {
+    reject(`${label} must not contain URLs or web links.`);
+  }
+}
+
 function unique(values: (string | number)[], label: string) {
   if (new Set(values).size !== values.length) reject(`${label} must be unique.`);
 }
@@ -76,13 +89,13 @@ function history(input: PlanInput): ExistingWorkout[] {
 }
 
 function validateWorkoutText(event: Workout) {
-  nonBlank(event.description, 'Workout description');
+  validateSafeText(event.description, 'Workout description');
   if ('parts' in event) {
-    for (const part of event.parts) nonBlank(part.description, 'Workout part');
+    for (const part of event.parts) validateSafeText(part.description, 'Workout part');
   } else {
     for (const exercise of event.exercises) {
-      nonBlank(exercise.name, 'Exercise name');
-      nonBlank(exercise.description, 'Exercise description');
+      validateSafeText(exercise.name, 'Exercise name');
+      validateSafeText(exercise.description, 'Exercise description');
     }
   }
 }
@@ -196,7 +209,7 @@ export function parsePlanOutput(value: unknown, input: PlanInput, now = Date.now
   if (!validateOutput(value)) reject('Output does not match the workout operations schema.');
   if (input.mode === 'modify') {
     if (value.message === null) reject('Modification requires a user-facing message.');
-    nonBlank(value.message, 'User-facing message');
+    validateSafeText(value.message, 'User-facing message');
   } else if (value.message !== null) reject('Creation must use a null message.');
 
   const existing = history(input);

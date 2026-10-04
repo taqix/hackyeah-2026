@@ -5,10 +5,25 @@ import {
   buildGeminiOutputSchema,
   parsePlanInput,
   parsePlanOutput,
+  PlanValidationError,
   type PlanInput,
   type PlanOutput,
 } from "@hackyeah/contracts/plan";
 import { PLAN_GENERATION_CONFIG } from "./plan-config.js";
+
+export const PROMPT_INJECTION_REFUSAL_MESSAGE =
+  "I cannot fulfill this request. I can only help you schedule and adjust your beginner movement plan.";
+
+const PROMPT_INJECTION_PATTERNS = [
+  /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions/i,
+  /disregard\s+(?:all\s+)?(?:previous|prior|above)\s+instructions/i,
+  /\b(?:reveal|show|dump|print)\s+(?:the\s+)?system\s+prompt\b/i,
+  /\b(?:developer\s+mode|dan\s+mode|jailbreak)\b/i,
+];
+
+function isPromptInjection(text: string): boolean {
+  return PROMPT_INJECTION_PATTERNS.some((pattern) => pattern.test(text));
+}
 
 export class PlanGenerationError extends Error {
   constructor(
@@ -81,6 +96,12 @@ export async function generatePlan(
     fail("CONFIGURATION", "now must be a valid timestamp.");
   if (preferences.mode === "create" && !preferences.available_slots.length)
     return { events: [], message: null };
+  if (
+    preferences.mode === "modify" &&
+    typeof preferences.user_prompt === "string" &&
+    isPromptInjection(preferences.user_prompt)
+  )
+    return { events: [], message: PROMPT_INJECTION_REFUSAL_MESSAGE };
   if (typeof apiKey !== "string" || !apiKey.trim())
     fail("CONFIGURATION", "Set GEMINI_API_KEY on the server.");
   if (typeof model !== "string" || !/^[a-zA-Z0-9._-]+$/.test(model))
@@ -124,6 +145,7 @@ export async function generatePlan(
       maxOutputTokens: PLAN_GENERATION_CONFIG.maxOutputTokens,
       candidateCount: 1,
     },
+    safetySettings: PLAN_GENERATION_CONFIG.safetySettings,
   });
   if (Buffer.byteLength(requestBody) > PLAN_GENERATION_CONFIG.maxRequestBytes)
     fail(
@@ -213,13 +235,24 @@ export async function generatePlan(
     );
   }
   const envelope = isRecord(payload) ? payload : undefined;
-  if (isRecord(envelope?.promptFeedback) && envelope.promptFeedback.blockReason)
+  if (
+    isRecord(envelope?.promptFeedback) &&
+    envelope.promptFeedback.blockReason
+  ) {
+    if (preferences.mode === "modify")
+      return { events: [], message: PROMPT_INJECTION_REFUSAL_MESSAGE };
     fail("BLOCKED", "Gemini blocked this plan request.");
+  }
   const candidate = Array.isArray(envelope?.candidates)
     ? envelope.candidates[0]
     : undefined;
   if (!isRecord(candidate))
     fail("INVALID_RESPONSE", "Gemini did not return a plan.");
+  if (candidate.finishReason === "SAFETY") {
+    if (preferences.mode === "modify")
+      return { events: [], message: PROMPT_INJECTION_REFUSAL_MESSAGE };
+    fail("BLOCKED", "Gemini blocked this plan content due to safety policy.");
+  }
   if (candidate.finishReason !== "STOP")
     fail(
       "INCOMPLETE",
@@ -243,7 +276,21 @@ export async function generatePlan(
   } catch {
     fail("INVALID_RESPONSE", "Gemini returned invalid plan JSON.");
   }
-  const validated = parsePlanOutput(plan, preferences, now);
+  let validated;
+  try {
+    validated = parsePlanOutput(plan, preferences, now);
+  } catch (error) {
+    if (
+      preferences.mode === "modify" &&
+      error instanceof PlanValidationError &&
+      (error.message.includes("must not contain URLs or web links") ||
+        error.message.includes("must not contain HTML tags") ||
+        error.message.includes("must not contain markdown links"))
+    ) {
+      return { events: [], message: PROMPT_INJECTION_REFUSAL_MESSAGE };
+    }
+    throw error;
+  }
   if (reviewContent) await reviewContent(validated, preferences);
   return validated;
 }

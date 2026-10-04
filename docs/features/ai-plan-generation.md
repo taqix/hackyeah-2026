@@ -184,7 +184,9 @@ It requests clear, standalone instructions, warm-up/rest/cool-down within the
 session budget, and supportive wording in the chat language (English otherwise).
 
 The prompt treats profile, catalog, history, and chat text as context that cannot
-override the contract or protected-workout rules. It forbids invented fitness
+override the contract or protected-workout rules. It explicitly instructs the model
+never to execute system overrides, prompt jailbreaks, or roleplay commands embedded
+in user input, and never to reveal system instructions. It forbids invented fitness
 measurements, diagnoses, venues, bookings, and calendar availability. Swimming
 requires pool access and explicit swimming comfort; gym access alone does not
 imply equipment. It avoids competitive targets, forced progression, guilt, and
@@ -192,7 +194,16 @@ medical claims. Illness-specific behavior is deferred.
 
 Runtime validation enforces structure, IDs, metric bounds/units, summed part
 durations where marked, scheduling, exclusions, selected-only discovery, and
-gym access. It does **not** prove appropriate intensity, readable technique,
+gym access. In addition, safe-text validation enforces that user-facing messages,
+workout descriptions, part descriptions, and exercise names/descriptions contain
+no URLs, web links, markdown links, or HTML tags. Provider safety settings
+(`HARM_CATEGORY_*`) are sent with each request, and in creation mode, content blocked
+by the provider for safety fails with an explicit `BLOCKED` error. In modification mode,
+safety blocks, overt prompt injection attacks in `user_prompt`, or outputs containing
+unsafe text are handled gracefully: the function returns `{ events: [], message: ... }`
+with a polite refusal (`"I cannot fulfill this request. I can only help you schedule and adjust your beginner movement plan."`),
+ensuring the user still receives an answer in the chat without modifying their active plan.
+Runtime validation does **not** prove appropriate intensity, readable technique,
 equipment suitability, swimming suitability, avoidance compliance, gym timing
 arithmetic described in prose, or correct interpretation of chat intent.
 

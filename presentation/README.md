@@ -25,7 +25,7 @@ Następnie otwórz http://localhost:8080.
 
 Treść: `index.html`. Wygląd: `styles.css`. Nawigacja: `presentation.js`.
 
-Slajd 9 zawiera model subskrypcyjny z 14-dniowym trialem i proponowane ceny z planu biznesowego zespołu. Ceny są założeniami do walidacji. Statystyki na slajdzie 2 pochodzą z materiałów zespołu i wymagają źródeł przed finalną prezentacją. Ekrany aplikacji oraz przykład dostosowania to mockupy, nie działające integracje ani generator planu. Opis stanu produktu na slajdzie 10 dotyczy tej koncepcji; uzupełnij go zgodnie z faktycznym stanem prototypu.
+Slajd 9 zawiera model subskrypcyjny z 14-dniowym trialem i proponowane ceny z planu biznesowego zespołu. Ceny są założeniami do walidacji. Statystyki na slajdzie 2 pochodzą z Eurobarometru Komisji Europejskiej (2022) oraz przeglądu Kidman i in. (2024); szczegółowe odniesienia są w notatkach prezentera. Ekrany aplikacji oraz przykład dostosowania to mockupy, nie działające integracje ani generator planu. Opis stanu produktu na slajdzie 10 dotyczy tej koncepcji; uzupełnij go zgodnie z faktycznym stanem prototypu.
 
 
 ## Eksport do PDF
@@ -41,9 +41,12 @@ W przeglądarce wybierz Drukuj → Zapisz jako PDF. CSS definiuje format 16:9 (1
 
 Pierwszy etap oceny odbywa się bez wystąpienia: slajdy opisują funkcje bez odwoływania się do narracji prowadzącego. Notatki w `notatki-prezentera.md` służą do ewentualnej prezentacji w finale.
 
-Porównanie na slajdzie 7 ograniczono do Runna i Hevy. „Niepotwierdzone” oznacza brak potwierdzenia funkcji w sprawdzonych materiałach, a nie dowód jej braku.
+Porównanie na slajdzie 7 ograniczono do Runna i Hevy. Runna synchronizuje treningi z kalendarzem, ale nie odczytuje zajętości użytkownika; godziny i przenoszenie sesji wymagają działania użytkownika. Hevy opisuje kalendarz historii treningów, bez synchronizacji z osobistym kalendarzem w sprawdzonych funkcjach. Runna ma czat wsparcia, lecz zmiany planu dokumentuje przez ustawienia i gotowe opcje.
 
 Dodatkowe źródła:
 - https://support.runna.com/en/articles/8601606-syncing-runna-to-your-calendar-scheduling-your-workouts
+- https://support.runna.com/en/articles/10137793-how-to-use-your-training-calendar
+- https://support.runna.com/en/articles/10393191-how-to-use-training-preferences
+- https://www.hevyapp.com/features/gym-progress/
 - https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT
 - https://support.strava.com/hc/en-us/articles/15401576-strava-and-runna-subscription-faqs

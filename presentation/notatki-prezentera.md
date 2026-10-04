@@ -16,24 +16,24 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Uwaga:** przedstawiamy koncepcję produktu. Ekrany w tej prezentacji są mockupami; nie stanowią dowodu wdrożenia funkcji.
 
-## Slajd 2 — Problem: chęci są, regularność znika
+## Slajd 2 — Problem: trudno zacząć, trudniej wytrwać
 
-**Cel:** pokazać skalę trudności z utrzymaniem aktywności.
+**Cel:** pokazać skalę trudności z rozpoczęciem aktywności, znalezieniem czasu i utrzymaniem użytkowników aplikacji.
 
 **Do powiedzenia:**
 
-> W przywołanym badaniu 64,5% badanych Polaków wskazywało brak czasu lub inne obowiązki jako ograniczenie regularnej aktywności. 63,2% wskazywało brak długoterminowej motywacji. W przeglądzie Kidmana i współautorów trzy badania aplikacji do aktywności fizycznej pokazały poziomy porzucenia od 54 do 75%. To różne wskaźniki, ale pokazują, dlaczego warto zająć się utrzymaniem aktywności po pierwszym starcie. Na ten etap skupiamy Movo.
+> W Eurobarometrze z 2022 roku 65% badanych w Polsce deklarowało, że nigdy nie ćwiczy. W całej Unii 41% badanych wskazało brak czasu jako powód, dla którego nie uprawia sportu częściej. Z kolei w przeglądzie Kidmana i współautorów trzy badania aplikacji do aktywności fizycznej pokazały poziomy porzucenia od 54 do 75%. To trzy różne miary: pokazują problem ze startem, znalezieniem czasu i pozostaniem przy aplikacji. Movo projektujemy wokół tych codziennych barier.
 
 **Przejście:** „Za tymi liczbami stoi bardzo codzienna sytuacja”.
 
 **Uwagi przed wystąpieniem:**
 
-- Uzupełnij źródło, rok i badaną grupę dla 64,5% i 63,2%. Te dwie liczby pochodzą z materiałów zespołu i nie zostały tu zweryfikowane. Zakres 54–75% został sprawdzony w publikacji Kidman i in., JMIR 2024, 26:e56897; odnosi się do trzech badań aplikacji do aktywności fizycznej.
-- Nie mów „64,5% wszystkich Polaków”. Wskaźnik dotyczy badanych osób.
-- Nie sumuj procentów; odpowiedzi mogą się nakładać.
+- 65% dotyczy badanych w Polsce, a 41% — badanych w całej UE. Obie liczby pochodzą z [Eurobarometru 525 Komisji Europejskiej (2022)](https://www.sportesalute.eu/images/studi-e-dati-dello-sport/schede/2022/98-Sport_physical_activity_2022_report.pdf). Badanie obejmowało osoby w wieku 15 lat i więcej; nie było ograniczone do studentów.
+- „Nigdy nie ćwiczy” to skrót na potrzeby slajdu: oryginalne pytanie dotyczyło zarówno ćwiczeń, jak i sportu. Wskaźnik nie mierzy wszelkiego ruchu (np. chodzenia). 41% odpowiada na pytanie o powody, dla których badani nie uprawiają sportu częściej; nie oznacza, że 41% nie ma czasu na żadną aktywność.
+- Nie sumuj ani nie porównuj bezpośrednio tych procentów: różnią się pytaniem i grupą odniesienia.
+- Zakres 54–75% pochodzi z publikacji [Kidman i in., *J Med Internet Res* 2024;26:e56897](https://pmc.ncbi.nlm.nih.gov/articles/PMC11694054/) i odnosi się do trzech badań aplikacji do aktywności fizycznej.
 - Przegląd podkreśla różne definicje porzucenia i okresy obserwacji; zakres 54–75% nie oznacza jednej wspólnej próby lub jednego okresu.
 - Nie zastępuj go automatycznie medianą 70% w ciągu 100 dni z planu biznesowego. To inna informacja, wymagająca osobnego sprawdzenia.
-- Jeśli źródła pierwszych dwóch wskaźników nie będą gotowe, usuń je ze slajdu i opowiedz jakościowo o braku czasu oraz motywacji.
 
 ## Slajd 3 — Dla kogo: „Chcę się ruszać. Tylko od czego zacząć?”
 
@@ -41,7 +41,7 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Do powiedzenia:**
 
-> Naszą grupą docelową są początkujący i osoby wracające po przerwie. Chcą poczuć się lepiej i znaleźć ruch, który zmieści się w ich tygodniu. Jeśli plan jest za trudny albo nie da się go pogodzić z obowiązkami, kolejna próba się urywa. Podobnie może być z kimś, kogo przytłoczyła rozbudowana aplikacja treningowa. To dla tych osób projektujemy Movo.
+> Naszą grupą docelową są początkujący i osoby wracające po przerwie. Chcą poczuć się lepiej i znaleźć ruch, który zmieści się w ich tygodniu. Wielu ma za sobą kilka nieudanych prób: plan był za trudny, nie pasował do obowiązków albo sama aktywność nie sprawiała przyjemności. Potrzebują prostego sposobu, żeby zacząć ponownie i utrzymać rytm. To dla tych osób projektujemy Movo.
 
 **Przejście:** „Dlatego zaczynamy od małego kroku, który da się wykonać”.
 
@@ -89,16 +89,16 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Do powiedzenia:**
 
-> Wyróżnienie Movo budujemy wokół połączenia osobistego kalendarza, czatu i wyboru aktywności. Runna oferuje synchronizację treningów do kalendarza; my kładziemy nacisk na wyszukiwanie wolnych slotów między obowiązkami. Hevy ma integrację z ChatGPT; w Movo rozmowa o zmianie sesji odbywa się w samej aplikacji. Chcemy też dobierać różne formy ruchu według preferencji, zamiast zaczynać od wybranego sportu. To zestaw funkcji, który projektujemy dla osoby szukającej prostego startu.
+> Runna może dodać trening do kalendarza, ale nie sprawdza, kiedy masz wolny czas. Godzinę ustawiasz sam, a gdy coś wypadnie, sam przenosisz trening. Hevy pokazuje historię ćwiczeń w swoim kalendarzu, ale w sprawdzonych funkcjach nie łączy się z twoim kalendarzem. Aplikacja Runna pozwala zmieniać plan przez ustawienia i gotowe opcje; jej czat służy do kontaktu ze wsparciem. Movo ma połączyć te kroki w jednym miejscu: znaleźć wolny termin, zaproponować aktywność i pomóc zmienić trening przez rozmowę, gdy dzień nie idzie zgodnie z planem.
 
 **Przejście:** „Wybór aktywności jest równie ważny jak znalezienie czasu”.
 
 **Uwagi:**
 
-- Dokumentacja Runna opisuje eksport treningów przez kanał iCalendar. Nie potwierdzono w sprawdzonych materiałach wyszukiwania wolnych slotów w osobistym kalendarzu.
-- Niepotwierdzone nie oznacza, że funkcja na pewno nie istnieje.
-- Hevy ma Hevy Trainer i integrację z ChatGPT; nie przedstawiaj go jako samego dziennika ani jako produktu bez pomocy konwersacyjnej.
-- Runna ma czat wsparcia, adaptację planu i treningi uzupełniające; nie twierdź, że oferuje wyłącznie bieganie ani że nie ma czatu.
+- [Runna: synchronizacja z kalendarzem](https://support.runna.com/en/articles/8601606-syncing-runna-to-your-calendar-scheduling-your-workouts) wprost podaje, że aplikacja nie ma dostępu do osobistego kalendarza, by sprawdzić dostępność. Użytkownik sam ustawia godzinę; w Google Calendar może ręcznie przenieść trening, a zmiana synchronizuje się z Runna. W Apple Calendar zmiany trzeba wykonać w Runna.
+- [Runna: Training Calendar](https://support.runna.com/en/articles/10137793-how-to-use-your-training-calendar) opisuje ręczne przenoszenie sesji. [Training Preferences](https://support.runna.com/en/articles/10393191-how-to-use-training-preferences) i [Not Feeling 100%](https://support.runna.com/en/articles/13531498-how-to-use-not-feeling-100) to gotowe mechanizmy zmiany planu. Runna ma czat wsparcia, więc nie mów, że nie ma czatu w ogóle; nie opisuje go jako rozmowy z asystentem zmieniającym sesję.
+- [Hevy: Gym Calendar](https://www.hevyapp.com/features/gym-progress/) pokazuje historię wykonanych treningów, a nie integrację z osobistym kalendarzem. Brak opisu synchronizacji w sprawdzonych funkcjach nie jest dowodem, że taka funkcja nie może powstać lub istnieć poza nimi.
+- Hevy ma Hevy Trainer i [integrację z ChatGPT](https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT); nie przedstawiaj go jako samego dziennika ani jako produktu bez pomocy konwersacyjnej.
 - Kolumna Movo opisuje koncepcję i funkcje wskazane przez zespół. Wdrożenie oraz przewaga dla użytkownika wymagają osobnego potwierdzenia.
 
 ## Slajd 8 — Odkrywanie aktywności: ruch, do którego chcesz wracać

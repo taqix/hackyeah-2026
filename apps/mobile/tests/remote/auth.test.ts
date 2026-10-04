@@ -12,6 +12,7 @@ import {
   toAuthSession,
 } from '../../src/api/remote/auth';
 import { createRemoteRuntime } from '../../src/api/remote/client';
+import { EXPO_GO_IP_SIGN_IN, isExpoGoIpRedirectError } from '../../src/api/remote/expo-go-redirect';
 import type { RemoteContext } from '../../src/api/remote/context';
 import type { AuthErrorLike, AuthPort, AuthResult, AuthSessionData, RemoteDeps } from '../../src/api/remote/deps';
 import { isApiError, type ApiErrorCode } from '../../src/api/types';
@@ -324,9 +325,10 @@ test('Google on the web hands the page to supabase-js and never settles', async 
 test('Expo Go returns to its exp:// callback, and the browser is told to come back there', async () => {
   const opened: string[] = [];
   const exchanges: string[] = [];
-  const expoGo = 'exp://192.168.1.20:8081/--/auth/callback';
+  // npm run start:hostname: the LAN IP as a nip.io hostname, which Supabase accepts.
+  const expoGo = 'exp://192.168.1.20.nip.io:8081/--/auth/callback';
   const { client } = authSection(googlePort(exchanges, []), {
-    redirectUrl: (path) => `exp://192.168.1.20:8081/--/${path}`,
+    redirectUrl: (path) => `exp://192.168.1.20.nip.io:8081/--/${path}`,
     openAuthSession: async (_url, redirectUrl) => {
       opened.push(redirectUrl);
       // Supabase may put the code in the fragment as well as the query.
@@ -336,6 +338,50 @@ test('Expo Go returns to its exp:// callback, and the browser is told to come ba
   await client.signInWithGoogle();
   assert.deepEqual(opened, [expoGo]);
   assert.deepEqual(exchanges, ['frag-code']);
+});
+
+test('Expo Go on an IP address stops before Google with how to start the app instead', async () => {
+  for (const host of ['10.250.163.235:8081', '127.0.0.1:8081', '[fe80::1]:8081', '[::1]']) {
+    const oauth: unknown[] = [];
+    const opened: string[] = [];
+    const { client } = authSection(googlePort([], oauth), {
+      platform: 'android',
+      redirectUrl: (path) => `exp://${host}/--/${path}`,
+      openAuthSession: async (url) => {
+        opened.push(url);
+        return { type: 'cancel' };
+      },
+    });
+    await assert.rejects(
+      client.signInWithGoogle(),
+      (error) =>
+        !isSignInCancelled(error) &&
+        isExpoGoIpRedirectError(error) &&
+        isApiError(error, 'validation') &&
+        error.retryable === false &&
+        error.message === EXPO_GO_IP_SIGN_IN,
+      host,
+    );
+    assert.deepEqual([oauth, opened], [[], []], 'neither Supabase nor the browser is asked');
+  }
+
+  // Hostnames reach Google as before: nip.io, an Expo tunnel, the dev build, the web.
+  for (const redirect of [
+    'exp://10.250.163.235.nip.io:8081/--/auth/callback',
+    'exp://abc-anonymous-8081.exp.direct/--/auth/callback',
+    'hackyeah2026://auth/callback',
+  ]) {
+    const opened: string[] = [];
+    const { client } = authSection(googlePort([], []), {
+      redirectUrl: () => redirect,
+      openAuthSession: async (_url, redirectUrl) => {
+        opened.push(redirectUrl);
+        return { type: 'success', url: `${redirect}?code=ok` };
+      },
+    });
+    await client.signInWithGoogle();
+    assert.deepEqual(opened, [redirect]);
+  }
 });
 
 test("Supabase's own refusals keep their copy; other Google failures say Google did not finish", async () => {
@@ -448,6 +494,35 @@ test('when the settings cannot be read, Google is offered and asked again later'
 
   const broken = scriptedFetch(() => fail(500, 'INTERNAL_ERROR'));
   assert.deepEqual(await authSection({}, { fetch: broken.fetch }).client.getProviders(), { google: true });
+});
+
+test('the providers read the same signed in, after sign-out and on a cold start: the server, not the person', async () => {
+  const SETTINGS = 'https://example.supabase.co/auth/v1/settings';
+  const settings = () => {
+    const script = scriptedFetch((call) =>
+      call.url === SETTINGS ? { status: 200, body: { external: { google: true, email: true } } } : fail(404, 'NOT_FOUND'),
+    );
+    return { ...script, reads: () => script.calls.filter((call) => call.url === SETTINGS) };
+  };
+
+  // Signed in (after a Google sign-in, or a stored session at a cold start): no user token is needed or sent.
+  const first = settings();
+  const { auth } = fakeAuth();
+  const runtime = createRemoteRuntime(fakeDeps({ auth, fetch: first.fetch }));
+  assert.deepEqual(await runtime.client.auth.getProviders(), { google: true });
+  assert.deepEqual(first.reads()[0]?.init.headers, { apikey: 'sb_publishable_test' });
+
+  // Signing out keeps the answer: it describes the project.
+  await runtime.client.auth.signOut();
+  assert.deepEqual(await runtime.client.auth.getProviders(), { google: true });
+  assert.equal(first.reads().length, 1);
+
+  // A cold start asks again, signed in from the stored session.
+  const cold = settings();
+  const restarted = createRemoteRuntime(fakeDeps({ fetch: cold.fetch }));
+  assert.equal((await restarted.client.auth.getSession())?.user.id, USER_ID);
+  assert.deepEqual(await restarted.client.auth.getProviders(), { google: true });
+  assert.equal(cold.reads().length, 1);
 });
 
 /* -------------------------------------------------------------- Account */

@@ -10,8 +10,11 @@ import { requestErrorMessage } from './auth-routes';
 
 type RequestAlertProps = {
   error: unknown;
-  /** Try again by default; `action` replaces it when retrying can't help ("Sign in instead"). */
-  onRetry: () => void;
+  /**
+   * Try again; `action` replaces it when another step helps ("Sign in instead").
+   * Without either, no button: trying again here can't help.
+   */
+  onRetry?: () => void;
   action?: { label: string; onPress: () => void };
   /** Overrides the offline/server copy. */
   message?: string;
@@ -34,11 +37,11 @@ export function RequestAlert({ error, onRetry, action, message }: RequestAlertPr
           <Button size="sm" variant="secondary" onPress={action.onPress} style={{ alignSelf: 'flex-start' }}>
             {action.label}
           </Button>
-        ) : (
+        ) : onRetry ? (
           <Button size="sm" variant="secondary" icon="refresh-cw" onPress={onRetry} style={{ alignSelf: 'flex-start' }}>
             Try again
           </Button>
-        )}
+        ) : null}
       </Card>
     </View>
   );

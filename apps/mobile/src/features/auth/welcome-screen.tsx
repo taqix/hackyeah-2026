@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { isMockMode } from '@/api/config';
 import { useAuthProviders, useLookupEmail, useSignInWithGoogle } from '@/api/hooks';
+import { isExpoGoIpRedirectError } from '@/api/remote/expo-go-redirect';
 import { isApiError } from '@/api/types';
 import { Button, Divider, Input, SuggestionCard, Text } from '@/components/ui';
 import { Col, Content, Row, Screen } from '@/components/layout';
@@ -101,7 +102,8 @@ export function WelcomeScreen() {
             {google.isError ? (
               <RequestAlert
                 error={google.error}
-                onRetry={continueWithGoogle}
+                // Expo Go on an IP address: the app has to be started differently, so no Try again.
+                onRetry={isExpoGoIpRedirectError(google.error) ? undefined : continueWithGoogle}
                 message={googleErrorMessage(google.error)}
               />
             ) : null}

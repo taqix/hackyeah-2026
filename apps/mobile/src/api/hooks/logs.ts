@@ -4,9 +4,14 @@ import { api } from '@/api';
 import { queryKeys } from '@/api/query-keys';
 import type { ActivityLog, CreateLogInput, SaveFeedbackInput, UpdateLogInput } from '@/api/types';
 
-/** A log changes the plan's weeks and sessions, the summary and the feedback overview. */
-function logChanged(queryClient: QueryClient, log: ActivityLog) {
+/**
+ * A log changes the plan's weeks and sessions, the summary and the feedback
+ * overview. Saving a draft gives the log a new ID; `previousId` keeps screens
+ * still reading the old one on the saved log.
+ */
+function logChanged(queryClient: QueryClient, log: ActivityLog, previousId?: string) {
   queryClient.setQueryData(queryKeys.log(log.id), log);
+  if (previousId && previousId !== log.id) queryClient.setQueryData(queryKeys.log(previousId), log);
   void queryClient.invalidateQueries({ queryKey: queryKeys.planAll });
   void queryClient.invalidateQueries({ queryKey: queryKeys.lastExerciseAll });
   void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
@@ -46,7 +51,7 @@ export function useSaveFeedback() {
   return useMutation({
     mutationFn: ({ logId, feedback }: { logId: string; feedback: SaveFeedbackInput }) =>
       api.logs.saveFeedback(logId, feedback),
-    onSuccess: (log) => logChanged(queryClient, log),
+    onSuccess: (log, { logId }) => logChanged(queryClient, log, logId),
   });
 }
 
@@ -58,7 +63,7 @@ export function useCommitLog() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.logs.commit(id),
-    onSuccess: (log) => logChanged(queryClient, log),
+    onSuccess: (log, id) => logChanged(queryClient, log, id),
   });
 }
 

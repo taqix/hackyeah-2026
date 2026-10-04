@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { accessTokenGetter, createRemoteRuntime } from '../../src/api/remote/client';
-import { isApiError } from '../../src/api/types';
 import { fakeAuth, fakeDeps, ok, scriptedFetch, session, SPORTS } from './fakes';
 
 test('the remote client lists the catalog in the app order with slug IDs', async () => {
@@ -32,11 +31,6 @@ test('without library sports the first six working ones are suggested', async ()
   );
   const { client } = createRemoteRuntime(fakeDeps({ fetch: fetch.fetch }));
   assert.equal((await client.catalog.listSports()).filter((s) => s.suggested).length, 6);
-});
-
-test('sections not written yet reject instead of pretending', async () => {
-  const { client } = createRemoteRuntime(fakeDeps());
-  await assert.rejects(client.logs.commit('draft:x'), (error) => isApiError(error, 'unknown'));
 });
 
 test('the access token comes from the session, a forced refresh, or rejects on a network failure', async () => {

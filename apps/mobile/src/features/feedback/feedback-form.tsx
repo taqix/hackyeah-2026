@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePlannedSession, useSaveFeedback } from '@/api/hooks';
-import type { ActivityLog, ChooseAgain, Felt } from '@/api/types';
+import { type ActivityLog, type ChooseAgain, type Felt, isApiError } from '@/api/types';
 import { BOTTOM_BAR_CLEARANCE, BottomBar, Col, Content } from '@/components/layout';
 import { Button, Input, Question, RadioCard, RadioGroup, Segmented, Text } from '@/components/ui';
 
@@ -12,6 +12,14 @@ import { FeedbackHeader } from './feedback-header';
 
 /** Room for the save error above the button. */
 const ERROR_SPACE = 56;
+
+/** A connection problem reads the same everywhere; anything else says what the server meant. */
+function saveErrorText(error: unknown): string {
+  if (!isApiError(error) || error.code === 'offline' || error.code === 'timeout') {
+    return "We couldn't save that. Check your connection and try again.";
+  }
+  return error.message;
+}
 
 /**
  * Completion & feedback (7): how it felt (required), whether they'd choose it
@@ -82,7 +90,7 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
           {save.isError ? (
             <View accessibilityRole="alert" accessibilityLiveRegion="polite">
               <Text variant="bodySm" tone="danger">
-                We couldn&apos;t save that. Check your connection and try again.
+                {saveErrorText(save.error)}
               </Text>
             </View>
           ) : null}

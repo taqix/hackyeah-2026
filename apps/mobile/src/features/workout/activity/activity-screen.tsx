@@ -95,6 +95,9 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
 
   const gym = isGymSession(session);
   const done = session.status === 'completed';
+  const log = logQuery.data;
+  // A saved session's time, metrics and sets are final; only a log not saved yet can be edited.
+  const editable = !!log && !log.actuals_locked;
   const skipped = session.status === 'skipped';
   const label = sportName(sport ? [sport] : null, session.sport_id).toLowerCase();
   const day = dayLabel(sessionStart(session), today);
@@ -167,25 +170,37 @@ function ActivityBody({ session, sport }: { session: PlannedSession; sport: Spor
       <BottomBar>
         {done ? (
           <>
-            <Button
-              variant="secondary"
-              size="lg"
-              icon="pencil"
-              onPress={() =>
-                session.log_id &&
-                router.push(gym ? routes.gymReview(session.id, session.log_id) : routes.log(session.id, session.log_id))
-              }
-              style={logQuery.data?.feedback ? styles.grow : undefined}
-              fullWidth={!!logQuery.data?.feedback}>
-              Edit
-            </Button>
-            {logQuery.data && !logQuery.data.feedback ? (
+            {editable ? (
+              <Button
+                variant="secondary"
+                size="lg"
+                icon="pencil"
+                onPress={() =>
+                  session.log_id &&
+                  router.push(gym ? routes.gymReview(session.id, session.log_id) : routes.log(session.id, session.log_id))
+                }
+                style={log?.feedback ? styles.grow : undefined}
+                fullWidth={!!log?.feedback}>
+                Edit
+              </Button>
+            ) : null}
+            {log && !log.feedback ? (
               <Button
                 size="lg"
                 iconRight="arrow-right"
                 onPress={() => session.log_id && router.push(routes.feedback(session.log_id))}
                 style={styles.grow}>
                 How did it feel?
+              </Button>
+            ) : null}
+            {log?.feedback && !editable ? (
+              <Button
+                variant="secondary"
+                size="lg"
+                icon="pencil"
+                fullWidth
+                onPress={() => session.log_id && router.push(routes.feedback(session.log_id))}>
+                Change how it felt
               </Button>
             ) : null}
           </>

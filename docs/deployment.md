@@ -36,8 +36,15 @@ Owner steps to bring the hosted project up to date:
    - `hackyeah2026://auth/callback` and `hackyeah2026://auth/reset`
    - the Expo Go `exp://…/--/auth/callback` and `exp://…/--/auth/reset` URLs
    - the web origin's `/auth/callback` and `/auth/reset`
-5. Optional: turn on the Google provider with its client ID and secret. The app
-   shows Google sign-in only while `/auth/v1/settings` reports it as on.
+5. Google: the provider is on, and the app shows Google sign-in while
+   `/auth/v1/settings` reports it as on. For Google Calendar:
+   - enable the Calendar API, and add its two scopes and the test users to
+     the consent screen
+   - turn on manual identity linking
+   - set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`
+   - redeploy `product-api`
+
+   The steps are in [Mobile app on Supabase](features/mobile-supabase-integration.md#google-cloud-and-supabase-setup-owner).
 6. Smoke-test from the app:
    - a new account through onboarding to its first plan
    - a log with feedback

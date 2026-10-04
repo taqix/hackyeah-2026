@@ -123,7 +123,8 @@ starts with `[movo:<scope>]`:
 - `nav`: route changes, with IDs shortened and parameter names only.
 - `plan`, `chat`, `logs`, `profile`, `calendar`: plan builds and re-plans,
   chat sends and Undo, drafts and feedback, opinions and switched-off sports,
-  calendar free time (source, slot count, read time) and the Movo export.
+  calendar free time (source, slot count, read time), the Movo export, and
+  Google Calendar connect, token refresh, free/busy counts and export counts.
 - `app`: the API mode and missing variables at start. `mock`: each mock call.
 
 Failures use `console.warn`; the root layout keeps these lines out of LogBox.

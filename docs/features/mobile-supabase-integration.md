@@ -21,7 +21,8 @@ the plan in chat, and see their history. All of this must persist in Supabase.
     - email/password sign-in and sign-up, including the email-confirmation state;
       sign-up also asks for the name the app greets the person by
       (see [Name](#mobile-architecture))
-    - Google OAuth (PKCE through the system browser)
+    - Google OAuth (PKCE through the system browser; a full-page redirect on
+      the web), see [Google sign-in](#google-sign-in)
     - password reset email, plus an in-app new-password screen from the recovery link
     - session refresh and sign-out
   - An HTTP `ApiClient` that maps the product API onto the existing mobile
@@ -35,6 +36,9 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - Calendar:
     - device free time feeds generation and chat, with manual availability as the fallback
     - an opt-in export of planned sessions to a "Movo" device calendar
+    - opt-in [Google Calendar](#google-calendar) on Data and privacy: its
+      free/busy comes first for planning, and the export can go to a "Movo"
+      calendar in Google instead of the device
   - The mock stays behind `EXPO_PUBLIC_API_MODE=mock` for offline demos and
     tests. The default is Supabase. Demo controls and time travel only exist in
     mock mode.
@@ -46,7 +50,7 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - timed gym sets
   - boolean/enum metrics
   - account deletion and export
-  - Google Calendar as a second source
+  - Google Calendar on Review (it is on Data and privacy only)
 - Affected areas: mobile, Edge Function, database migrations, shared contracts.
 
 ## Acceptance criteria
@@ -73,6 +77,23 @@ the plan in chat, and see their history. All of this must persist in Supabase.
   - Without access, they send `manual` slots from the preferred window.
   - Exported sessions appear in the "Movo" calendar when export is on, and
     disappear when it is off.
+- [ ] **Google sign-in.** Continue with Google works in a development build
+      (`hackyeah2026://`), in Expo Go (`exp://…/--/auth/callback`) and on Expo
+      web (`http://localhost:8081/auth/callback`). Google shows its account
+      chooser, the app greets the person by their Google name, and closing or
+      declining Google stays on Welcome without an error.
+- [ ] **Google Calendar.**
+  - Connect on Data and privacy asks Google for free/busy and app-created
+    calendars only, and shows the Google email once connected.
+  - Connected with Use for planning on, generation and chat send
+    `google_calendar` free slots. A failed Google read falls back to the device
+    calendar, then to manual slots.
+  - Add sessions to Google Calendar keeps a "Movo" calendar in Google in step
+    with the plan.
+  - When Google refuses the connection, or the token cannot be refreshed, the
+    row says "Reconnect Google Calendar".
+  - Disconnect deletes the tokens on the phone and can remove the Movo calendar
+    from Google.
 - [ ] **Next week.** Plans the following week automatically from the last day
       of the planned week (Home focus).
 - [ ] **Ownership.** One account never sees another account's data. Mobile has
@@ -96,7 +117,10 @@ the plan in chat, and see their history. All of this must persist in Supabase.
 
 Auth redirect: `hackyeah2026://auth/callback` (app scheme) plus the Expo Go
 `exp://…/--/auth/callback` URL in development, and the web origin on Expo web.
-The owner allowlists these in Supabase Auth.
+The app builds them with `Linking.createURL('auth/callback')`. The owner
+allowlists these in Supabase Auth (done on the hosted project). Google
+Calendar uses the same callback; its setup is in
+[Google Cloud and Supabase setup](#google-cloud-and-supabase-setup-owner).
 
 ### Mobile architecture
 
@@ -202,7 +226,12 @@ The owner allowlists these in Supabase Auth.
 
   New codes: `ai_unavailable`, `confirmation_required`, `not_configured`.
 - **Calendar.** `src/services/calendar/plan-availability.ts`
-  `captureAvailability({weekStart, from, window, minMinutes})`:
+  `captureAvailability({weekStart, from, window, minMinutes, timeZone}, {google})`:
+  - **Google Calendar connected, Use for planning on:** Google's free/busy for
+    the primary calendar, turned into free time and cut exactly like the
+    device's below, `source: google_calendar`. If the read fails (expired and
+    not refreshable, offline, a Google error), it falls back to the device,
+    then manual. A failed read never goes out as an empty Google result.
   - **Access granted:** free slots are intersected with the daily window
     (`preferred_window ?? [7,21]`) and split per day. Short slots are dropped,
     at most 100 are kept, `source: device_calendar`. The "Movo" export calendar
@@ -211,7 +240,211 @@ The owner allowlists these in Supabase Auth.
   - **`native-error`:** propagates.
   - **Export:** `plan-export.ts` `syncPlanToCalendar` upserts events by a
     `movo-activity:<uuid>` marker in the notes and removes stale ones. It is
-    off by default. The toggle is on Data and privacy, stored locally.
+    off by default. The toggle is on Data and privacy, stored locally. The
+    export can go to Google Calendar instead (see below).
+
+### Google sign-in
+
+`auth.signInWithGoogle` (`src/api/remote/auth.ts`):
+
+- `signInWithOAuth({provider: 'google'})` with
+  `redirectTo = Linking.createURL('auth/callback')` and
+  `queryParams: {prompt: 'select_account'}`, so Google shows its account
+  chooser.
+  - Development build: `hackyeah2026://auth/callback`.
+  - Expo Go: `exp://<host>:8081/--/auth/callback`.
+  - Expo web: `http://localhost:8081/auth/callback`.
+- **Phone:** `skipBrowserRedirect`, then `WebBrowser.openAuthSessionAsync`.
+  - The code is read from the query or the fragment.
+  - `exchangeCodeForSession` runs once per code. The sheet, the deep link
+    listener (`AuthSessionSync`) and `/auth/callback` share one exchange.
+  - Closing the sheet, or `access_denied` without an `error_code` (the person
+    declined on Google), is a quiet cancel: Welcome stays as it was.
+  - Supabase's own refusals come with an `error_code` and keep their copy, for
+    example `signup_disabled` ("New accounts can't be created right now").
+  - A refused or expired code reads "Google sign-in didn't finish. Try again."
+- **Web:** a full-page redirect. `/auth/callback` finishes it after the page
+  loads again; supabase-js (`detectSessionInUrl`) may trade the code first,
+  and its saved session then counts.
+- The button shows only while `GET /auth/v1/settings` reports
+  `external.google: true`. It is offered anyway when the settings can't be read.
+- The session's name is Google's `full_name` or `name`, and `AuthSessionSync`
+  keeps the cached session in step.
+- **Same email.** Supabase links a Google sign-in whose verified email matches
+  an existing email account to that account automatically (automatic identity
+  linking). The person lands in their existing account, which from then on has
+  both identities. Google's name may replace the metadata name at that sign-in.
+
+### Google Calendar
+
+Opt-in, on Data and privacy (`features/settings/google-calendar-rows.tsx`).
+The app calls Google Calendar directly with the person's Google token.
+
+**Reads and writes**
+
+- It reads free/busy only, never event titles or details.
+- It writes only to a "Movo" calendar that it creates itself.
+- The scopes are in one constant (`GOOGLE_CALENDAR_SCOPES`,
+  `services/google-calendar/types.ts`):
+  - `https://www.googleapis.com/auth/calendar.freebusy`
+  - `https://www.googleapis.com/auth/calendar.app.created`
+
+**Connect** (`api/remote/google-calendar.ts`, `connect`)
+
+- If the account already has a Google identity (`getUserIdentities`), it runs
+  `signInWithOAuth` with:
+  - `{redirectTo, scopes, queryParams: {access_type: 'offline', prompt: 'consent', login_hint: <its Google email>}, skipBrowserRedirect}`
+  - The browser flow is the same as Google sign-in.
+- Otherwise (an email account) it runs `linkIdentity` with the same options.
+  - This needs manual linking switched on in Supabase Auth.
+  - Its `manual_linking_disabled` error reads "Connecting Google to an account
+    made with email isn't switched on yet."
+  - A Google account linked to another Movo account
+    (`identity_already_exists`) gets its own message.
+- After the code exchange, the session carries `provider_token` and
+  `provider_refresh_token` once. Supabase does not keep them.
+- **Capture.** A pending marker in AsyncStorage holds:
+  - the user
+  - the start time
+  - a fingerprint of any older Google token
+  - for the `signInWithOAuth` path, the session to restore
+
+  `capture(session)` stores the tokens for the user who tapped Connect. It
+  runs from the connect call, the Android deep link (when the sheet reports a
+  dismiss), and `AuthSessionSync` (the web page after Google). An older
+  sign-in's token that comes back on a reload is never taken.
+- **Another account.** If Google signs in a different Movo account, the
+  original session is put back (`setSession`) and the row explains it.
+- **Web.** The page goes to Google, and `/auth/callback` returns to Data and
+  privacy.
+
+**Tokens** (`services/google-calendar/tokens.ts`)
+
+- Stored as `{access_token, expires_at, refresh_token, email, connected_at, needs_reconnect}`.
+- Kept per Supabase user under `movo.google-calendar.tokens.v1.<user id>`:
+  - native: `expo-secure-store` (keychain, keystore)
+  - web, which has no secure store: AsyncStorage (localStorage), where
+    supabase-js keeps its own session
+- The choices are in AsyncStorage per user: Use for planning (on by default),
+  Add sessions (off by default), and the Movo calendar ID.
+
+**Refresh**
+
+- The access token is assumed to last 50 minutes.
+- Near expiry, or after a Google 401, the app sends `POST /google/token`
+  `{refresh_token}` to the product API, which answers `{access_token, expires_in}`.
+- The function holds the OAuth client secret.
+- One refresh runs at a time per user.
+- Any of these marks the tokens `needs_reconnect`:
+  - `GOOGLE_RECONNECT_REQUIRED` (Google answered `invalid_grant`)
+  - `GOOGLE_NOT_CONFIGURED` (no function secrets)
+  - a missing route (404)
+  - no refresh token
+  - a refused scope
+
+  The row then says "Reconnect Google Calendar", and planning skips Google
+  until then. Offline is not a reason to reconnect.
+
+**Availability.** Described in the Calendar bullet above.
+- `POST https://www.googleapis.com/calendar/v3/freeBusy` asks for
+  [range start, range end) on `primary`, in the plan's time zone.
+- Busy intervals become free gaps (`freeFromBusy`). The existing per-day
+  window, minimum length and 100-slot cap then apply.
+
+**Export** (`services/google-calendar/export.ts`)
+
+- `syncPlanToGoogleCalendar` finds or creates a secondary "Movo" calendar:
+  - the remembered ID first
+  - else one found by title and description (listing may be refused for
+    these scopes)
+  - else `calendars.insert`
+- It upserts events by `extendedProperties.private.movoActivityId`.
+- It deletes stale or duplicate Movo events in the synced range. Events
+  without the property are left alone.
+- A Movo calendar deleted in Google is created again.
+- It shares the device export's queue (`features/calendar-export`): debounced
+  1.5 s, one write at a time, retried on the next change or return to the
+  app. Failures stay quiet.
+
+**One target.** Sessions go to one Movo calendar:
+
+- Turning on Add sessions to Google Calendar while the phone's export is on
+  asks first.
+- It then removes the phone's Movo calendar, and the reverse works the same
+  way.
+- Turning the Google export off asks, then deletes its Movo calendar.
+
+**Disconnect**
+
+- Optionally removes the Movo calendar from Google first.
+- Asks Google to revoke the token (`oauth2.googleapis.com/revoke`, with the
+  token in the form body).
+- Deletes the tokens on the phone and turns the export off.
+
+**Debug logs** (scope `calendar`)
+
+- connect: the path and the outcome
+- refresh
+- free/busy: the busy and free counts, the slot count
+- export: the created, updated and deleted counts
+
+They never contain a token, an email or event content.
+
+**UI** (Data and privacy › Connected)
+
+- Not connected:
+  - "Google Calendar"
+  - "Busy times only, never what's in your events. It can also add your sessions."
+  - Connect
+- Connected:
+  - the Google email with On
+  - Use for planning
+  - Add sessions to Google Calendar
+  - Disconnect Google Calendar (a sheet: disconnect and remove the calendar,
+    or keep it)
+- Hidden in mock mode, and while Google sign-in is off.
+
+### Google Cloud and Supabase setup (owner)
+
+Google sign-in goes through Supabase's hosted OAuth, so the Google client is a
+**Web application** client whose redirect URI points at Supabase.
+
+1. **Google Cloud, OAuth client (Web application).**
+   - Authorized redirect URI: `https://<ref>.supabase.co/auth/v1/callback`.
+   - No JavaScript origins are needed.
+2. **Google Cloud, APIs.** Enable the **Google Calendar API** in the same
+   project.
+3. **Google Cloud, OAuth consent screen.**
+   - App name `Movo`.
+   - Authorized domain `<ref>.supabase.co`.
+   - Scopes: `openid`, `email`, `profile`, and for Google Calendar
+     `.../auth/calendar.freebusy` and `.../auth/calendar.app.created`.
+   - While the app is unverified (publishing status "Testing"), add each tester
+     under Test users. Only they can grant the calendar scopes, and their
+     refresh tokens expire after 7 days. That shows as "Reconnect Google
+     Calendar".
+   - Publishing for everyone needs Google's verification of the calendar
+     scopes.
+4. **Supabase Auth › Providers › Google.**
+   - On, with the Web client ID and secret. This is done on the hosted project.
+   - The secret stays in Supabase, never in `.env` or Git.
+5. **Supabase Auth, manual linking.** Turn on "Allow manual linking"
+   (`security_manual_linking_enabled`). Otherwise an email account cannot
+   connect Google Calendar.
+6. **Function secrets.** Set the same Web client for the token refresh, then
+   redeploy:
+
+   ```sh
+   supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<WEB_CLIENT_ID> GOOGLE_OAUTH_CLIENT_SECRET=<WEB_CLIENT_SECRET>
+   supabase functions deploy product-api
+   ```
+
+   Without them, refresh answers 501. The app then asks for a reconnect when
+   the first access token expires, after about an hour.
+7. **Redirect allowlist.** Google Calendar uses the existing
+   `auth/callback` URLs. Nothing new is needed.
+8. **App.** Rebuild the development build: `expo-secure-store` is a native
+   module. Expo Go already includes it.
 
 ### Contract extensions
 
@@ -227,6 +460,18 @@ router has exact paths only.
 | PUT | /opinions | `{activity_key, title, sport_id, opinion: yes\|maybe\|no\|null, last_date}` | `ActivityOpinionEntity \| null` (null = cleared) |
 | POST | /opinions/reset | `{}` | `{cleared: integer}` |
 | POST | /plans/undo | `{request_id, plan_id, expected_version}` | `{plan, version}` (new version, `origin: "undo"`) |
+| POST | /google/token | `{refresh_token}` (1–2048 characters) | `{access_token, expires_in}`; 501 `GOOGLE_NOT_CONFIGURED`, 409 `GOOGLE_RECONNECT_REQUIRED`, 502 `PROVIDER_UNAVAILABLE` |
+
+**`availability.source`:** `device_calendar|google_calendar|manual`.
+`google_calendar` is handled exactly like `device_calendar` by validation and
+the Gemini adapter: only the slots matter.
+
+**POST /google/token:**
+- It calls `https://oauth2.googleapis.com/token` with the function secrets
+  `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+- It is authenticated like every route, and never stores or logs a token.
+- `invalid_grant` is 409, not 401, so it never reads as an expired Supabase
+  session.
 
 **`ActivityOpinionEntity`:**
 - `activity_key`: 1–100 characters, `^[a-z0-9][a-z0-9_-]*$`
@@ -310,8 +555,13 @@ freeze the week.
   enforces them locally.
 
 **Auth**
-- Email sign-in is on with autoconfirm. Google sign-in is off (no client ID);
-  the app reads `GET /auth/v1/settings` and hides the button.
+- Email sign-in is on with autoconfirm.
+- Google sign-in is on with a Web client ID and secret. `GET /auth/v1/settings`
+  reports `external.google: true`, so the app shows the button.
+- Manual identity linking (`security_manual_linking_enabled`) is off. Email
+  accounts cannot connect Google Calendar until it is on.
+- `product-api` has no `GOOGLE_OAUTH_*` secrets yet, and the Google token route
+  is not deployed.
 - The redirect allowlist holds `hackyeah2026://auth/{callback,reset}`,
   `exp://**/--/auth/{callback,reset}` and
   `http://localhost:8081/auth/{callback,reset}`. `site_url` is still
@@ -319,8 +569,12 @@ freeze the week.
 
 ### Open decisions and dependencies (owner)
 
-- Google sign-in: configure the Google provider (client ID and secret) in the
-  Supabase dashboard.
+- Google Calendar: steps 2, 3, 5 and 6 of
+  [Google Cloud and Supabase setup](#google-cloud-and-supabase-setup-owner):
+  - the Calendar API
+  - the consent screen scopes and test users
+  - manual linking
+  - the two function secrets, then a redeploy
 - Optional: enable leaked-password protection.
 - Whether `lookupEmail` may reveal account existence is still open. Mobile
   asks for a password first and offers "Create an account" instead; there is
@@ -380,6 +634,53 @@ project or Gemini.
   The acceptance criteria above are therefore covered only by unit tests with
   fakes.
 
+### Google sign-in and Google Calendar (4 October, later)
+
+Run in a worktree of `feat/mobile-full-integration`, with no calls to the
+hosted project, Google or Gemini, and no real account. Google, Supabase Auth
+and the product API are fakes.
+
+- **Mobile** (in `apps/mobile`):
+  - `npm run typecheck` and `npx eslint src`: clean.
+  - `npm run test:remote`: 149 of 149. `tests/remote/google-calendar.test.ts`
+    covers:
+    - the connect choice (`signInWithOAuth` with `login_hint`, or
+      `linkIdentity`) with the scopes and offline access
+    - tokens in the secure store only, per user
+    - the web redirect and capture, and an older sign-in's token being ignored
+    - another account restored
+    - decline, close, and the Android dismiss race
+    - manual linking off, a Google account taken, offline
+    - refresh through `POST /google/token`, with the body checked against the
+      contract; reconnect on 409, 501 and 404; offline left alone
+    - the planning and export switches, disconnect with revoke and calendar
+      removal
+
+    `auth.test.ts` adds `prompt=select_account`, the Expo Go callback with a
+    fragment code, and the redirect error copy.
+  - `npm test`: 10 of 10.
+  - `npm run test:calendar`: 77 of 77 in Europe/Warsaw and in
+    America/Los_Angeles. `tests/google-calendar.test.ts` runs against an
+    in-memory Google Calendar API. It covers:
+    - free/busy into free slots, including DST weeks and a fully busy week
+    - the fallbacks to the device and manual, never an empty Google result
+    - the 401 refresh and the scope errors
+    - the token refresh, its dedupe and the reconnect marking
+    - the export: create, idempotent second run, update, delete stale and
+      duplicate, unmarked events kept, recreate after deletion, reuse after a
+      reinstall, remove
+  - `npx expo export --platform web` and `--platform ios`: bundle.
+- **Supabase** (repository root):
+  - `npm run test:supabase`: 49 of 49. `google-token.test.ts` runs the route
+    against a fake Google token endpoint:
+    - success, with the form body and nothing in the URL
+    - missing secrets (501)
+    - `invalid_grant` (409, logs without the token)
+    - a rejected client, an outage, an odd answer
+    - validation, 401 and 405
+  - `npm run typecheck:supabase` and `npm run lint:supabase`: clean.
+  - `npm run schema:product`: after a re-run, `git status docs/api` is clean.
+
 ### Deviations from the plan
 
 - **Validation** skips every per-activity check (sport, discovery, gym shape,
@@ -414,7 +715,8 @@ project or Gemini.
   - deploy `product-api`
   - set `GEMINI_API_KEY` and `GEMINI_MODEL`
   - allowlist the auth redirects
-  - optionally turn on Google
+  - Google Calendar: see
+    [Google Cloud and Supabase setup](#google-cloud-and-supabase-setup-owner)
 - **Never run against real PostgREST:**
   - the opinion upsert (`on_conflict`, `Prefer: resolution=merge-duplicates`)
   - the `sport_id::text` cast in write responses
@@ -462,6 +764,26 @@ project or Gemini.
   - It runs only while the app is open.
   - Signing out keeps the Movo calendar.
   - With access revoked, the app cannot delete the Movo calendar.
+- **Google Calendar, never run against Google or Supabase:**
+  - Whether Supabase returns `provider_token` and `provider_refresh_token`
+    after a PKCE `linkIdentity` exchange as it does after a sign-in. Without
+    them, Connect says Google didn't share the calendar.
+  - Whether `calendarList.list` is allowed with these scopes. The export
+    creates a new Movo calendar when it is refused, so a reinstall can leave a
+    second one.
+  - Whether `calendars.delete` is allowed for the app's own calendar under
+    `calendar.app.created`.
+  - The Android dismiss race, the web return through `/auth/callback`, and the
+    restore after another account signed in.
+  - Google's consent screen with unticked calendar boxes. Expected: a 403
+    reads as "Reconnect Google Calendar".
+- **Google Calendar, by design:**
+  - Google tokens stay on the phone for the account after sign-out, so the
+    same account signing in again finds it connected. Disconnect removes them.
+  - The access token's lifetime is assumed (50 minutes), because Supabase does
+    not pass Google's.
+  - Free/busy reads the primary calendar only.
+  - Review's calendar row is still device-only.
 - **Copy and mock leftovers:**
   - The reset-feedback sheet still mentions the assistant summary, which is
     hidden in Supabase mode.

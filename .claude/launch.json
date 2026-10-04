@@ -79,6 +79,16 @@
       ],
       "port": 8093,
       "autoPort": true
+    },
+    {
+      "name": "pages-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview:pages"
+      ],
+      "port": 4830,
+      "autoPort": true
     }
   ]
 }

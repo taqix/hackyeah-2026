@@ -140,17 +140,18 @@ so they are publishable by design; row-level security protects the data.
   (`sb_secret_…` or a `service_role` JWT). `EXPO_PUBLIC_API_MODE=mock` builds
   the offline demo instead and needs neither.
 
-**Local preview.** Serve `dist/pages` under `/hackyeah-2026/`:
+**Local preview.** `npm run preview:pages` serves `dist/pages` the way GitHub
+Pages does (file, `<path>.html`, `<path>/index.html`, else `404.html`), so deep
+links and reloads behave as on the real site:
 
 ```bash
 npm run build:pages
-mkdir -p dist/preview && ln -sfn ../pages dist/preview/hackyeah-2026
-python3 -m http.server 4830 --directory dist/preview
+npm run preview:pages
 ```
 
 Then open http://localhost:4830/hackyeah-2026/ and
-http://localhost:4830/hackyeah-2026/app/. Python has no `404.html` fallback, so
-reloading a deep link there shows Python's error page; GitHub Pages opens the app.
+http://localhost:4830/hackyeah-2026/app/. The app talks to the Supabase project
+it was built with.
 
 **Supabase Auth.** Done on 4 October 2026: the redirect allowlist has
 `https://taqix.github.io/hackyeah-2026/app/auth/callback` and

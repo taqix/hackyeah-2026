@@ -105,8 +105,7 @@ function responseSchema(
       id: { type: 'string', enum: PLANNABLE_EXERCISES.map((item) => item.id) },
       sets: {
         type: 'array',
-        minItems: 1,
-        maxItems: 5,
+        description: '1 to 5 sets.',
         items: {
           type: 'object',
           properties: { repetitions: { type: 'integer', minimum: 1, maximum: 30 } },
@@ -139,7 +138,11 @@ function responseSchema(
         maximum: maxMinutes,
         description: 'A multiple of 5.',
       },
-      gym_exercises: { type: 'array', maxItems: 6, items: exercise },
+      gym_exercises: {
+        type: 'array',
+        description: 'At most 6 exercises for a gym sport; empty for any other sport.',
+        items: exercise,
+      },
     },
     required: [
       'id',
@@ -151,7 +154,13 @@ function responseSchema(
       'gym_exercises',
     ],
   };
-  const list = { type: 'array', maxItems: sports.length ? maxSessions : 0, items: activity };
+  // Gemini rejects array length keywords (minItems/maxItems) with a bare 400 INVALID_ARGUMENT,
+  // so counts are described here and enforced by the prompt and local validation.
+  const list = {
+    type: 'array',
+    description: sports.length ? `At most ${maxSessions} sessions.` : 'Always empty.',
+    items: activity,
+  };
   return chat
     ? {
         type: 'object',

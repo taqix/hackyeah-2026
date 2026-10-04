@@ -160,7 +160,8 @@ test('generate builds a validated weekly snapshot from a structured answer', asy
   const config = calls[0]!.body.generationConfig;
   assert.equal(config.responseMimeType, 'application/json');
   const activity = config.responseJsonSchema.properties.activities;
-  assert.equal(activity.maxItems, 5);
+  assert.equal(activity.description, 'At most 5 sessions.');
+  assert.ok(!/"(minItems|maxItems)"/.test(JSON.stringify(config.responseJsonSchema)));
   assert.deepEqual(activity.items.properties.sport_id.enum, ['1', '2']);
   assert.equal(activity.items.properties.duration_minutes.maximum, 30);
   const prompt = sent();

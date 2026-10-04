@@ -17,6 +17,8 @@ export type ComposerProps = {
   onSend: () => void;
   /** A change is running: the box is locked, one change at a time. */
   busy: boolean;
+  /** Nothing can be sent yet (no plan to change): the box is locked; `top` says why. */
+  disabled?: boolean;
   /** The last message waits unsent: the offline note replaces the hint. */
   offline: boolean;
   /** The attached session (8.1, 8.15), removable. */
@@ -35,6 +37,7 @@ export function Composer({
   onChangeText,
   onSend,
   busy,
+  disabled = false,
   offline,
   about,
   onRemoveAbout,
@@ -48,8 +51,9 @@ export function Composer({
   const [webContentHeight, setWebContentHeight] = useState(0);
   const line = type.body.lineHeight;
   const webHeight = value ? Math.min(MAX_INPUT_HEIGHT, Math.max(line, webContentHeight)) : line;
-  const ring = focused && !busy;
-  const canSend = value.trim().length > 0 && !busy && !offline;
+  const locked = busy || disabled;
+  const ring = focused && !locked;
+  const canSend = value.trim().length > 0 && !locked && !offline;
 
   return (
     <View
@@ -77,7 +81,7 @@ export function Composer({
               {
                 borderRadius: about ? 24 : 26,
                 borderColor: ring ? colors.accent : colors.borderStrong,
-                backgroundColor: busy ? colors.surfaceSunken : colors.surfaceCard,
+                backgroundColor: locked ? colors.surfaceSunken : colors.surfaceCard,
               },
             ]}>
             {about ? <AboutChip {...about} onRemove={onRemoveAbout} /> : null}
@@ -85,13 +89,13 @@ export function Composer({
               ref={inputRef}
               value={value}
               onChangeText={onChangeText}
-              editable={!busy}
+              editable={!locked}
               multiline
               placeholder={busy ? 'Updating your plan…' : 'Message your coach…'}
               placeholderTextColor={busy ? colors.textSecondary : colors.textTertiary}
               selectionColor={colors.accent}
               accessibilityLabel="Message"
-              aria-disabled={busy}
+              aria-disabled={locked}
               autoComplete="off"
               enterKeyHint={Platform.OS === 'web' ? 'send' : undefined}
               onFocus={() => setFocused(true)}

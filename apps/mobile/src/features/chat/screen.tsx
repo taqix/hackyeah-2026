@@ -23,9 +23,9 @@ import { useTheme } from '@/theme';
 import { CoachBubble, FineLine, QuickReplies } from './bubbles';
 import { ChatHeader } from './chat-header';
 import { Composer } from './composer';
-import { DONE_STAYS, INTRO, MOVE_REQUEST, SESSION_REPLIES } from './copy';
+import { DONE_STAYS, INTRO, MOVE_REQUEST, NOT_READY_HINT, SESSION_REPLIES } from './copy';
 import { Examples } from './examples';
-import { aboutLabel, sessionQuestion, sessionRef } from './labels';
+import { aboutLabel, sessionQuestion, sessionRef, undoProblem } from './labels';
 import { ThreadMessages } from './thread-messages';
 import { ThreadScroll, type ThreadScrollHandle } from './thread-scroll';
 import { useChatSend } from './use-chat-send';
@@ -62,9 +62,11 @@ export function ChatScreen() {
   });
   const pendingSession = usePlannedSession(sender.pending?.aboutId);
   const busy = sender.busy || undo.isPending;
+  // A message changes the plan, so there must be one (not while it builds or after it failed).
+  const planReady = plan.data?.status === 'ready';
 
   const sendText = (text: string) => {
-    if (undo.isPending || !sender.submit(text, aboutId)) return false;
+    if (!planReady || undo.isPending || !sender.submit(text, aboutId)) return false;
     undo.reset();
     setSentThisVisit(true);
     threadRef.current?.follow();
@@ -163,16 +165,17 @@ export function ChatScreen() {
             if (sendText(draft)) setDraft('');
           }}
           busy={busy}
+          disabled={!planReady}
           offline={sender.pending?.status === 'offline'}
           about={about.data ? { icon: sportIcon(about.data.sport_id), label: aboutLabel(about.data, today) } : null}
           onRemoveAbout={() => setAboutId(null)}
           top={
             undo.isError ? (
               <FineLine icon="circle-alert" danger align="center" alert>
-                {isApiError(undo.error, 'offline')
-                  ? "You're offline, so nothing was undone."
-                  : "Couldn't undo that. Your plan hasn't changed."}
+                {undoProblem(undo.error)}
               </FineLine>
+            ) : plan.data && !planReady ? (
+              <FineLine align="center">{NOT_READY_HINT}</FineLine>
             ) : null
           }
           bottomPadding={keyboardShown ? 10 : Math.max(insets.bottom, 16)}

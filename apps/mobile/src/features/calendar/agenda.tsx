@@ -1,17 +1,18 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { useLog, useSessionsInRange } from '@/api/hooks';
+import { useSessionsInRange } from '@/api/hooks';
 import type { ActivityLog, LocalDate } from '@/api/types';
 import { Col } from '@/components/layout';
 import { Badge, Card, Icon, PressableScale, Skeleton, Text } from '@/components/ui';
-import { addDays, formatDayDate, formatDayShort, formatLongDate, formatMinutes, formatTime, fromLocalDate } from '@/lib/dates';
-import { nextPlannedSession, sessionLocalDate, sessionMinutes, sessionStart, sessionTimeLabel } from '@/lib/sessions';
+import { addDays, formatDayDate, formatDayShort, formatLongDate, formatTime, fromLocalDate } from '@/lib/dates';
+import { nextPlannedSession, sessionLocalDate, sessionStart, sessionTimeLabel } from '@/lib/sessions';
 import { routes } from '@/navigation/routes';
 import { useTheme } from '@/theme';
 
-import { type DayItem, feltLabel, markState, type MarkState, stateWord } from './day-items';
+import { type DayItem, markState, type MarkState, stateWord } from './day-items';
 import { dayOfMonth, isInMonth, monthOf } from './month';
+import { extraFacts, lengthAndFelt, useSessionFacts } from './session-facts';
 
 type AgendaProps = {
   date: LocalDate;
@@ -56,7 +57,8 @@ export function Agenda({ date, items, today, firstWeekStart, plannedThrough }: A
   );
 }
 
-function FreeDay({ date, firstWeekStart, plannedThrough }: Omit<AgendaProps, 'items' | 'today'>) {
+/** A day without sessions: not planned yet, before the plan, or a rest day with the next session. */
+export function FreeDay({ date, firstWeekStart, plannedThrough }: Omit<AgendaProps, 'items' | 'today'>) {
   if (date > plannedThrough) {
     return (
       <Text variant="bodySm" style={styles.free}>
@@ -111,14 +113,9 @@ function SessionLine({ item, today, divider }: { item: SessionItem; today: Local
   const router = useRouter();
   const { session } = item;
   const state = markState(item, today);
-  const log = useLog(state === 'done' ? session.log_id : null);
-  const minutes = log.data ? log.data.duration_seconds / 60 : sessionMinutes(session);
-  const felt = log.data?.feedback?.felt;
+  const facts = useSessionFacts(session, state);
   // Nothing was logged for planned and unlogged sessions, so they keep their planned time.
-  const meta =
-    state === 'planned' || state === 'unlogged'
-      ? sessionTimeLabel(session)
-      : formatMinutes(minutes) + (felt ? ` · felt ${feltLabel(felt)}` : '');
+  const meta = state === 'planned' || state === 'unlogged' ? sessionTimeLabel(session) : lengthAndFelt(facts);
   return (
     <Line
       title={session.title}
@@ -135,8 +132,7 @@ function SessionLine({ item, today, divider }: { item: SessionItem; today: Local
 /** A workout added in chat: history, not the plan. Opens its log to edit. */
 function ExtraLine({ log, divider }: { log: ActivityLog; divider: boolean }) {
   const router = useRouter();
-  const felt = log.feedback?.felt;
-  const meta = formatMinutes(log.duration_seconds / 60) + (felt ? ` · felt ${feltLabel(felt)}` : '');
+  const meta = lengthAndFelt(extraFacts(log));
   return (
     <Line
       title={log.title}

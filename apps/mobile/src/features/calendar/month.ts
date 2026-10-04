@@ -44,3 +44,9 @@ export function clampMonth(month: LocalDate, min: LocalDate, max: LocalDate): Lo
 export function dayOfMonth(date: LocalDate): number {
   return Number(date.slice(8, 10));
 }
+
+/** The same day of the month in another month, or that month's last day when it is shorter. */
+export function sameDayIn(month: LocalDate, date: LocalDate): LocalDate {
+  const day = Math.min(dayOfMonth(date), dayOfMonth(monthEnd(month)));
+  return `${month.slice(0, 8)}${String(day).padStart(2, '0')}`;
+}

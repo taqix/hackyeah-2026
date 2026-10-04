@@ -134,3 +134,6 @@ const driver: CalendarDriver = {
 };
 
 export const deviceCalendar = createCalendarService(driver);
+
+/** iOS and Android have a device calendar; Expo Go still reports `unavailable` through the permission. */
+export const deviceCalendarSupported: boolean = true;

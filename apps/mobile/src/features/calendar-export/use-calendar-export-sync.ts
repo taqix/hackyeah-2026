@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import { usePlanState, useSessionsInRange } from '@/api/hooks';
 import { useNow } from '@/lib/clock';
 import { toLocalDate } from '@/lib/dates';
-import { deviceCalendar } from '@/services/calendar';
+import { deviceCalendar, deviceCalendarSupported } from '@/services/calendar';
 import { useCalendarExportSetting } from '@/state/calendar-export';
 import { useGoogleCalendar } from '@/state/google-calendar';
 
@@ -72,15 +72,17 @@ function useForegrounds(enabled: boolean) {
  * planned day: on the device while Add sessions to my calendar is on and
  * access is granted, in Google while Add sessions to Google Calendar is on and
  * Google Calendar is connected. Writes are debounced and run one at a time;
- * failures stay quiet.
+ * failures stay quiet. The web has no device calendar, so there only Google
+ * is kept in step and calendar access is never checked.
  */
 export function useCalendarExportSync(): void {
   const setting = useCalendarExportSetting();
-  const access = useExportAccess(setting.enabled);
+  const deviceExport = deviceCalendarSupported && setting.enabled;
+  const access = useExportAccess(deviceExport);
   const google = useGoogleCalendar().status;
   const toGoogle = !!google?.connected && !google.needsReconnect && google.exportEnabled;
   const foregrounds = useForegrounds(toGoogle);
-  const toDevice = setting.enabled && access.granted;
+  const toDevice = deviceExport && access.granted;
   const plan = usePlanState();
   const today = toLocalDate(useNow());
   const plannedThrough = plan.data?.planned_through ?? null;

@@ -569,12 +569,15 @@ freeze the week.
 
 ### Open decisions and dependencies (owner)
 
-- Google Calendar: steps 2, 3, 5 and 6 of
+- Google Calendar, from
   [Google Cloud and Supabase setup](#google-cloud-and-supabase-setup-owner):
-  - the Calendar API
-  - the consent screen scopes and test users
-  - manual linking
-  - the two function secrets, then a redeploy
+  - Already done on 4 October: manual linking turned on, and `product-api`
+    redeployed with `POST /google/token`.
+  - Still open:
+    - the Calendar API
+    - the consent screen scopes and test users
+    - the two `GOOGLE_OAUTH_*` function secrets (the Management API shows only
+      a digest of the Auth client secret, so it can't be copied over)
 - Optional: enable leaked-password protection.
 - Whether `lookupEmail` may reveal account existence is still open. Mobile
   asks for a password first and offers "Create an account" instead; there is

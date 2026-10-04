@@ -6,12 +6,14 @@ These are the team's agreed target conventions. `develop` already contains an
 Expo SDK 57 starter in `apps/mobile`, npm workspaces, and `package-lock.json`.
 Root commands include `npm start`, `npm run start:hostname`,
 `npm run android`, `npm run ios`, `npm run web`, `npm run typecheck`, and
-`npm run lint`. The current web command
-starts Expo's web target, not the planned standalone React dashboard.
+`npm run lint`. `npm run web` starts Expo's web target, which is the web app: from
+768 px wide it shows the desktop panel (sidebar, docked coach); see
+[Web app](features/web-app.md). `npm run build:pages` builds the GitHub Pages site.
 
 The NestJS backend now serves `GET /health` and has a Dockerfile and Compose
-setup for local development. The standalone web app and CI workflows remain
-unimplemented. Shared wearable contracts, the extraction library, and an
+setup for local development. The web app is the Expo app's web build, published
+to GitHub Pages with the landing page by `.github/workflows/pages.yml`, which also
+builds every pull request that touches the site (see [deployment](deployment.md)). Shared wearable contracts, the extraction library, and an
 additive storage migration are available; see the
 [integration guide](features/wearable-extraction.md). The backend commands below
 have been run locally. The pnpm commands in the target-script table remain
@@ -22,9 +24,8 @@ planned interfaces.
 ```text
 apps/
   backend/             # NestJS application API and AI integration
-  web/                 # React dashboard
-  website/             # React marketing site and demo (GitHub Pages)
-  mobile/              # React Native / Expo; setup owned by mobile collaborator
+  website/             # React landing page (GitHub Pages site root)
+  mobile/              # React Native / Expo: iOS, Android and the web app (GitHub Pages /app/)
 packages/
   contracts/           # Request/response types and runtime validation schemas
   config/              # Shared TypeScript, ESLint, and Prettier configuration
@@ -228,7 +229,8 @@ Read [coding principles](code-principles.md) before changing application code. I
 longer form of the rules below: a single home for every fact, one responsibility per module,
 registries instead of growing conditionals, a domain layer with no React or clock of its own,
 components that take intent callbacks rather than state setters, and evidence that a refactor
-did not change behaviour. `apps/website` is the worked example and compiles under `strict`.
+did not change behaviour. The website's former demo layer is the worked example (see the note
+at the top of that page) and compiles under `strict`.
 
 - Use the shared ESLint/Prettier rules; avoid app-specific style drift.
 - Prefer descriptive names, small focused modules, and explicit public contracts.
@@ -257,7 +259,8 @@ did not change behaviour. `apps/website` is the worked example and compiles unde
 Branch from the latest `develop` using names such as `feat/guest-entry`,
 `fix/plan-revision`, or `docs/local-runtime`. Target feature/documentation PRs to
 `develop`; promote reviewed releases from `develop` to `main`. Keep each PR focused
-and obtain one teammate approval before merging. No hosting workflow is configured.
+and obtain one teammate approval before merging. GitHub Pages hosts the landing page and
+the web app; see [deployment](deployment.md).
 
 Write commit subjects that explain the resulting change. PR descriptions state
 the problem, behavior, acceptance criteria, verification evidence, and migration

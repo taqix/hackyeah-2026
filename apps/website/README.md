@@ -64,7 +64,7 @@ so update `src/domain/onboarding.ts` when the app's onboarding changes.
 
 ## Deployment
 
-`.github/workflows/pages.yml` runs on pushes to `main` and `develop` that touch
-this folder or the lockfile. It typechecks, builds and publishes `dist/` to
-GitHub Pages. CSS is not minified on purpose: the minifier rewrites colour
+`.github/workflows/pages.yml` builds this site together with the Expo web app
+(`npm run build:pages`, see [deployment](../../docs/deployment.md)) and publishes
+both to GitHub Pages: the landing page at the root, the app under `app/`. CSS is not minified on purpose: the minifier rewrites colour
 values in the design tokens, which changes how the page renders.

@@ -87,6 +87,12 @@ export type SemanticColors = {
   infoText: string;
   focusRing: string;
   overlay: string;
+  /**
+   * Hover wash for a control or row with no fill of its own, on the web: ink
+   * at 5% on light, paper at 7% on dark, so it shows on any surface. The web
+   * panel adds it; the CSS tokens have no hover wash.
+   */
+  hoverWash: string;
   /** Floating tab bar fill: 82% of the raised surface (CSS used backdrop blur). */
   barFill: string;
   /** Hairline on tinted hero cards: text-primary at 10%. */
@@ -132,6 +138,7 @@ export const colors: Record<ColorScheme, SemanticColors> = {
     infoText: '#5B5A77',
     focusRing: 'rgba(91,143,214,0.45)',
     overlay: 'rgba(29,25,20,0.36)',
+    hoverWash: 'rgba(29,25,20,0.05)',
     barFill: 'rgba(255,255,255,0.82)',
     hairlineOnTint: 'rgba(29,25,20,0.10)',
   },
@@ -173,6 +180,7 @@ export const colors: Record<ColorScheme, SemanticColors> = {
     infoText: palette.slate300,
     focusRing: 'rgba(134,174,227,0.5)',
     overlay: 'rgba(0,0,0,0.55)',
+    hoverWash: 'rgba(243,237,227,0.07)',
     barFill: 'rgba(36,32,28,0.82)',
     hairlineOnTint: 'rgba(243,237,227,0.10)',
   },

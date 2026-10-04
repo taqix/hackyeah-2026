@@ -6,8 +6,11 @@ import { useTheme } from '@/theme';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
 
-/** 24 px ring; when checked, a 2 px accent border, a soft halo and a 12 px dot that springs in. */
-function Indicator({ checked }: { checked: boolean }) {
+/**
+ * 24 px ring; when checked, a 2 px accent border, a soft halo and a 12 px dot
+ * that springs in. Unchecked, a mouse over the choice darkens the ring (web).
+ */
+function Indicator({ checked, hovered }: { checked: boolean; hovered: boolean }) {
   const { colors, motion } = useTheme();
   const reduced = useReducedMotion();
   return (
@@ -22,7 +25,7 @@ function Indicator({ checked }: { checked: boolean }) {
           {
             backgroundColor: colors.surfaceCard,
             borderWidth: checked ? 2 : 1.5,
-            borderColor: checked ? colors.accent : colors.borderStrong,
+            borderColor: checked ? colors.accent : hovered ? colors.textTertiary : colors.borderStrong,
           },
         ]}>
         <Animated.View
@@ -79,13 +82,20 @@ export function Radio({ label, description, checked = false, disabled = false, o
       accessibilityLabel={description ? `${label}, ${description}` : label}
       aria-checked={checked} aria-disabled={disabled}
       style={[styles.row, { alignItems: description ? 'flex-start' : 'center', opacity: disabled ? 0.45 : 1 }, style]}>
-      <Indicator checked={checked} />
-      <ChoiceText label={label} description={description} strong={false} />
+      {({ hovered }) => (
+        <>
+          <Indicator checked={checked} hovered={hovered} />
+          <ChoiceText label={label} description={description} strong={false} />
+        </>
+      )}
     </PressableScale>
   );
 }
 
-/** Radio as a card (variant choices like "How did it feel?"): text first, indicator on the right. */
+/**
+ * Radio as a card (variant choices like "How did it feel?"): text first,
+ * indicator on the right. Unchecked, it sinks a step when pressed or hovered.
+ */
 export function RadioCard({ label, description, checked = false, disabled = false, onPress, style }: RadioProps) {
   const { colors, radius } = useTheme();
   return (
@@ -96,20 +106,24 @@ export function RadioCard({ label, description, checked = false, disabled = fals
       accessibilityRole="radio"
       accessibilityLabel={description ? `${label}, ${description}` : label}
       aria-checked={checked} aria-disabled={disabled}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }) => [
         styles.card,
         {
           alignItems: description ? 'flex-start' : 'center',
           borderRadius: radius.md,
-          backgroundColor: checked ? colors.accentSoft : pressed ? colors.surfaceSunken : colors.surfaceCard,
+          backgroundColor: checked ? colors.accentSoft : pressed || hovered ? colors.surfaceSunken : colors.surfaceCard,
           borderWidth: checked ? 1.5 : 1,
           borderColor: checked ? colors.accent : colors.borderStrong,
           opacity: disabled ? 0.45 : 1,
         },
         style,
       ]}>
-      <ChoiceText label={label} description={description} strong />
-      <Indicator checked={checked} />
+      {({ hovered }) => (
+        <>
+          <ChoiceText label={label} description={description} strong />
+          <Indicator checked={checked} hovered={hovered} />
+        </>
+      )}
     </PressableScale>
   );
 }

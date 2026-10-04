@@ -1,12 +1,17 @@
-import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/theme';
 
 import { ExerciseMedia } from './exercise-media';
+import { FocusRing } from './focus-ring';
+import { HoverBand } from './hover-band';
 import { Icon, type IconName } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
+
+/** The round check's diameter. */
+const CHECK = 28;
 
 export type ExerciseRowProps = {
   name: string;
@@ -79,36 +84,48 @@ export function ExerciseRow({
           scaleTo={motion.pressScaleCard}
           accessibilityRole="button"
           style={styles.main}>
-          {body}
+          {({ hovered }) => (
+            <>
+              {/* The text area starts at the content's edge, so the band reaches past it from there. */}
+              <HoverBand visible={hovered} flushEnd={!!onToggle} />
+              {body}
+            </>
+          )}
         </PressableScale>
       ) : (
         <View style={styles.main}>{body}</View>
       )}
       {onToggle ? (
-        <Pressable
+        // No press scale, as before; the web gets the hover step and the ring on the circle itself.
+        <PressableScale
           onPress={onToggle}
+          scaleTo={1}
+          focusRing="none"
           accessibilityRole="checkbox"
           accessibilityLabel={name}
           aria-checked={done}
           style={styles.toggle}>
-          <Animated.View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: done ? colors.accent : 'transparent',
-              borderWidth: 1.5,
-              borderColor: done ? colors.accent : colors.borderStrong,
-              transform: [{ scale: done ? 1 : 0.96 }],
-              transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-              transitionDuration: reduced ? 0 : motion.durSlow,
-              transitionTimingFunction: cubicBezier(...motion.easeSpring),
-            }}>
-            {done ? <Icon name="check" size={15} strokeWidth={2.5} color={colors.textOnAccent} /> : null}
-          </Animated.View>
-        </Pressable>
+          {({ hovered, focusVisible }) => (
+            <Animated.View
+              style={{
+                width: CHECK,
+                height: CHECK,
+                borderRadius: CHECK / 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: done ? (hovered ? colors.accentHover : colors.accent) : hovered ? colors.accentSoft : 'transparent',
+                borderWidth: 1.5,
+                borderColor: done ? (hovered ? colors.accentHover : colors.accent) : hovered ? colors.accent : colors.borderStrong,
+                transform: [{ scale: done ? 1 : 0.96 }],
+                transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
+                transitionDuration: reduced ? 0 : motion.durSlow,
+                transitionTimingFunction: cubicBezier(...motion.easeSpring),
+              }}>
+              {done ? <Icon name="check" size={15} strokeWidth={2.5} color={colors.textOnAccent} /> : null}
+              {focusVisible ? <FocusRing radius={CHECK / 2} /> : null}
+            </Animated.View>
+          )}
+        </PressableScale>
       ) : null}
     </View>
   );

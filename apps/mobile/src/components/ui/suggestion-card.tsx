@@ -48,8 +48,11 @@ const INK = '#FBF8F2';
 const INK_BODY = 'rgba(251,248,242,0.9)';
 const INK_QUIET = 'rgba(251,248,242,0.92)';
 const KICKER_FILL = 'rgba(251,248,242,0.18)';
+/** The quiet action's fill when pressed, or hovered on the web (components.js onPointerEnter). */
 const QUIET_PRESSED = 'rgba(251,248,242,0.14)';
 const DISMISS_FILL = 'rgba(20,18,16,0.38)';
+/** The dismiss button darkens a step under the mouse (web). */
+const DISMISS_HOVER = 'rgba(20,18,16,0.56)';
 const PROTECTION = ['rgba(18,16,14,0)', 'rgba(18,16,14,0.25)', 'rgba(18,16,14,0.72)'] as const;
 
 /** Light-on-dark colours for content passed as children (a progress bar on the hero). */
@@ -59,8 +62,11 @@ export const suggestionInk = {
   track: 'rgba(251,248,242,0.25)',
 } as const;
 
-/** Blurred colour fields: SVG radial gradients standing in for the CSS radial-gradient stack. */
-function Fields({ tone }: { tone: SuggestionTone }) {
+/**
+ * Blurred colour fields: SVG radial gradients standing in for the CSS
+ * radial-gradient stack. Also the backdrop of the web sign-in panel.
+ */
+export function Fields({ tone }: { tone: SuggestionTone }) {
   const { base, fields } = TONES[tone];
   return (
     <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
@@ -133,7 +139,7 @@ export function SuggestionCard({
           hitSlop={4}
           accessibilityRole="button"
           accessibilityLabel="Dismiss"
-          style={styles.dismiss}>
+          style={({ hovered }) => [styles.dismiss, { backgroundColor: hovered ? DISMISS_HOVER : DISMISS_FILL }]}>
           <Icon name="x" size={18} strokeWidth={2} color={INK} />
         </PressableScale>
       ) : null}
@@ -170,7 +176,10 @@ export function SuggestionCard({
               <PressableScale
                 onPress={onSecondary}
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.quiet, { backgroundColor: pressed ? QUIET_PRESSED : 'transparent' }]}>
+                style={({ pressed, hovered }) => [
+                  styles.quiet,
+                  { backgroundColor: pressed || hovered ? QUIET_PRESSED : 'transparent' },
+                ]}>
                 <Text style={{ fontFamily: fontFamily.bodySemibold, fontSize: 16, lineHeight: 20, color: INK_QUIET }}>
                   {secondaryLabel}
                 </Text>
@@ -221,6 +230,5 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: DISMISS_FILL,
   },
 });

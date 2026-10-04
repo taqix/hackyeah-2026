@@ -1,5 +1,7 @@
 import { type ReactNode, type Ref, useState } from 'react';
 import {
+  Platform,
+  type PointerEvent,
   type StyleProp,
   StyleSheet,
   TextInput,
@@ -36,10 +38,23 @@ function Affix({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** A mouse over the field on the web darkens its border a step; touch never hovers. */
+function useFieldHover() {
+  const [hovered, setHovered] = useState(false);
+  if (Platform.OS !== 'web') return { hovered: false, handlers: null };
+  const track = (next: boolean) => (event: PointerEvent) => {
+    if (event.nativeEvent.pointerType !== 'touch') setHovered(next);
+  };
+  return { hovered, handlers: { onPointerEnter: track(true), onPointerLeave: track(false) } };
+}
+
 /**
  * Text field (DS Input): 52 high, radius 18, border-strong outline that turns
  * accent with a soft focus ring, danger on error. Props not listed pass to
- * TextInput (inputMode, autoComplete, textContentType, returnKeyType, …).
+ * TextInput (inputMode, autoComplete, textContentType, returnKeyType, …). On
+ * the web the browser's outline gives way to the kit's ring, inputMode and
+ * secure set the field's type, autoComplete reaches password managers, and
+ * Enter calls onSubmitEditing on a single-line field.
  */
 export function Input({
   label,
@@ -61,8 +76,15 @@ export function Input({
   const { colors, radius, type } = useTheme();
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const { hovered, handlers } = useFieldHover();
   const note = error || hint;
-  const border = error ? colors.danger : focused ? colors.accent : colors.borderStrong;
+  const border = error
+    ? colors.danger
+    : focused
+      ? colors.accent
+      : hovered && editable
+        ? colors.textTertiary
+        : colors.borderStrong;
 
   return (
     <View style={[styles.wrap, style]}>
@@ -78,6 +100,7 @@ export function Input({
           />
         ) : null}
         <View
+          {...handlers}
           style={[
             styles.field,
             multiline ? styles.multiline : null,

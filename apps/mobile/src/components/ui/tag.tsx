@@ -15,7 +15,7 @@ export type TagProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Selectable chip for multiple choice (DS Tag): inverse fill when selected. */
+/** Selectable chip for multiple choice (DS Tag): inverse fill when selected; sinks a step when pressed or hovered (web). */
 export function Tag({ label, icon, selected = false, onPress, disabled = false, style }: TagProps) {
   const { colors } = useTheme();
   const fg = selected ? colors.textInverse : colors.textPrimary;
@@ -27,7 +27,7 @@ export function Tag({ label, icon, selected = false, onPress, disabled = false, 
       accessibilityRole="button"
       accessibilityLabel={label}
       aria-selected={selected} aria-disabled={disabled}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }) => [
         {
           flexDirection: 'row',
           alignItems: 'center',
@@ -37,7 +37,7 @@ export function Tag({ label, icon, selected = false, onPress, disabled = false, 
           borderRadius: 999,
           borderWidth: 1,
           borderColor: selected ? colors.surfaceInverse : colors.borderStrong,
-          backgroundColor: selected ? colors.surfaceInverse : pressed ? colors.surfaceSunken : colors.surfaceCard,
+          backgroundColor: selected ? colors.surfaceInverse : pressed || hovered ? colors.surfaceSunken : colors.surfaceCard,
           opacity: disabled ? 0.4 : 1,
         },
         style,

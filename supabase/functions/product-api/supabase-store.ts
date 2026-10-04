@@ -1,6 +1,7 @@
 import {
   z,
   activePlanSchema,
+  activityOpinionSchema,
   chatMessageSchema,
   completionSchema,
   profileSchema,
@@ -45,6 +46,8 @@ const sqlErrors: Record<string, { status: number; code: ApiErrorCode; message: s
     message: 'Completed activities cannot be changed.',
   },
 };
+// PostgREST reports constraint failures with the PostgreSQL error code.
+const invalidDataCodes = new Set(['22P02', '23503', '23514']);
 function stored<T>(schema: z.ZodType<T>, value: unknown): T {
   const parsed = schema.safeParse(value);
   if (!parsed.success)
@@ -76,6 +79,7 @@ export function createSupabaseDependencies(
     key: string,
     method = 'GET',
     body?: unknown,
+    prefer = 'return=representation',
   ): Promise<unknown> {
     let response: Response;
     try {
@@ -85,7 +89,7 @@ export function createSupabaseDependencies(
           apikey: key,
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=representation',
+          Prefer: prefer,
         },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(10000),
@@ -97,9 +101,11 @@ export function createSupabaseDependencies(
     if (!response.ok) {
       if (response.status === 401)
         throw new ApiError('UNAUTHENTICATED', 401, 'Sign in again to continue.');
-      const error = z.object({ message: z.string() }).safeParse(data);
+      const error = z.object({ message: z.string(), code: z.string().optional() }).safeParse(data);
       const mapped = error.success ? sqlErrors[error.data.message] : undefined;
       if (mapped) throw new ApiError(mapped.code, mapped.status, mapped.message);
+      if (error.success && invalidDataCodes.has(error.data.code ?? ''))
+        throw new ApiError('INVALID_REQUEST', 400, 'Check the request fields.');
       throw new ApiError(
         'DATA_UNAVAILABLE',
         502,
@@ -131,6 +137,9 @@ export function createSupabaseDependencies(
         limit: String(page.limit),
         offset: String(page.offset),
       });
+      const opinionColumns = 'activity_key,title,sport_id::text,opinion,last_date,updated_at';
+      const opinions = (query: Record<string, string>) =>
+        `/rest/v1/activity_opinion?${new URLSearchParams({ ...query, select: opinionColumns })}`;
       const profileQuery = {
         id: `eq.${owner}`,
         select: 'id,username,created_at,preferences',
@@ -216,6 +225,18 @@ export function createSupabaseDependencies(
             }),
           );
         },
+        async getVersion(planId, version) {
+          const rows = stored(
+            z.array(planVersionSchema),
+            await read('plan_version', {
+              ...ownerFilter,
+              plan_id: `eq.${planId}`,
+              version: `eq.${version}`,
+              limit: '1',
+            }),
+          );
+          return rows[0] ?? null;
+        },
         listMessages: (planId, page) => listMessages(planId, pagination(page)),
         requestMessages: (planId, requestId) =>
           listMessages(planId, { request_id: `eq.${requestId}`, limit: '2' }),
@@ -234,7 +255,8 @@ export function createSupabaseDependencies(
             await read('activity_completion', {
               ...ownerFilter,
               activity_id: `in.(${ids.join(',')})`,
-              limit: '7',
+              // One completion per activity, so this never truncates.
+              limit: String(ids.length),
             }),
           );
         },
@@ -283,7 +305,8 @@ export function createSupabaseDependencies(
               409,
               'This request ID was already used with different data.',
             );
-          if ('sport_id' in input) return stored(activePlanSchema, rows[0].result);
+          // Generation and Undo both replay the saved {plan, version}.
+          if (!('message' in input)) return stored(activePlanSchema, rows[0].result);
           if (rows[0].action === 'save_plan_version')
             return {
               outcome: 'plan_updated',
@@ -341,6 +364,57 @@ export function createSupabaseDependencies(
             ),
           );
           return saved.messages;
+        },
+        async updateFeedback(input) {
+          return stored(
+            completionSchema,
+            await rpc('update_completion_feedback', {
+              p_completion_id: input.completion_id,
+              p_feedback: input.feedback,
+            }),
+          );
+        },
+        async listOpinions() {
+          return stored(
+            z.array(activityOpinionSchema),
+            await read('activity_opinion', {
+              ...ownerFilter,
+              select: opinionColumns,
+              order: 'updated_at.desc,activity_key.asc',
+            }),
+          );
+        },
+        async putOpinion(input) {
+          if (input.opinion === null) {
+            await call(
+              opinions({ ...ownerFilter, activity_key: `eq.${input.activity_key}` }),
+              token,
+              config.publishableKey,
+              'DELETE',
+            );
+            return null;
+          }
+          const rows = stored(
+            z.array(activityOpinionSchema),
+            await call(
+              opinions({ on_conflict: 'profile_id,activity_key' }),
+              token,
+              config.publishableKey,
+              'POST',
+              { ...input, profile_id: owner },
+              'resolution=merge-duplicates,return=representation',
+            ),
+          );
+          if (!rows[0])
+            throw new ApiError('DATA_UNAVAILABLE', 502, 'The opinion could not be saved.', true);
+          return rows[0];
+        },
+        async resetOpinions() {
+          const rows = stored(
+            z.array(z.object({ activity_key: z.string() })),
+            await call(opinions(ownerFilter), token, config.publishableKey, 'DELETE'),
+          );
+          return rows.length;
         },
         async complete(input) {
           return stored(

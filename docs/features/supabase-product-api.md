@@ -13,20 +13,25 @@ until the Gemini collaborator connects it.
 
 Included: local signup/access fixes, product persistence, request validation,
 immutable plan history, transactional RPCs, completion/feedback, client contracts,
-and a deployable function scaffold. No live data or catalog rows are seeded.
+and a deployable function scaffold. Since 4 October it also covers feedback given
+after the log or changed later, mutable "choose again" opinions with reset, Undo
+of the newest chat change, and a sport catalog seed. No users or plans are seeded.
 
-Deferred: Gemini provider/model/prompt, guest demo bootstrap and AI usage limits,
-chat undo, extra workout ingestion, profile summaries, Auth dashboard settings,
-web/mobile screens, hosting, and deployment. These are not working capabilities
-of this scaffold. Existing tournament and wearable features are outside this API.
+Deferred: guest demo bootstrap and AI usage limits, extra workout ingestion,
+profile summaries, Auth dashboard settings, web screens, hosting, and deployment.
+These are not working capabilities of this scaffold. The Gemini provider and the
+mobile client are tracked in
+[the mobile Supabase integration](mobile-supabase-integration.md). Existing
+tournament and wearable features are outside this API.
 
 ## Client handoff
 
 Import types and runtime schemas from `@hackyeah/contracts/product`. Request DTOs
-are `UpdateProfileDto`, `GeneratePlanDto`, `SendChatDto`, and `CompleteActivityDto`.
+are `UpdateProfileDto`, `GeneratePlanDto`, `SendChatDto`, `CompleteActivityDto`,
+`UpdateFeedbackDto`, `PutOpinionDto`, `ResetOpinionsDto`, and `UndoPlanDto`.
 Entities are `ProfileEntity`, `SportEntity`, `PlanEntity`, `PlanVersionEntity`,
-`ChatMessageEntity`, and `ActivityCompletionEntity`. Response DTOs are exported
-alongside their schemas in `apiSchemas`.
+`ChatMessageEntity`, `ActivityCompletionEntity`, and `ActivityOpinionEntity`.
+Response DTOs are exported alongside their schemas in `apiSchemas`.
 
 Generated artifacts:
 
@@ -52,19 +57,24 @@ and the handler independently validates it with Supabase Auth's user endpoint.
 Session tokens and keys never go in URLs. Email, tokens, and username are not
 included in the AI context.
 
-| Method | Path              | Request                        | Response data                                  |
-| ------ | ----------------- | ------------------------------ | ---------------------------------------------- |
-| GET    | `/schema`         | None                           | Named JSON schemas                             |
-| GET    | `/profile`        | None                           | `ProfileEntity`                                |
-| PUT    | `/profile`        | `UpdateProfileDto`             | Updated `ProfileEntity`                        |
-| GET    | `/sports`         | None                           | `SportEntity[]`                                |
-| GET    | `/plans/current`  | None                           | `{plan, version}` or `null`                    |
-| GET    | `/plans/history`  | Pagination                     | `PlanVersionEntity[]`                          |
-| POST   | `/plans/generate` | `GeneratePlanDto`              | Saved `{plan, version}`                        |
-| GET    | `/chat/messages`  | Required `plan_id`, pagination | `ChatMessageEntity[]`, oldest first            |
-| POST   | `/chat`           | `SendChatDto`                  | Outcome, saved messages, optional updated plan |
-| GET    | `/completions`    | Pagination                     | `ActivityCompletionEntity[]`                   |
-| POST   | `/completions`    | `CompleteActivityDto`          | Saved completion                               |
+| Method | Path                    | Request                        | Response data                                  |
+| ------ | ----------------------- | ------------------------------ | ---------------------------------------------- |
+| GET    | `/schema`               | None                           | Named JSON schemas                             |
+| GET    | `/profile`              | None                           | `ProfileEntity`                                |
+| PUT    | `/profile`              | `UpdateProfileDto`             | Updated `ProfileEntity`                        |
+| GET    | `/sports`               | None                           | `SportEntity[]`                                |
+| GET    | `/plans/current`        | None                           | `{plan, version}` or `null`                    |
+| GET    | `/plans/history`        | Pagination                     | `PlanVersionEntity[]`                          |
+| POST   | `/plans/generate`       | `GeneratePlanDto`              | Saved `{plan, version}`                        |
+| POST   | `/plans/undo`           | `UndoPlanDto`                  | Saved `{plan, version}`, origin `undo`         |
+| GET    | `/chat/messages`        | Required `plan_id`, pagination | `ChatMessageEntity[]`, oldest first            |
+| POST   | `/chat`                 | `SendChatDto`                  | Outcome, saved messages, optional updated plan |
+| GET    | `/completions`          | Pagination                     | `ActivityCompletionEntity[]`                   |
+| POST   | `/completions`          | `CompleteActivityDto`          | Saved completion                               |
+| PUT    | `/completions/feedback` | `UpdateFeedbackDto`            | Completion with the new feedback               |
+| GET    | `/opinions`             | None                           | `ActivityOpinionEntity[]`, newest first        |
+| PUT    | `/opinions`             | `PutOpinionDto`                | Saved opinion, or `null` when cleared          |
+| POST   | `/opinions/reset`       | `{}`                           | `{cleared}`                                    |
 
 Success is `{data, meta: {contract_version: "1", request_id: UUID | null}}`.
 Failure is `{error: {code, message, retryable}, meta}`. Platform gateway errors
@@ -105,8 +115,16 @@ Feedback effort is `easy`, `okay` (Just right), `hard`, or `too_much`.
 `enjoyment` is required but nullable: in this PoC it records "Would you choose
 this again?" as `yes`, `maybe`, `no`, or `null` for no opinion. The completion
 screen can send null without adding a question to its design. Optional notes
-use an empty string when absent. Completion actuals are immutable; opinion
-edits/reset need the separate mutable model in the review.
+use an empty string when absent. A completion may be saved with `feedback: null`
+and given feedback later with `PUT /completions/feedback`; metrics, sets and
+the completion time stay immutable. Opinions that can change or be reset live
+in `/opinions`, one per client-chosen `activity_key`.
+
+`POST /plans/undo` restores the version before the active one when the active
+version is a chat revision of the same week, as a new version with origin
+`undo`. It makes no AI call and replays by `request_id`. Anything else returns
+409 `NOTHING_TO_UNDO`; a change that touched a logged session returns 409
+`UNDO_LOCKED`.
 
 Generation/chat requests include a caller-generated UUID `request_id`, expected
 version, and free-slot snapshot with source and capture time. Send free intervals
@@ -147,6 +165,13 @@ catalog reads. Explicit grants replace broad preexisting/default grants.
 Clients can read their own product history but cannot write versions/messages/
 completion tables directly. Legacy `workout` remains a separate existing table;
 these API completion records are stored in `activity_completion`.
+
+`20261004100000_feedback_opinions_undo.sql` makes completion feedback nullable,
+adds the owner-only `update_completion_feedback` RPC, the `activity_opinion`
+table with owner RLS for every operation, and the `undo` version origin.
+`20261004110000_sport_catalog_seed.sql` upserts the catalog by case-insensitive
+name (with a unique index on the lowercased name) and backfills missing
+profiles. Working sports have `generation_enabled = true`; previews do not.
 
 - `save_plan_version`: server-only, owner-serialized, expected-version checked,
   immutable version insert and active pointer switch in one transaction.
@@ -208,6 +233,8 @@ declarations allow TypeScript checks without claiming Deno bundling was tested.
 - [x] Invalid requests/AI output do not save a plan; current/history empty states are explicit.
 - [x] Version conflicts, idempotent receipts, and preserved completions are tested locally.
 - [x] Synthetic DTO examples match their runtime schemas.
+- [x] Late/changed feedback, opinion isolation, Undo saves, and an idempotent
+      catalog seed are tested locally.
 - [x] Shared contracts compile and workspace typechecks pass.
 - [ ] Hosted migration/function/Auth verification by owner.
 - [ ] Gemini provider integration and guest AI limits.
@@ -221,7 +248,8 @@ the Supabase test suite passed 21 tests, with no failures or skipped tests.
 Workspace typechecks covered backend, mobile, contracts, and wearable packages.
 Supabase and contracts lint finished without warnings. Scoped `git diff --check`
 passed. These results cover source and disposable local PostgreSQL databases,
-not hosted Supabase or the Deno runtime.
+not hosted Supabase or the Deno runtime. After the 4 October extensions the
+Supabase suite passes 30 tests.
 
 Creating `feat/supabase-product-api` from `develop` was blocked by local `.git`
 write permissions, including the sandbox escalation attempt. The prepared

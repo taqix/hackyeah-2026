@@ -68,6 +68,23 @@ export type NewCalendarEvent = {
   | { allDay?: false; timeZone?: string }
 );
 
+/** Timed-event fields to change; omitted fields keep their value. */
+export type CalendarEventPatch = {
+  title?: string;
+  startDate?: Date;
+  endDate?: Date;
+  notes?: string;
+  timeZone?: string;
+};
+
+/** The title of the calendar the app creates for exported sessions. */
+export const APP_CALENDAR_TITLE = 'Movo';
+
+/** The app's own export calendar: writable and titled "Movo". */
+export function isAppCalendar(calendar: DeviceCalendar): boolean {
+  return calendar.title === APP_CALENDAR_TITLE && calendar.allowsModifications;
+}
+
 export interface CalendarService {
   /** Checks current OS access without prompting; also safe on web and Expo Go. */
   getPermission(): Promise<CalendarPermission>;
@@ -77,6 +94,13 @@ export interface CalendarService {
   getEvents(query: CalendarEventQuery): Promise<CalendarEvent[]>;
   /** All-day dates must be device-local midnight, with an exclusive end date. */
   createEvent(event: NewCalendarEvent): Promise<CalendarEvent>;
+  /** Changes a timed event; never retried automatically. */
+  updateEvent(eventId: string, patch: CalendarEventPatch): Promise<void>;
+  deleteEvent(eventId: string): Promise<void>;
+  /** The app's "Movo" calendar, created on this device the first time it is needed. */
+  ensureAppCalendar(): Promise<DeviceCalendar>;
+  /** Deletes the app's calendar and every event in it. False when there was none. */
+  deleteAppCalendar(): Promise<boolean>;
 }
 
 export type CalendarErrorCode =

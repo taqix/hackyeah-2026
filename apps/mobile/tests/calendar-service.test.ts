@@ -6,6 +6,7 @@ import {
   CalendarError,
   type CalendarErrorCode,
   type CalendarEvent,
+  type CalendarEventPatch,
   type CalendarPermission,
   type DeviceCalendar,
   type NewCalendarEvent,
@@ -38,6 +39,10 @@ function setup() {
     listCalendars: mock.fn(async () => state.calendars),
     getEvents: mock.fn(async (_ids: string[], _start: Date, _end: Date) => state.events),
     createEvent: mock.fn(async (input: NewCalendarEvent) => event(input)),
+    updateEvent: mock.fn(async (_id: string, _patch: CalendarEventPatch) => undefined),
+    deleteEvent: mock.fn(async (_id: string) => undefined),
+    createCalendar: mock.fn(async (title: string): Promise<DeviceCalendar> => ({ ...calendar, id: 'created', title })),
+    deleteCalendar: mock.fn(async (_id: string) => undefined),
   };
   return { state, driver, service: createCalendarService(driver) };
 }
@@ -230,4 +235,56 @@ test('native failures are actionable and writes are never retried after uncertai
   driver.getEvents.mock.mockImplementation(async () => { throw nativeFailure; });
   await assert.rejects(service.getEvents(range()), hasCode('native-error'));
   assert.equal(driver.getEvents.mock.callCount(), 1);
+});
+
+test('event updates and deletes are validated, gated by access, and never prompt', async () => {
+  const { state, service, driver } = setup();
+  const patch = { title: ' Walk ', ...range(), notes: 'n', timeZone: 'Europe/Warsaw' };
+  await service.updateEvent('event', patch);
+  assert.deepEqual(driver.updateEvent.mock.calls[0].arguments, ['event', { ...patch, title: 'Walk' }]);
+  await service.deleteEvent('event');
+  assert.deepEqual(driver.deleteEvent.mock.calls[0].arguments, ['event']);
+
+  for (const [id, bad] of [
+    ['event', { startDate: range().startDate }],
+    ['event', { ...range(), startDate: range().endDate }],
+    ['event', { title: '  ' }],
+    ['event', { timeZone: 'Mars/Olympus' }],
+    [' ', { title: 'Walk' }],
+  ] as const) {
+    await assert.rejects(service.updateEvent(id, bad), hasCode('invalid-input'));
+  }
+  await assert.rejects(service.deleteEvent(''), hasCode('invalid-input'));
+
+  state.permission = { status: 'denied', canAskAgain: true };
+  await assert.rejects(service.updateEvent('event', { title: 'Walk' }), hasCode('permission-denied'));
+  await assert.rejects(service.deleteEvent('event'), hasCode('permission-denied'));
+  await assert.rejects(service.ensureAppCalendar(), hasCode('permission-denied'));
+  await assert.rejects(service.deleteAppCalendar(), hasCode('permission-denied'));
+  assert.equal(driver.updateEvent.mock.callCount(), 1);
+  assert.equal(driver.deleteEvent.mock.callCount(), 1);
+  assert.equal(driver.requestPermission.mock.callCount(), 0);
+});
+
+test('the app calendar is found by title among writable calendars, created once, and only it is deleted', async () => {
+  const { state, service, driver } = setup();
+  state.calendars = [calendar, { ...calendar, id: 'shared-movo', title: 'Movo', allowsModifications: false }];
+  const created = await service.ensureAppCalendar();
+  assert.deepEqual(driver.createCalendar.mock.calls[0].arguments, ['Movo']);
+  assert.equal(created.id, 'created');
+
+  state.calendars = [calendar, { ...calendar, id: 'movo', title: 'Movo' }];
+  assert.equal((await service.ensureAppCalendar()).id, 'movo');
+  assert.equal(driver.createCalendar.mock.callCount(), 1);
+
+  state.calendars.push({ ...calendar, id: 'movo-2', title: 'Movo' });
+  assert.equal(await service.deleteAppCalendar(), true);
+  assert.deepEqual(driver.deleteCalendar.mock.calls.map((call) => call.arguments[0]), ['movo', 'movo-2']);
+
+  state.calendars = [calendar];
+  assert.equal(await service.deleteAppCalendar(), false);
+  assert.equal(driver.deleteCalendar.mock.callCount(), 2);
+
+  driver.createCalendar.mock.mockImplementation(async (title: string) => ({ ...calendar, title, allowsModifications: false }));
+  await assert.rejects(service.ensureAppCalendar(), hasCode('calendar-read-only'));
 });

@@ -12,7 +12,7 @@ import { KeyboardFrame } from './keyboard-frame';
 import { Legal } from './legal';
 import { RequestAlert, SentNote } from './notes';
 
-const WRONG_PASSWORD_ERROR = "That password doesn't match. Try again, or reset it.";
+const WRONG_PASSWORD_ERROR = "Wrong password, or there's no account with this email yet.";
 const SHORT_PASSWORD_ERROR = 'Use at least 8 characters.';
 
 /** The email being used, with Change to go back and edit it. */
@@ -48,9 +48,11 @@ export type PasswordScreenProps = {
 };
 
 /**
- * The password step after an email: 1.1 signs in to an existing account, 1.2 creates
- * one, 1.3 is a wrong password said in the field. Success goes to the gate, which
- * routes a new account to onboarding and a set-up one to Today.
+ * The password step after an email: 1.1 signs in, 1.2 creates an account, 1.3 is a
+ * wrong password said in the field. The server never says whether an email has an
+ * account, so sign-in also offers "Create an account". Success goes to the gate,
+ * which routes a new account to onboarding and a set-up one to Today. When the email
+ * must be confirmed first, sign-up ends with a note instead.
  */
 export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   const router = useRouter();
@@ -69,7 +71,8 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
       : isApiError(error, 'invalid_credentials')
         ? WRONG_PASSWORD_ERROR
         : null;
-  const requestError = error && !fieldError ? error : null;
+  const awaitingConfirmation = !signingIn && isApiError(error, 'confirmation_required');
+  const requestError = error && !fieldError && !awaitingConfirmation ? error : null;
 
   const changeEmail = () => {
     if (router.canGoBack()) router.back();
@@ -87,6 +90,7 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   };
 
   const sendReset = () => reset.mutate(email);
+  const switchMode = (next: AuthMode) => router.replace(passwordRoute(email, next));
 
   return (
     <Screen>
@@ -94,12 +98,8 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
       <KeyboardFrame>
         <Content gap={20} automaticallyAdjustKeyboardInsets={false}>
           <Col gap={8}>
-            <H1>{signingIn ? 'Welcome back' : 'Create your account'}</H1>
-            <Body>
-              {signingIn
-                ? 'Enter the password for this account.'
-                : 'No account uses this email yet. Pick a password to set one up.'}
-            </Body>
+            <H1>{signingIn ? 'Sign in' : 'Create your account'}</H1>
+            <Body>{signingIn ? 'Enter the password for this email.' : 'Pick a password to set up your account.'}</Body>
           </Col>
           <EmailChip email={email} onChange={changeEmail} />
           <Input
@@ -127,8 +127,10 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
                 error={requestError}
                 message="An account already uses this email."
                 onRetry={() => submit()}
-                action={{ label: 'Sign in instead', onPress: () => router.replace(passwordRoute(email, 'sign-in')) }}
+                action={{ label: 'Sign in instead', onPress: () => switchMode('sign-in') }}
               />
+            ) : isApiError(requestError, 'confirmation_required') ? (
+              <RequestAlert error={requestError} message={requestError.message} onRetry={() => submit()} />
             ) : isApiError(requestError, 'validation') ? (
               <RequestAlert
                 error={requestError}
@@ -145,16 +147,37 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
               {signingIn ? 'Sign in' : 'Create account'}
             </Button>
             {signingIn ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={reset.isPending}
-                onPress={sendReset}
-                style={{ height: 44, alignSelf: 'center' }}>
-                Forgot password?
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  loading={reset.isPending}
+                  onPress={sendReset}
+                  style={{ height: 44, alignSelf: 'center' }}>
+                  Forgot password?
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => switchMode('sign-up')}
+                  style={{ height: 44, alignSelf: 'center' }}>
+                  New here? Create an account
+                </Button>
+              </>
             ) : null}
           </Col>
+          {awaitingConfirmation ? (
+            <Col gap={12}>
+              <SentNote>Check your inbox to confirm, then sign in.</SentNote>
+              <Button
+                variant="secondary"
+                size="sm"
+                onPress={() => switchMode('sign-in')}
+                style={{ alignSelf: 'flex-start' }}>
+                Sign in
+              </Button>
+            </Col>
+          ) : null}
           {reset.isSuccess ? <SentNote>{`We've sent a reset link to ${email}.`}</SentNote> : null}
           {reset.isError ? <RequestAlert error={reset.error} onRetry={sendReset} /> : null}
           {signingIn ? null : <Legal lead="By creating an account" />}

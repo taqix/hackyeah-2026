@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { useLookupEmail, useSignInWithGoogle } from '@/api/hooks';
+import { isMockMode } from '@/api/config';
+import { useAuthProviders, useLookupEmail, useSignInWithGoogle } from '@/api/hooks';
 import { isApiError } from '@/api/types';
 import { Button, Divider, Input, SuggestionCard, Text } from '@/components/ui';
 import { Col, Content, Row, Screen } from '@/components/layout';
@@ -46,12 +47,15 @@ function OrDivider() {
 /**
  * Welcome (1): Continue with Google, or one email field for everyone. The lookup
  * decides whether the next step asks for the account's password (1.1) or a new one (1.2).
- * No guest entry on mobile.
+ * Google shows only while the server has it switched on. No guest entry on mobile.
  */
 export function WelcomeScreen() {
   const router = useRouter();
   const lookup = useLookupEmail();
   const google = useSignInWithGoogle();
+  const providers = useAuthProviders();
+  // Hidden until the server says it's on; if it can't be asked, offer it anyway.
+  const offerGoogle = providers.data?.google ?? providers.isError;
   const [email, setEmail] = useState('');
   const [checkFormat, setCheckFormat] = useState(false);
 
@@ -73,7 +77,12 @@ export function WelcomeScreen() {
   };
 
   const continueWithGoogle = () => {
-    google.mutate(undefined, { onSuccess: () => router.replace('/') });
+    // Null: the person closed Google without signing in, so stay here quietly.
+    google.mutate(undefined, {
+      onSuccess: (session) => {
+        if (session) router.replace('/');
+      },
+    });
   };
 
   return (
@@ -88,9 +97,13 @@ export function WelcomeScreen() {
             title="Find a way to move you'll keep."
             body="A few questions, then a gentle first week. Everyone starts somewhere."
           />
-          <GoogleButton onPress={continueWithGoogle} loading={google.isPending} disabled={lookup.isPending} />
-          {google.isError ? <RequestAlert error={google.error} onRetry={continueWithGoogle} /> : null}
-          <OrDivider />
+          {offerGoogle ? (
+            <>
+              <GoogleButton onPress={continueWithGoogle} loading={google.isPending} disabled={lookup.isPending} />
+              {google.isError ? <RequestAlert error={google.error} onRetry={continueWithGoogle} /> : null}
+              <OrDivider />
+            </>
+          ) : null}
           <Col gap={12}>
             <Input
               label="Email"
@@ -125,7 +138,7 @@ export function WelcomeScreen() {
             {lookupFailed ? <RequestAlert error={lookup.error} onRetry={() => continueWithEmail()} /> : null}
           </Col>
           <Legal lead="We'll sign you in, or set up your account if you're new. By continuing" />
-          {__DEV__ ? (
+          {__DEV__ && isMockMode ? (
             <Text variant="caption" align="center">
               Demo: ana@example.com, any 8+ character password
             </Text>

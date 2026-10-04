@@ -36,8 +36,11 @@ export interface ApiClient {
     lookupEmail(email: string): Promise<EmailLookup>;
     /** Rejects with invalid_credentials on a wrong password (1.3). */
     signInWithEmail(email: string, password: string): Promise<AuthSession>;
-    /** Rejects with weak_password under 8 characters, email_taken if it exists. */
-    signUpWithEmail(email: string, password: string): Promise<AuthSession>;
+    /**
+     * Rejects with weak_password under 8 characters, email_taken if it exists,
+     * and validation for an empty name or one over 50 characters (trimmed).
+     */
+    signUpWithEmail(email: string, password: string, name: string): Promise<AuthSession>;
     signInWithGoogle(): Promise<AuthSession>;
     sendPasswordReset(email: string): Promise<void>;
     /**
@@ -112,5 +115,11 @@ export interface ApiClient {
   };
   account: {
     get(): Promise<Account>;
+    /**
+     * Changes the name the person is greeted by (Settings › Account). Resolves
+     * with the name as saved (trimmed); rejects with validation when it is
+     * empty or over 50 characters.
+     */
+    updateName(name: string): Promise<string>;
   };
 }

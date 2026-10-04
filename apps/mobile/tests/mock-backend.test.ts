@@ -92,8 +92,25 @@ test('the seed tells Ana story relative to the current week', () => {
 test('a wrong password and a short sign-up password are rejected', () => {
   const { backend } = setup();
   assert.throws(() => backend.auth.signInWithEmail(DEMO_EMAIL, WRONG_PASSWORD), (e) => isApiError(e, 'invalid_credentials'));
-  assert.throws(() => backend.auth.signUpWithEmail('new@example.com', 'short'), (e) => isApiError(e, 'weak_password'));
+  assert.throws(() => backend.auth.signUpWithEmail('new@example.com', 'short', 'Ola'), (e) => isApiError(e, 'weak_password'));
   assert.equal(backend.auth.lookupEmail('NEW@example.com ').exists, false);
+});
+
+test('sign-up keeps the trimmed name for the greeting, and Settings can change it', () => {
+  const db = emptyDb();
+  const backend = createBackend({ db: () => db, now: () => WEDNESDAY_EVENING });
+  for (const name of ['', '   ', 'x'.repeat(51)]) {
+    assert.throws(() => backend.auth.signUpWithEmail('new@example.com', 'long enough', name), (e) => isApiError(e, 'validation'));
+  }
+  assert.equal(db.accounts.length, 0, 'nothing is created without a name');
+
+  assert.equal(backend.auth.signUpWithEmail('new@example.com', 'long enough', '  Ola  ').user.name, 'Ola');
+  assert.equal(backend.auth.getSession()?.user.name, 'Ola');
+  assert.equal(backend.account.updateName(' Aleksandra '), 'Aleksandra');
+  assert.equal(backend.account.get().user.name, 'Aleksandra');
+  assert.equal(backend.auth.getSession()?.user.name, 'Aleksandra');
+  assert.throws(() => backend.account.updateName(' '), (e) => isApiError(e, 'validation'));
+  assert.equal(backend.account.get().user.name, 'Aleksandra');
 });
 
 test('"Make Friday shorter" changes its length, and Undo restores it', () => {
@@ -215,7 +232,7 @@ test('the first plan builds in about three seconds, or fails and keeps the answe
   const db = emptyDb();
   const clock = { now: new Date(2026, 9, 5, 6, 30) };
   const backend = createBackend({ db: () => db, now: () => clock.now, wallMs: () => clock.now.getTime() });
-  backend.auth.signUpWithEmail('new@example.com', 'long enough');
+  backend.auth.signUpWithEmail('new@example.com', 'long enough', 'Ola');
   backend.preferences.save(SAMPLE_PREFS);
   assert.equal(backend.plan.build(null, true).status, 'building');
   clock.now = new Date(clock.now.getTime() + 3_500);

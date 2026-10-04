@@ -4,7 +4,7 @@
  * changed: logs → plan, summary and feedback; chat → chat and plan; answers →
  * preferences, plan and summary.
  */
-export { useAccount } from './account';
+export { useAccount, useUpdateName } from './account';
 export {
   useAuthProviders,
   useLookupEmail,

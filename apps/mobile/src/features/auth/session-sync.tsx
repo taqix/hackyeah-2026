@@ -6,7 +6,7 @@ import { AppState, Platform, type AppStateStatus } from 'react-native';
 import { isMockMode } from '@/api/config';
 import { signedIn, signedOut } from '@/api/hooks/auth';
 import { queryKeys } from '@/api/query-keys';
-import { authLinkKind, authRedirectParams, exchangeAuthCode, toAuthSession } from '@/api/remote/auth';
+import { authLinkKind, authRedirectParams, exchangeAuthCode, keepKnownName, toAuthSession } from '@/api/remote/auth';
 import { getRemoteRuntime, supabaseAuth } from '@/api/remote/default';
 import type { AuthSession } from '@/api/types';
 
@@ -35,7 +35,7 @@ function startAuthSync(queryClient: QueryClient): () => void {
       return;
     }
 
-    const next = toAuthSession(session);
+    const next = keepKnownName(toAuthSession(session), previous);
     // Another account took over: drop what the previous one left in the cache.
     if (previous && previous.user.id !== next.user.id) signedIn(queryClient, next);
     else queryClient.setQueryData(queryKeys.session, next);

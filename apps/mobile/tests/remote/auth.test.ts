@@ -153,21 +153,21 @@ test('sign-up checks the length first, detects a taken email, and asks for confi
       return answer(session());
     },
   });
-  await assert.rejects(short.signUpWithEmail('ana@example.com', 'short'), rejectsWith('weak_password'));
+  await assert.rejects(short.signUpWithEmail('ana@example.com', 'short', 'Ana'), rejectsWith('weak_password'));
   assert.equal(calls, 0, 'a short password never reaches the server');
 
   const taken = authSection({ signUp: async () => answer(null, authError('user_already_exists', { status: 422 })) });
-  await assert.rejects(taken.client.signUpWithEmail('ana@example.com', 'long enough'), rejectsWith('email_taken'));
+  await assert.rejects(taken.client.signUpWithEmail('ana@example.com', 'long enough', 'Ana'), rejectsWith('email_taken'));
 
   const hidden = session();
   hidden.user.identities = [];
   const obfuscated = authSection({ signUp: async () => ({ data: { user: hidden.user, session: null }, error: null }) });
-  await assert.rejects(obfuscated.client.signUpWithEmail('ana@example.com', 'long enough'), rejectsWith('email_taken'));
+  await assert.rejects(obfuscated.client.signUpWithEmail('ana@example.com', 'long enough', 'Ana'), rejectsWith('email_taken'));
 
   const pending = session();
   pending.user.identities = [{ provider: 'email' }];
   const confirm = authSection({ signUp: async () => ({ data: { user: pending.user, session: null }, error: null }) });
-  await assert.rejects(confirm.client.signUpWithEmail('ana@example.com', 'long enough'), rejectsWith('confirmation_required'));
+  await assert.rejects(confirm.client.signUpWithEmail('ana@example.com', 'long enough', 'Ana'), rejectsWith('confirmation_required'));
 
   let options: object | undefined;
   const fine = authSection({
@@ -176,8 +176,11 @@ test('sign-up checks the length first, detects a taken email, and asks for confi
       return answer(session());
     },
   });
-  assert.equal((await fine.client.signUpWithEmail('Ana@example.com', 'long enough')).user.id, USER_ID);
-  assert.deepEqual(options, { emailRedirectTo: 'hackyeah2026://auth/callback' });
+  assert.equal((await fine.client.signUpWithEmail('Ana@example.com', 'long enough', 'Ana')).user.id, USER_ID);
+  assert.deepEqual(options, {
+    emailRedirectTo: 'hackyeah2026://auth/callback',
+    data: { name: 'Ana', full_name: 'Ana' },
+  });
 });
 
 test('password reset links back to the reset screen; a new password must be long enough', async () => {

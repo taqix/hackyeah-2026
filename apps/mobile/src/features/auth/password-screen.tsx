@@ -1,10 +1,14 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { TextInput } from 'react-native';
+import type { ScrollView } from 'react-native-gesture-handler';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { useSendPasswordReset, useSignInWithEmail, useSignUpWithEmail } from '@/api/hooks';
 import { isApiError } from '@/api/types';
 import { Button, Icon, Input, Text } from '@/components/ui';
 import { BackButton, Body, Col, Content, H1, Row, Screen, TopBar } from '@/components/layout';
+import { nameProblem } from '@/lib/person-name';
 import { useTheme } from '@/theme';
 
 import { type AuthMode, EMAIL_FORMAT_ERROR, MIN_PASSWORD_LENGTH, passwordRoute } from './auth-routes';
@@ -52,7 +56,8 @@ export type PasswordScreenProps = {
  * wrong password said in the field. The server never says whether an email has an
  * account, so sign-in also offers "Create an account". Success goes to the gate,
  * which routes a new account to onboarding and a set-up one to Today. When the email
- * must be confirmed first, sign-up ends with a note instead.
+ * must be confirmed first, sign-up ends with a note instead. Sign-up also asks for
+ * the name Today greets the person by, above the password.
  */
 export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   const router = useRouter();
@@ -63,6 +68,22 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   const account = signingIn ? signIn : signUp;
   const [password, setPassword] = useState('');
   const [tooShort, setTooShort] = useState(false);
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const reduced = useReducedMotion();
+  const scrollRef = useRef<ScrollView>(null);
+  const nameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const passwordFocused = useRef(false);
+
+  /**
+   * Sign-up: moving from the name to the password doesn't move the keyboard,
+   * so nothing else would reveal a password field it covers on a small screen.
+   * Runs on focus and when the keyboard resizes the screen.
+   */
+  const revealPassword = () => {
+    if (!signingIn && passwordFocused.current) scrollRef.current?.scrollToEnd({ animated: !reduced });
+  };
 
   const error = account.error;
   const fieldError =
@@ -82,11 +103,23 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
   /** Return passes the field's own text: fast typing can submit before state catches up. */
   const submit = (typed: string = password) => {
     if (!typed || account.isPending) return;
-    if (!signingIn && typed.length < MIN_PASSWORD_LENGTH) {
+    const done = { onSuccess: () => router.replace('/') };
+    if (signingIn) {
+      signIn.mutate({ email, password: typed }, done);
+      return;
+    }
+    const problem = nameProblem(name);
+    if (problem) {
+      setNameError(problem);
+      scrollRef.current?.scrollTo({ y: 0, animated: !reduced });
+      nameRef.current?.focus();
+      return;
+    }
+    if (typed.length < MIN_PASSWORD_LENGTH) {
       setTooShort(true);
       return;
     }
-    account.mutate({ email, password: typed }, { onSuccess: () => router.replace('/') });
+    signUp.mutate({ email, password: typed, name }, done);
   };
 
   const sendReset = () => reset.mutate(email);
@@ -96,13 +129,37 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
     <Screen>
       <TopBar left={<BackButton />} />
       <KeyboardFrame>
-        <Content gap={20} automaticallyAdjustKeyboardInsets={false}>
+        <Content ref={scrollRef} gap={20} automaticallyAdjustKeyboardInsets={false} onLayout={revealPassword}>
           <Col gap={8}>
             <H1>{signingIn ? 'Sign in' : 'Create your account'}</H1>
-            <Body>{signingIn ? 'Enter the password for this email.' : 'Pick a password to set up your account.'}</Body>
+            <Body>
+              {signingIn ? 'Enter the password for this email.' : 'Add your name and pick a password to set up your account.'}
+            </Body>
           </Col>
           <EmailChip email={email} onChange={changeEmail} />
+          {signingIn ? null : (
+            <Input
+              ref={nameRef}
+              label="Your name"
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                setNameError(null);
+              }}
+              hint="We'll use it to greet you."
+              error={nameError}
+              autoComplete="given-name"
+              textContentType="givenName"
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoFocus
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+            />
+          )}
           <Input
+            ref={passwordRef}
             label={signingIn ? 'Password' : 'New password'}
             secure
             value={password}
@@ -117,8 +174,15 @@ export function PasswordScreen({ email, mode }: PasswordScreenProps) {
             textContentType={signingIn ? 'password' : 'newPassword'}
             autoCapitalize="none"
             autoCorrect={false}
-            autoFocus
+            autoFocus={signingIn}
             returnKeyType="go"
+            onFocus={() => {
+              passwordFocused.current = true;
+              revealPassword();
+            }}
+            onBlur={() => {
+              passwordFocused.current = false;
+            }}
             onSubmitEditing={(event) => submit(event.nativeEvent.text)}
           />
           {requestError ? (

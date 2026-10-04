@@ -1,5 +1,6 @@
 import type { ApiClient } from '../client';
 import type { Preferences } from '../types';
+import { readSession } from './auth';
 import type { RemoteContext } from './context';
 import { preferencesFromWire, preferencesToWire } from './mappers';
 import { replanActiveWeek } from './plan';
@@ -39,7 +40,23 @@ export function planningFieldsChanged(
 }
 
 /**
- * GET /profile and PUT /profile (the whole document; the username is kept).
+ * The name in the signed-in user's Auth metadata (given at sign-up, or
+ * Google's), or null. PUT /profile can't run before the first answers, so the
+ * first save writes it as the profile's username.
+ */
+async function sessionName(ctx: RemoteContext): Promise<string | null> {
+  try {
+    const name = (await readSession(ctx.deps.auth))?.user.name ?? null;
+    // The contract's username is 1–200 characters: a name never blocks the answers.
+    return name && name.length <= 200 ? name : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * GET /profile and PUT /profile (the whole document; the username is kept,
+ * or taken from the session's name while the profile has none).
  * When a plan exists and the answers it is built from changed, the active
  * week is re-planned in the background; the save does not wait for it.
  */
@@ -54,7 +71,7 @@ export function createRemotePreferences(ctx: RemoteContext): ApiClient['preferen
     async save(preferences) {
       const [profile, ids] = await Promise.all([ctx.data.profile(), ctx.data.sportIds()]);
       const document = preferencesToWire(preferences, ids.toWire);
-      const body: UpdateProfileDto = { username: profile?.username ?? null, preferences: document };
+      const body: UpdateProfileDto = { username: profile?.username ?? (await sessionName(ctx)), preferences: document };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);
       ctx.data.setProfile(saved);
       const kept = saved.preferences ?? document;

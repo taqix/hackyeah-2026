@@ -1,13 +1,17 @@
+import { useState } from 'react';
+
 import { useAccount } from '@/api/hooks';
 import { Col } from '@/components/layout';
 import { ListRow, Skeleton } from '@/components/ui';
 
 import { InlineError } from './inline-error';
+import { NameSheet } from './name-sheet';
 import { deviceTimeZone, timeZoneCity } from './time-zone';
 
-/** Settings › Account: the email with how it signs in, and the phone's time zone. */
+/** Settings › Account: the email with how it signs in, the name we greet by (editable), and the phone's time zone. */
 export function AccountRows() {
   const account = useAccount();
+  const [editingName, setEditingName] = useState(false);
 
   if (account.isPending) {
     return (
@@ -37,7 +41,17 @@ export function AccountRows() {
         title={user.email}
         detail={user.provider === 'google' ? 'Signed in with Google' : 'Signed in with email'}
       />
+      <ListRow
+        icon="user-round"
+        discSize={36}
+        title="Name"
+        detail={user.name ?? 'Not added yet'}
+        accessibilityHint="Changes the name we greet you by"
+        onPress={() => setEditingName(true)}
+        divider
+      />
       <ListRow icon="globe" discSize={36} title="Time zone" detail={`${timeZoneCity(zone)} · from your phone`} divider />
+      <NameSheet visible={editingName} onClose={() => setEditingName(false)} current={user.name} />
     </>
   );
 }

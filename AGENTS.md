@@ -41,6 +41,7 @@ below before changing a feature.
 
 ## References
 
+- [Architecture overview](docs/architecture.md) — hosting, how clients reach the database, AI generation, app structure
 - [Product scope](docs/product.md)
 - [Development, code conventions, and checks](docs/development.md)
 - [Coding principles: DRY, SOLID, clean code](docs/code-principles.md)

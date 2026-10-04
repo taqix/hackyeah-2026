@@ -1,10 +1,10 @@
 /**
  * The product API's wire types: a hand-written mirror of
- * `packages/contracts/src/product.ts` (contract_version "1") plus the additive
- * extensions in docs/features/mobile-supabase-integration.md › Contract
- * extensions (nullable completion feedback, PUT /completions/feedback,
- * opinions, POST /plans/undo). Keep in sync with the contract: mobile does not
- * import it, because the package ships zod and builds to dist/.
+ * `packages/contracts/src/product.ts` (contract_version "1"), including the
+ * additive extensions (nullable completion feedback, PUT /completions/feedback,
+ * opinions, POST /plans/undo). Mobile does not import the contract, because
+ * the package ships zod and builds to dist/; tests/remote/contract-compat.test.ts
+ * fails typecheck when this mirror and the contract source drift apart.
  *
  * Conventions: sport IDs are bigint decimal strings; other IDs are UUIDs;
  * instants are ISO 8601 with Z or an offset; dates are YYYY-MM-DD.

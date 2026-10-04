@@ -1,7 +1,7 @@
 /**
  * The wire mirror against the real contract: fixtures typed with wire.ts must
- * parse with packages/contracts' runtime schemas. Catches drift in the parts
- * both sides already share (extensions land in the contract separately).
+ * parse with packages/contracts' runtime schemas. contract-compat.test.ts
+ * compares the types themselves and the adapter's real request bodies.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

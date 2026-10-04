@@ -22,3 +22,10 @@
 .discovery h2{font-size:70px}.discovery .lead{font-size:25px;margin:25px 0}.discovery .feature-steps{margin-top:20px}.discovery .feature-steps article{padding:16px 0}.activity-option{border-top:1px solid var(--line);padding:23px 0}.activity-option:first-of-type{margin-top:25px}.activity-option span{font-size:16px;color:#486d9a}.activity-option h3{font-size:27px;margin:12px 0 7px}.activity-option p{font-size:19px}
 .comparison h2{font-size:62px}.comparison .feature-comparison{margin-top:30px}.comparison .feature-comparison th,.comparison .feature-comparison td{padding:17px 18px}.comparison .comparison-note{margin-top:22px;font-size:22px}.comparison .sources{margin-top:17px;font-size:14px}
 .discovery h2{font-size:62px}.discovery .lead{font-size:24px;margin:22px 0}.discovery .feature-steps article{padding:14px 0}.discovery .feature-steps h3{font-size:24px}.discovery .feature-steps p{font-size:20px}.discovery .activity-option{padding:18px 0}.discovery .activity-option:first-of-type{margin-top:15px}
+
+/* Numerals and separator share one flex row; the rule is centered geometrically. */
+.stats .range-stat{display:flex;align-items:center;letter-spacing:0}
+.stats .range-stat .range-number{font-size:100px;line-height:1;font-weight:500;letter-spacing:-6px}
+.stats .range-stat .range-separator{display:block;width:42px;height:5px;background:currentColor;margin:0 15px;flex:none}
+.stats .range-stat .percent{font-size:45px;line-height:1;letter-spacing:-2px;align-self:flex-end;margin-bottom:9px}
+.source-note{font-size:18px;line-height:1.45;margin-top:37px;max-width:1350px}

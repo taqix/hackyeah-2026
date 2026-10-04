@@ -20,20 +20,20 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Cel:** pokazać skalę trudności z utrzymaniem aktywności.
 
-**Do powiedzenia — po potwierdzeniu źródeł:**
+**Do powiedzenia:**
 
-> W przywołanym badaniu 64,5% badanych Polaków wskazywało brak czasu lub inne obowiązki jako ograniczenie regularnej aktywności. 63,2% wskazywało brak długoterminowej motywacji. W badaniach aplikacji związanych z aktywnością obserwowano też porzucenia na poziomie 54–75%. To różne wskaźniki, ale pokazują, dlaczego warto zająć się utrzymaniem aktywności po pierwszym starcie. Na ten etap skupiamy Movo.
+> W przywołanym badaniu 64,5% badanych Polaków wskazywało brak czasu lub inne obowiązki jako ograniczenie regularnej aktywności. 63,2% wskazywało brak długoterminowej motywacji. W przeglądzie Kidmana i współautorów trzy badania aplikacji do aktywności fizycznej pokazały poziomy porzucenia od 54 do 75%. To różne wskaźniki, ale pokazują, dlaczego warto zająć się utrzymaniem aktywności po pierwszym starcie. Na ten etap skupiamy Movo.
 
 **Przejście:** „Za tymi liczbami stoi bardzo codzienna sytuacja”.
 
 **Uwagi przed wystąpieniem:**
 
-- Uzupełnij źródła, rok, badaną grupę i okres obserwacji. Liczby pochodzą z materiałów zespołu i nie zostały w tej pracy zweryfikowane.
+- Uzupełnij źródło, rok i badaną grupę dla 64,5% i 63,2%. Te dwie liczby pochodzą z materiałów zespołu i nie zostały tu zweryfikowane. Zakres 54–75% został sprawdzony w publikacji Kidman i in., JMIR 2024, 26:e56897; odnosi się do trzech badań aplikacji do aktywności fizycznej.
 - Nie mów „64,5% wszystkich Polaków”. Wskaźnik dotyczy badanych osób.
 - Nie sumuj procentów; odpowiedzi mogą się nakładać.
-- Zakres 54–75% wymaga wyjaśnienia, co badania uznawały za porzucenie aplikacji i po jakim czasie.
+- Przegląd podkreśla różne definicje porzucenia i okresy obserwacji; zakres 54–75% nie oznacza jednej wspólnej próby lub jednego okresu.
 - Nie zastępuj go automatycznie medianą 70% w ciągu 100 dni z planu biznesowego. To inna informacja, wymagająca osobnego sprawdzenia.
-- Jeśli źródła nie będą gotowe, usuń liczby ze slajdu i opowiedz jakościowo o braku czasu, motywacji i trudnościach z powrotem.
+- Jeśli źródła pierwszych dwóch wskaźników nie będą gotowe, usuń je ze slajdu i opowiedz jakościowo o braku czasu oraz motywacji.
 
 ## Slajd 3 — Dla kogo: „Chcę się ruszać. Tylko od czego zacząć?”
 

@@ -1,4 +1,5 @@
 import { debugLog } from '../../lib/debug-log';
+import { asUsername } from '../../lib/person-name';
 import type { ApiClient } from '../client';
 import { ApiError, type AssistantSummary, type FeedbackOverview } from '../types';
 import type { RemoteContext } from './context';
@@ -111,7 +112,7 @@ export function createRemoteProfile(ctx: RemoteContext): ApiClient['profile'] {
         next = [...rest, wireId];
       }
       const body: UpdateProfileDto = {
-        username: profile.username,
+        username: asUsername(profile.username),
         preferences: { ...preferences, excluded_activity_types: next },
       };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);

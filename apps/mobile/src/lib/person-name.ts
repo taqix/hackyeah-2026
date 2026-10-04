@@ -25,3 +25,21 @@ export function checkName(name: string): string {
   if (problem) throw new ApiError('validation', problem);
   return name.trim();
 }
+
+/** The product API's limit on the profile's username (the contract trims it and takes 1–200 characters). */
+export const USERNAME_MAX_LENGTH = 200;
+
+/**
+ * A name as the profile's `username` in PUT /profile: trimmed, null when
+ * blank, and cut to the contract's length rather than dropped, so a name the
+ * server or Google filled in is never replaced by null or blocks the save.
+ */
+export function asUsername(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.length <= USERNAME_MAX_LENGTH) return trimmed || null;
+  let cut = trimmed.slice(0, USERNAME_MAX_LENGTH);
+  // Never end on half of a surrogate pair (an emoji).
+  if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
+  return cut.trimEnd() || null;
+}

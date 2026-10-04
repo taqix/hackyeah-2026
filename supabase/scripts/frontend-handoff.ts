@@ -180,7 +180,7 @@ shared runtime schemas. All application tables have RLS enabled.
 
 | Table / entity | Fields | Client access and relationships |
 | --- | --- | --- |
-| profile / ProfileEntity | id uuid; username text nullable; created_at timestamptz nullable; preferences jsonb nullable. Database also stores email text nullable; API omits email. | Owner read/update; id references auth.users. Signup provisions one profile. |
+| profile / ProfileEntity | id uuid; username text nullable; created_at timestamptz nullable; preferences jsonb nullable. Database also stores email text nullable; API omits email. | Owner read/update; id references auth.users. Signup provisions one profile; its username is the Auth metadata name (Google's, or the email sign-up's data.name), cleaned to the contract, or null. |
 | sport / SportEntity | id bigint identity; name text; is_gym boolean; generation_enabled boolean; metrics jsonb | Authenticated reads; catalog writes are server/owner work. API IDs are decimal strings. Names are unique ignoring case. API requires valid nonempty names and metric definitions even though legacy DB columns permit nulls. |
 | plan / PlanEntity | id uuid; profile_id uuid; active_version_id uuid nullable; created_at timestamptz | Owner read only. One plan row per profile; active_version_id must belong to that plan and owner. |
 | plan_version / PlanVersionEntity | id uuid; plan_id uuid; profile_id uuid; version integer; origin text; plan jsonb; summary text; created_at timestamptz | Owner read only. Unique plan/version number. Origin is generate, revise, or undo. plan stores a complete weekly snapshot. |
@@ -521,11 +521,13 @@ the HTTP API or connect AI. The owner must complete these steps:
    the changes in a disposable Supabase project before the hosted project.
 2. Apply and record \`20261003130000_profile_sport_workout_baseline.sql\` first,
    then \`20261003140000_product_persistence.sql\`,
-   \`20261004100000_feedback_opinions_undo.sql\`, and
-   \`20261004110000_sport_catalog_seed.sql\`. They live under
+   \`20261004100000_feedback_opinions_undo.sql\`,
+   \`20261004110000_sport_catalog_seed.sql\`, and
+   \`20261004120000_profile_username_from_auth.sql\`. They live under
    supabase/migrations. Review the earlier wearable migration separately before
    syncing the entire migration directory. The seed adds catalog rows and
-   profile rows for accounts without one; it adds no users or plans.
+   profile rows for accounts without one; it adds no users or plans. The last
+   one fills empty profile usernames from the Auth metadata name.
 3. Verify signup creates singular profile rows, owner-only access works, and
    another account cannot see or modify application history. Re-run advisors.
 4. Verify Auth provider/confirmation/recovery settings and allowlisted web/mobile

@@ -11,6 +11,8 @@ Live state after the 4 October 2026 push:
 - **Migrations:**
   - Applied up to `20261004110000_sport_catalog_seed`, including
     `20261004100000_feedback_opinions_undo`.
+  - `20261004120000_profile_username_from_auth` (signup copies the Auth
+    name into `profile.username`) is prepared and not yet applied.
   - The wearable migration `20261003120000` is intentionally not applied.
   - The catalog has 7 working sports and 15 previews.
 - **Function:** `product-api` is redeployed with `verify_jwt = true`. It

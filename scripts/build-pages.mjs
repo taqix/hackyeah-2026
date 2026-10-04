@@ -2,6 +2,7 @@
  * Builds the GitHub Pages site into dist/pages:
  *
  *   index.html, assets/  the landing page (apps/website)
+ *   phone/               a phone-sized preview of that same app
  *   app/                 the Expo web app (apps/mobile), exported for <base>/app
  *   404.html             the app's page again: Pages serves it for any path without a file,
  *                        so app deep links and reloads (app/session/<id>) start the app
@@ -135,6 +136,7 @@ function summary() {
   const bytes = files.reduce((total, entry) => total + statSync(join(entry.parentPath, entry.name)).size, 0);
   const rows = [
     [`${base}/`, 'landing page'],
+    [`${base}/phone/`, 'phone-sized preview of the web app'],
     [`${appBase}/`, `web app (${files.length} files, ${(bytes / 1e6).toFixed(1)} MB)`],
     ['404.html', 'the app again, for deep links; other unknown paths go to the landing page'],
   ];

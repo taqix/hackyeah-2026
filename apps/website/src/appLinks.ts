@@ -14,3 +14,6 @@ export const GUEST_ENTRY = `${APP_URL}guest`;
 
 /** Signs in to an account, or creates one. */
 export const SIGN_IN = `${APP_URL}welcome`;
+
+/** The same Expo app presented at phone dimensions on a separate Pages page. */
+export const PHONE_PREVIEW = "./phone/";

@@ -1,4 +1,4 @@
-import { GUEST_ENTRY, SIGN_IN } from "../../appLinks";
+import { GUEST_ENTRY, PHONE_PREVIEW, SIGN_IN } from "../../appLinks";
 import { Button, Card, Icon } from "../../design-system";
 import { COMFORT_OPTIONS, ONBOARDING_QUESTIONS } from "../../domain";
 import type { Breakpoint } from "../../hooks/useMediaQuery";
@@ -56,6 +56,7 @@ export function Hero({ breakpoint }: { breakpoint: Breakpoint }) {
           <Button size="lg" iconRight="arrow-right" href={GUEST_ENTRY}>Try it as a guest</Button>
           <Button size="lg" variant="secondary" icon="log-in" href={SIGN_IN}>Sign in</Button>
         </div>
+        <a className="s-phone-preview-link" href={PHONE_PREVIEW}>See the phone preview <span aria-hidden="true">→</span></a>
         <p className="s-capline">
           <Icon name="info" size={16} />No account needed. As a guest, your plan stays in this browser.
         </p>

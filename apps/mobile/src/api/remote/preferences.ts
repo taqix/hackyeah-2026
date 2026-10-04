@@ -1,10 +1,68 @@
 import type { ApiClient } from '../client';
-import { notImplemented, type RemoteContext } from './context';
+import type { Preferences } from '../types';
+import type { RemoteContext } from './context';
+import { preferencesFromWire, preferencesToWire } from './mappers';
+import { replanActiveWeek } from './plan';
+import type { PreferencesDto, ProfileEntity, UpdateProfileDto } from './wire';
 
-/** GET /profile and PUT /profile (the whole document; keep the username). */
+/** The answers the planner reads. Timezone and obstacles do not change the plan. */
+export const PLANNING_FIELDS = [
+  'sessions_per_week',
+  'session_minutes',
+  'preferred_window',
+  'activity_interests',
+  'discovery_preference',
+  'available_locations',
+  'available_equipment',
+  'avoidances',
+  'excluded_activity_types',
+  'starting_comfort',
+] as const;
+
+type PlanningField = (typeof PLANNING_FIELDS)[number];
+
+/** Lists compare as sets: picking the same sports in another order changes nothing. The window is a pair. */
+const comparable = (field: PlanningField, value: unknown) =>
+  JSON.stringify(Array.isArray(value) && field !== 'preferred_window' ? [...value].map(String).sort() : (value ?? null));
+
+/**
+ * Whether saved answers change what the plan is built from. Works on the
+ * app's answers and on the wire document alike (same field names); no
+ * earlier answers counts as a change.
+ */
+export function planningFieldsChanged(
+  before: Pick<Preferences, PlanningField> | Pick<PreferencesDto, PlanningField> | null | undefined,
+  after: Pick<Preferences, PlanningField> | Pick<PreferencesDto, PlanningField>,
+): boolean {
+  if (!before) return true;
+  return PLANNING_FIELDS.some((field) => comparable(field, before[field]) !== comparable(field, after[field]));
+}
+
+/**
+ * GET /profile and PUT /profile (the whole document; the username is kept).
+ * When a plan exists and the answers it is built from changed, the active
+ * week is re-planned in the background; the save does not wait for it.
+ */
 export function createRemotePreferences(ctx: RemoteContext): ApiClient['preferences'] {
   return {
-    get: () => notImplemented(),
-    save: () => notImplemented(),
+    async get() {
+      const profile = await ctx.data.profile();
+      if (!profile?.preferences) return null;
+      return preferencesFromWire(profile.preferences, (await ctx.data.sportIds()).toApp);
+    },
+
+    async save(preferences) {
+      const [profile, ids] = await Promise.all([ctx.data.profile(), ctx.data.sportIds()]);
+      const document = preferencesToWire(preferences, ids.toWire);
+      const body: UpdateProfileDto = { username: profile?.username ?? null, preferences: document };
+      const saved = await ctx.http.put<ProfileEntity>('/profile', body);
+      ctx.data.setProfile(saved);
+      const kept = saved.preferences ?? document;
+      if (profile?.preferences && planningFieldsChanged(profile.preferences, kept)) {
+        // Only a plan in use is re-planned; replanActiveWeek checks that and never rejects.
+        void replanActiveWeek(ctx);
+      }
+      return preferencesFromWire(kept, ids.toApp);
+    },
   };
 }

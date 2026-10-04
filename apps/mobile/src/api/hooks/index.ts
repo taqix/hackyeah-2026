@@ -22,6 +22,7 @@ export { useCommitLog, useCreateLog, useLastExercise, useLog, useSaveFeedback, u
 export {
   useBuildPlan,
   useDismissRecentChange,
+  useEnsureNextWeek,
   usePlannedSession,
   usePlanState,
   usePlanVersions,

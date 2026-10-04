@@ -44,14 +44,16 @@ export function useSignInWithEmail() {
 }
 
 /**
- * 1.2: creates the account; rejects with `weak_password` under 8 characters,
- * `email_taken`, or `confirmation_required` when the email must be confirmed first.
+ * 1.2: creates the account with the name to greet the person by; rejects with
+ * `weak_password` under 8 characters, `validation` for an empty or too long
+ * name, `email_taken`, or `confirmation_required` when the email must be confirmed first.
  */
 export function useSignUpWithEmail() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['auth', 'sign-up-email'],
-    mutationFn: ({ email, password }: { email: string; password: string }) => api.auth.signUpWithEmail(email, password),
+    mutationFn: ({ email, password, name }: { email: string; password: string; name: string }) =>
+      api.auth.signUpWithEmail(email, password, name),
     onSuccess: (session) => signedIn(queryClient, session),
   });
 }

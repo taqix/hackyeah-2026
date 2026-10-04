@@ -16,6 +16,7 @@ import {
   toLocalDate,
   weekdayIndex,
 } from '../../lib/dates';
+import { checkName } from '../../lib/person-name';
 import { answersSentence } from '../../lib/preference-options';
 import { sessionLocalDate, sessionMinutes, sessionStart, sortSessions } from '../../lib/sessions';
 import {
@@ -402,13 +403,14 @@ export function createBackend(deps: BackendDeps) {
         db().session_user_id = acc.user.id;
         return sessionFor(acc.user);
       },
-      signUpWithEmail(email: string, password: string): AuthSession {
+      signUpWithEmail(email: string, password: string, name: string): AuthSession {
         const e = validateEmail(email);
+        const saved = checkName(name);
         if (db().accounts.some((a) => a.user.email === e)) {
           throw new ApiError('email_taken', 'An account already uses this email. Sign in instead.');
         }
         if (password.length < 8) throw new ApiError('weak_password', 'Use at least 8 characters.');
-        const acc = createAccount(e, password, null, 'email');
+        const acc = createAccount(e, password, saved, 'email');
         db().session_user_id = acc.user.id;
         return sessionFor(acc.user);
       },
@@ -801,6 +803,11 @@ export function createBackend(deps: BackendDeps) {
       get(): Account {
         const u = data();
         return { user: account().user, timezone: u.preferences?.timezone ?? 'Europe/Warsaw' };
+      },
+      updateName(name: string): string {
+        const saved = checkName(name);
+        account().user.name = saved;
+        return saved;
       },
     },
   };

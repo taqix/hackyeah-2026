@@ -18,7 +18,9 @@ the plan in chat, and see their history. All of this must persist in Supabase.
 
 - Included:
   - Supabase Auth on mobile:
-    - email/password sign-in and sign-up, including the email-confirmation state
+    - email/password sign-in and sign-up, including the email-confirmation state;
+      sign-up also asks for the name the app greets the person by
+      (see [Name](#mobile-architecture))
     - Google OAuth (PKCE through the system browser)
     - password reset email, plus an in-app new-password screen from the recovery link
     - session refresh and sign-out
@@ -143,6 +145,22 @@ The owner allowlists these in Supabase Auth.
   - The first plan uses the current Monday, with availability from now to Sunday.
   - Home generates the next Monday's week once today ≥ `planned_through`. It
     runs once per week per app session and shows a soft error.
+- **Name.** Today's greeting and the You tab read `AuthSession.user.name`.
+  - Sign-up asks for it ("Your name", required, trimmed, 1–50 characters) and
+    sends it as Auth metadata (`signUp` `options.data` `{name, full_name}`), so
+    the first session carries it. Google keeps its own name.
+  - The session name is the metadata's `full_name` or `name`. Without one
+    (older accounts), `getSession` and email sign-in fall back to the
+    profile's `username`. Auth events keep a name already shown for the same
+    user.
+  - `PUT /profile` needs the whole answers document (`preferences` is not
+    nullable), so sign-up writes no profile. `preferences.save` sends
+    `username = profile username ?? session name ?? null`, so the first
+    onboarding save stores it.
+  - Settings › Account › Name changes it (`account.updateName`): `PUT /profile`
+    with the new username and the current answers (skipped before
+    onboarding), then `updateUser({data: {name, full_name}})`. An empty or
+    too long name is rejected with `validation`.
 - **Answers.** Profile › Edit saves the full preferences document. When
   planning fields change, it regenerates the active week (`generate`, same
   `week_start`, `expected_version` = active). Completed and past activities
@@ -424,6 +442,12 @@ project or Gemini.
   - Without a "seen" marker on this device, `recent_change` shows only a
     change that made the active version.
   - The sign-in step reads "Sign in", not "Welcome back".
+- **Name:**
+  - A Google account's Auth metadata may be refreshed from Google at its next
+    sign-in, which can replace a name changed in Settings. The profile keeps
+    the new username.
+  - Not checked on a device: the name field's autofill and the scroll that
+    keeps the password field above the keyboard on small screens.
 - **Calendar export:**
   - It runs only while the app is open.
   - Signing out keeps the Movo calendar.

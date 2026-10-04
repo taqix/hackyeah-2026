@@ -29,7 +29,10 @@ export type AuthProvider = 'google' | 'email';
 export interface User {
   id: string;
   email: string;
-  /** From Google, or null for email accounts (the greeting then omits the name). */
+  /**
+   * The name the person is greeted by: asked at sign-up, from Google, or set in
+   * Settings › Account. Null when the account has none (the greeting then omits it).
+   */
   name: string | null;
   provider: AuthProvider;
   created_at: IsoDateTime;

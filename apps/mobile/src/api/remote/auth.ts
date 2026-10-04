@@ -9,6 +9,7 @@ import {
   startTimer,
 } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
+import { checkName } from '../../lib/person-name';
 import { ApiError, type AuthProviders, type AuthSession } from '../types';
 import type { RemoteContext } from './context';
 import type { AuthErrorLike, AuthPort, AuthSessionData, RemoteDeps } from './deps';
@@ -45,7 +46,11 @@ export const isSignInCancelled = (error: unknown): error is SignInCancelled => e
 
 const text = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value.trim() : null);
 
-/** A Supabase session as the app's AuthSession: the name comes from Google's metadata, if any. */
+/**
+ * A Supabase session as the app's AuthSession. The name comes from the user
+ * metadata: Google's, or the one given at sign-up or in Settings (both write
+ * `full_name` and `name`).
+ */
 export function toAuthSession(session: AuthSessionData): AuthSession {
   const { user } = session;
   return {
@@ -58,6 +63,32 @@ export function toAuthSession(session: AuthSessionData): AuthSession {
     },
     access_token: session.access_token,
   };
+}
+
+/** The session with `name` filled in, when it has none. */
+const named = (session: AuthSession, name: string | null): AuthSession =>
+  session.user.name || !name ? session : { ...session, user: { ...session.user, name } };
+
+/**
+ * An account whose metadata has no name (made before sign-up asked for one,
+ * or named elsewhere) is greeted by its profile's username. Best effort: the
+ * session comes back unchanged when the profile can't be read.
+ */
+export async function withProfileName(ctx: Pick<RemoteContext, 'data'>, session: AuthSession): Promise<AuthSession> {
+  if (session.user.name) return session;
+  try {
+    return named(session, text((await ctx.data.profile())?.username));
+  } catch {
+    return session;
+  }
+}
+
+/**
+ * An Auth event's session (token refresh, focus) carries only the metadata:
+ * keep the name already shown for the same person when it has none.
+ */
+export function keepKnownName(next: AuthSession, previous: AuthSession | null | undefined): AuthSession {
+  return previous?.user.id === next.user.id ? named(next, previous.user.name) : next;
 }
 
 const LINK_CODES = new Set([
@@ -280,8 +311,8 @@ function withAuthLogging(client: ApiClient['auth']): ApiClient['auth'] {
     ...client,
     signInWithEmail: (email, password) =>
       traced('sign-in (email)', email, () => client.signInWithEmail(email, password), sessionTag),
-    signUpWithEmail: (email, password) =>
-      traced('sign-up (email)', email, () => client.signUpWithEmail(email, password), sessionTag),
+    signUpWithEmail: (email, password, name) =>
+      traced('sign-up (email)', email, () => client.signUpWithEmail(email, password, name), sessionTag),
     signInWithGoogle: () => traced('sign-in (google)', null, () => client.signInWithGoogle(), sessionTag),
     sendPasswordReset: (email) => traced('password reset email', email, () => client.sendPasswordReset(email)),
     updatePassword: (password) => traced('new password', null, () => client.updatePassword(password)),
@@ -316,7 +347,10 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
   let providers: AuthProviders | null = null;
 
   const client: ApiClient['auth'] = {
-    getSession: () => readSession(auth),
+    async getSession() {
+      const session = await readSession(auth);
+      return session ? withProfileName(ctx, session) : null;
+    },
 
     // Supabase can't tell whether an email has an account without revealing it
     // to anyone, so everyone is asked for a password first; the password
@@ -329,14 +363,25 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
       const { data, error } = await call(() => auth.signInWithPassword({ email: validEmail(email), password }));
       if (error) throw mapAuthError(error);
       if (!data.session) throw new ApiError('confirmation_required', CONFIRM_FIRST);
-      return toAuthSession(data.session);
+      return withProfileName(ctx, toAuthSession(data.session));
     },
 
-    async signUpWithEmail(email, password) {
+    async signUpWithEmail(email, password, name) {
       const normalized = validEmail(email);
+      const fullName = checkName(name);
       checkPassword(password);
+      // The session's user carries the name at once. PUT /profile needs the
+      // whole answers document, so the first onboarding save writes it as the
+      // profile's username (see preferences.save).
       const { data, error } = await call(() =>
-        auth.signUp({ email: normalized, password, options: { emailRedirectTo: deps.redirectUrl(CALLBACK_PATH) } }),
+        auth.signUp({
+          email: normalized,
+          password,
+          options: {
+            emailRedirectTo: deps.redirectUrl(CALLBACK_PATH),
+            data: { name: fullName, full_name: fullName },
+          },
+        }),
       );
       if (error) throw mapAuthError(error);
       // With email confirmation on, a taken email comes back as a user with no identities.

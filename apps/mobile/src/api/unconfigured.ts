@@ -37,6 +37,6 @@ export function createUnconfiguredApiClient(missing: string[]): ApiClient {
     logs: { create: fail, get: fail, update: fail, saveFeedback: fail, commit: fail, lastForExercise: fail },
     chat: { listMessages: fail, send: fail, undo: fail },
     profile: { getSummary: fail, getFeedback: fail, setOpinion: fail, resetFeedback: fail, setSportExcluded: fail },
-    account: { get: fail },
+    account: { get: fail, updateName: fail },
   };
 }

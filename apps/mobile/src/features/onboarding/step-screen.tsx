@@ -1,20 +1,15 @@
-import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 
 import type { PreferenceSection } from '@/api/types';
 import { Button } from '@/components/ui';
-import { BackButton, BottomBar, Content, Kicker, Screen, TopBar } from '@/components/layout';
+import { BackButton, BottomBar, Content, Kicker, Screen, TopBar, useLayout } from '@/components/layout';
 
-/** The questions in order; Review (4) follows and is not counted in "N of 5". */
-export const ONBOARDING_ORDER: PreferenceSection[] = ['starting', 'time', 'activities', 'places', 'extras'];
+import { nextOnboardingRoute, ONBOARDING_ORDER } from './order';
+import type { WizardSkip } from './wizard/actions';
+import { DesktopStepScreen } from './wizard/desktop-step-screen';
 
-export const onboardingRoute = (section: PreferenceSection): Href => `/onboarding/${section}`;
-
-/** Where Continue goes from a step: the next question, or Review after the last one. */
-export function nextOnboardingRoute(section: PreferenceSection): Href {
-  const next = ONBOARDING_ORDER[ONBOARDING_ORDER.indexOf(section) + 1];
-  return next ? onboardingRoute(next) : '/onboarding/review';
-}
+export { nextOnboardingRoute, ONBOARDING_ORDER, onboardingRoute } from './order';
 
 export type OnboardingStepScreenProps = {
   section: PreferenceSection;
@@ -23,12 +18,20 @@ export type OnboardingStepScreenProps = {
   canContinue: boolean;
   /** Defaults to the next step, or back to Review when the step was opened from there (?from=review). */
   onContinue?: () => void;
-  /** Replaces the "N of 5" kicker, e.g. Skip on Good to know (3.4). */
-  right?: ReactNode;
+  /** Skip, e.g. on Good to know (3.4): in place of the "N of 5" kicker on a phone, beside Continue on the desktop. */
+  skip?: WizardSkip;
 };
 
-/** Onboarding chrome (prototype StepTop + Next): back, "N of 5", the questions, Continue. */
-export function OnboardingStepScreen({ section, children, canContinue, onContinue, right }: OnboardingStepScreenProps) {
+/**
+ * Onboarding chrome. Phones (prototype StepTop + Next): back, "N of 5", the
+ * questions, Continue in the bottom bar. The desktop web shows the wizard card.
+ */
+export function OnboardingStepScreen(props: OnboardingStepScreenProps) {
+  const { isDesktop } = useLayout();
+  return isDesktop ? <DesktopStepScreen {...props} /> : <PhoneStepScreen {...props} />;
+}
+
+function PhoneStepScreen({ section, children, canContinue, onContinue, skip }: OnboardingStepScreenProps) {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const step = ONBOARDING_ORDER.indexOf(section) + 1;
@@ -40,7 +43,20 @@ export function OnboardingStepScreen({ section, children, canContinue, onContinu
     <Screen>
       <TopBar
         left={router.canGoBack() ? <BackButton /> : null}
-        right={right ?? <Kicker>{`${step} of ${ONBOARDING_ORDER.length}`}</Kicker>}
+        right={
+          skip ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={skip.onPress}
+              accessibilityHint={skip.hint}
+              style={{ marginRight: -8 }}>
+              Skip
+            </Button>
+          ) : (
+            <Kicker>{`${step} of ${ONBOARDING_ORDER.length}`}</Kicker>
+          )
+        }
       />
       <Content bottomInset="bottomBar">{children}</Content>
       <BottomBar>

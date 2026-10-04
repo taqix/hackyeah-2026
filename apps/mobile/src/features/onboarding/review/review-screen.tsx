@@ -2,13 +2,14 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { Button, Icon, Text } from '@/components/ui';
-import { BackButton, Body, BottomBar, Col, Content, H1, Row, Screen, TopBar } from '@/components/layout';
-import { ONBOARDING_ORDER } from '@/features/onboarding/step-screen';
+import { BackButton, Body, BottomBar, Col, Content, H1, Row, Screen, TopBar, useLayout } from '@/components/layout';
+import { ONBOARDING_ORDER } from '@/features/onboarding/order';
 import { deviceTimezone, stepIsComplete, useOnboardingDraft } from '@/state/onboarding-draft';
 import { useTheme } from '@/theme';
 
 import { useBottomBarInset } from './bottom-bar-inset';
 import { ReviewCalendarRows } from './calendar-rows';
+import { DesktopReview } from './review-desktop';
 import { ReviewRows } from './review-rows';
 import { useBuildFirstPlan } from './use-build-first-plan';
 
@@ -18,9 +19,15 @@ const FAILURE_LINE = 52;
 /**
  * 4 Review (and 4.1, calendar access off): every answer once, the calendars
  * (the phone's, and Google Calendar where Google sign-in is on), Build plan.
- * Neither calendar is required to build the plan.
+ * Neither calendar is required to build the plan. The desktop web shows the
+ * wizard's Review card instead.
  */
 export function ReviewScreen() {
+  const { isDesktop } = useLayout();
+  return isDesktop ? <DesktopReview /> : <PhoneReview />;
+}
+
+function PhoneReview() {
   const router = useRouter();
   const { colors } = useTheme();
   const [draft] = useOnboardingDraft();

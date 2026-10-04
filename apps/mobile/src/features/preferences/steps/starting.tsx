@@ -1,15 +1,32 @@
 import { Question, RadioCard, RadioGroup } from '@/components/ui';
-import { Body, Col, H1, Steps } from '@/components/layout';
-import { ONBOARDING_ORDER } from '@/features/onboarding/step-screen';
+import { Col, useLayout } from '@/components/layout';
+import { ChoiceGrid, COMFORT_ICONS, OptionCard } from '@/features/preferences/choices';
 import { PREF_OPTIONS } from '@/lib/preference-options';
 
+import { OnboardingHeading } from './heading';
 import type { StepBodyProps } from './types';
 
 const QUESTION = 'How does starting feel?';
 
-/** 2 Starting point: starting_comfort as radio cards with a line under each. */
+/** 2 Starting point: starting_comfort as radio cards with a line under each (cards side by side on desktop). */
 export function StartingStep({ draft, update, mode }: StepBodyProps) {
-  const options = (
+  const { isDesktop } = useLayout();
+  const options = isDesktop ? (
+    <ChoiceGrid label={QUESTION} kind="radio" minItemWidth={176}>
+      {PREF_OPTIONS.starting_comfort.map((o) => (
+        <OptionCard
+          key={o.value}
+          kind="radio"
+          layout="stacked"
+          icon={COMFORT_ICONS[o.value]}
+          label={o.label}
+          description={o.description}
+          selected={draft.starting_comfort === o.value}
+          onPress={() => update({ starting_comfort: o.value })}
+        />
+      ))}
+    </ChoiceGrid>
+  ) : (
     <RadioGroup label={QUESTION}>
       {PREF_OPTIONS.starting_comfort.map((o) => (
         <RadioCard
@@ -25,7 +42,7 @@ export function StartingStep({ draft, update, mode }: StepBodyProps) {
 
   if (mode === 'edit') {
     return (
-      <Col gap={12}>
+      <Col gap={isDesktop ? 16 : 12}>
         <Question>{QUESTION}</Question>
         {options}
       </Col>
@@ -33,12 +50,12 @@ export function StartingStep({ draft, update, mode }: StepBodyProps) {
   }
 
   return (
-    <Col gap={24}>
-      <Steps step={ONBOARDING_ORDER.indexOf('starting') + 1} total={ONBOARDING_ORDER.length} />
-      <Col gap={8}>
-        <H1>{QUESTION}</H1>
-        <Body>No wrong answers. This sets how gentle your first week is.</Body>
-      </Col>
+    <Col gap={isDesktop ? 32 : 24}>
+      <OnboardingHeading
+        section="starting"
+        title={QUESTION}
+        body="No wrong answers. This sets how gentle your first week is."
+      />
       {options}
     </Col>
   );

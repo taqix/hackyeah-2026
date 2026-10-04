@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import { useSession } from '@/api/hooks';
 import { RowNote, useGoogleCalendarConnect } from '@/features/google-calendar';
+import { deviceCalendarSupported } from '@/services/calendar';
 import { dropStashedDraft, stashDraftForRedirect } from '@/state/onboarding-draft';
 
 import { useCalendarAccess } from './calendar-access';
@@ -43,8 +44,9 @@ export function ReviewCalendarRows() {
   );
   return (
     <>
-      {signedInWithGoogle ? googleRow : phoneRow}
-      {signedInWithGoogle ? phoneRow : googleRow}
+      {/* The web has no phone calendar to offer: Google Calendar is its calendar. */}
+      {signedInWithGoogle || !deviceCalendarSupported ? googleRow : phoneRow}
+      {!deviceCalendarSupported ? null : signedInWithGoogle ? phoneRow : googleRow}
       {google.note ? <RowNote>{google.note}</RowNote> : null}
     </>
   );

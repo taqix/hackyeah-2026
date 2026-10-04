@@ -59,6 +59,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "start:hostname": "node scripts/start-hostname.cjs",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",

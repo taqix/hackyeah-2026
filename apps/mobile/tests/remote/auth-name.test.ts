@@ -169,6 +169,74 @@ test('the first save of the answers writes the sign-up name as the username; a s
   assert.equal((namelessPut?.body as { username: unknown }).username, null);
 });
 
+/* ------------------------------------- Google and a server-filled username */
+
+/** A Google session: provider google, Google's names in the metadata. */
+function googleSessionWith(metadata: Record<string, unknown>): AuthSessionData {
+  const s = sessionWith(metadata);
+  s.user.app_metadata = { provider: 'google' };
+  return s;
+}
+
+const usernameSent = (server: ReturnType<typeof fakeServer>) =>
+  (server.requests.find((r) => r.method === 'PUT' && r.path === '/profile')?.body as { username: unknown } | undefined)
+    ?.username;
+
+test("a Google account is greeted by Google's name, and the first save stores it when the profile has none", async () => {
+  const server = fakeServer();
+  server.state.profile = { id: USER_ID, username: null, created_at: null, preferences: null };
+  const { client } = runtimeWith(server, googleSessionWith({ full_name: 'Sam Doe', name: 'Sam', avatar_url: 'x' }));
+  const signedIn = await client.auth.getSession();
+  assert.deepEqual([signedIn?.user.provider, signedIn?.user.name], ['google', 'Sam Doe']);
+  assert.equal(profileReads(server), 0, "Google's name needs no profile read");
+
+  await client.preferences.save(APP_PREFERENCES);
+  assert.equal(usernameSent(server), 'Sam Doe');
+  assert.equal(server.state.profile?.username, 'Sam Doe');
+});
+
+test('a username the server filled in at sign-up is kept on every save, never replaced or nulled', async () => {
+  // The server copied the metadata name into the profile at sign-up; the metadata may differ or be gone since.
+  for (const metadata of [{ full_name: 'Samuel Doe' }, {}]) {
+    const server = fakeServer();
+    server.state.profile = { id: USER_ID, username: 'Sam Doe', created_at: null, preferences: null };
+    const { client } = runtimeWith(server, googleSessionWith(metadata));
+    await client.preferences.save(APP_PREFERENCES);
+    assert.equal(usernameSent(server), 'Sam Doe', JSON.stringify(metadata));
+
+    // Later saves (Profile › Edit, switching a sport off) keep it too.
+    await client.preferences.save({ ...APP_PREFERENCES, sessions_per_week: 2 });
+    await client.profile.setSportExcluded('walking', true);
+    const puts = server.requests.filter((r) => r.method === 'PUT' && r.path === '/profile');
+    assert.deepEqual(
+      puts.map((r) => (r.body as { username: unknown }).username),
+      ['Sam Doe', 'Sam Doe', 'Sam Doe'],
+    );
+    for (const put of puts) assert.ok(apiSchemas.UpdateProfileDto.safeParse(put.body).success);
+    assert.equal(server.state.profile?.username, 'Sam Doe');
+  }
+});
+
+test('a blank stored username gives way to the session name; a long one is cut to fit, never dropped', async () => {
+  const blank = fakeServer();
+  blank.state.profile = { id: USER_ID, username: '   ', created_at: null, preferences: null };
+  await runtimeWith(blank, googleSessionWith({ name: 'Sam' })).client.preferences.save(APP_PREFERENCES);
+  assert.equal(usernameSent(blank), 'Sam');
+
+  const long = fakeServer();
+  long.state.profile = { id: USER_ID, username: `  ${'a'.repeat(199)}🙂🙂 `, created_at: null, preferences: null };
+  await runtimeWith(long).client.preferences.save(APP_PREFERENCES);
+  const sent = usernameSent(long);
+  assert.equal(sent, 'a'.repeat(199), 'cut before the emoji it would split');
+  const put = long.requests.find((r) => r.method === 'PUT' && r.path === '/profile');
+  assert.ok(apiSchemas.UpdateProfileDto.safeParse(put?.body).success);
+
+  const googleLong = fakeServer();
+  googleLong.state.profile = { id: USER_ID, username: null, created_at: null, preferences: null };
+  await runtimeWith(googleLong, googleSessionWith({ full_name: 'B'.repeat(250) })).client.preferences.save(APP_PREFERENCES);
+  assert.equal(usernameSent(googleLong), 'B'.repeat(200));
+});
+
 /* ------------------------------------------------------------- Settings */
 
 test('updateName saves the username with the whole profile document, then the Auth metadata', async () => {

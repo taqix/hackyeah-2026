@@ -1,4 +1,5 @@
 import { debugLog } from '../../lib/debug-log';
+import { asUsername } from '../../lib/person-name';
 import type { ApiClient } from '../client';
 import type { Preferences } from '../types';
 import { readSession } from './auth';
@@ -42,14 +43,14 @@ export function planningFieldsChanged(
 
 /**
  * The name in the signed-in user's Auth metadata (given at sign-up, or
- * Google's), or null. PUT /profile can't run before the first answers, so the
- * first save writes it as the profile's username.
+ * Google's `full_name`/`name`), as a username, or null. PUT /profile can't
+ * run before the first answers, so the first save writes it as the profile's
+ * username when the server has not filled one in at sign-up.
  */
 async function sessionName(ctx: RemoteContext): Promise<string | null> {
   try {
-    const name = (await readSession(ctx.deps.auth))?.user.name ?? null;
     // The contract's username is 1–200 characters: a name never blocks the answers.
-    return name && name.length <= 200 ? name : null;
+    return asUsername((await readSession(ctx.deps.auth))?.user.name);
   } catch {
     return null;
   }
@@ -57,7 +58,8 @@ async function sessionName(ctx: RemoteContext): Promise<string | null> {
 
 /**
  * GET /profile and PUT /profile (the whole document; the username is kept,
- * or taken from the session's name while the profile has none).
+ * or taken from the session's name while the profile has none, so a username
+ * the server filled in at sign-up is never replaced, and never by null).
  * When a plan exists and the answers it is built from changed, the active
  * week is re-planned in the background; the save does not wait for it.
  */
@@ -73,7 +75,8 @@ export function createRemotePreferences(ctx: RemoteContext): ApiClient['preferen
       const userId = await ctx.data.userId();
       const [profile, ids] = await Promise.all([ctx.data.profile(), ctx.data.sportIds()]);
       const document = preferencesToWire(preferences, ids.toWire);
-      const body: UpdateProfileDto = { username: profile?.username ?? (await sessionName(ctx)), preferences: document };
+      const username = asUsername(profile?.username) ?? (await sessionName(ctx));
+      const body: UpdateProfileDto = { username, preferences: document };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);
       ctx.data.setProfile(saved, userId);
       const kept = saved.preferences ?? document;

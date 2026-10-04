@@ -13,6 +13,7 @@ import { checkName } from '../../lib/person-name';
 import { ApiError, isApiError, type AuthProviders, type AuthSession } from '../types';
 import type { RemoteContext } from './context';
 import type { AuthErrorLike, AuthPort, AuthSessionData, RemoteDeps } from './deps';
+import { checkGoogleRedirect, EXPO_GO_IP_SIGN_IN } from './expo-go-redirect';
 import { defaultErrorMessage } from './http';
 
 /** Deep-link paths the Auth emails and Google return to (`deps.redirectUrl`). */
@@ -404,6 +405,8 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
       // Linking.createURL: hackyeah2026://auth/callback in a build, exp://…/--/auth/callback
       // in Expo Go, http://localhost:8081/auth/callback on the web; all are allowlisted.
       const redirectTo = deps.redirectUrl(CALLBACK_PATH);
+      // Expo Go on a LAN IP: Supabase would send Google's answer to the Site URL instead.
+      checkGoogleRedirect(redirectTo, EXPO_GO_IP_SIGN_IN);
       const queryParams = { ...GOOGLE_SIGN_IN_PARAMS };
       if (deps.platform === 'web') {
         // supabase-js sends the whole page to Google; /auth/callback finishes

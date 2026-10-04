@@ -8,6 +8,8 @@ export const HINT = 'Changes apply straight away. You can undo.';
 export const BUSY_HINT = 'One change at a time.';
 export const DONE_STAYS = "Sessions you've done always stay as they are.";
 export const OFFLINE_NOTE = "You're offline. Your plan hasn't changed.";
+/** Replaces the hint while there is no plan to change yet (none, building or failed). */
+export const NOT_READY_HINT = 'You can chat once your plan is ready.';
 
 /** Home's Move it (8.15): the coach answers with free slots and "Skip it this time". */
 export const MOVE_REQUEST = 'Move it';

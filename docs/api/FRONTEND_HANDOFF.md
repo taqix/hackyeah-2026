@@ -1,9 +1,10 @@
 # Supabase API: frontend handoff
 
 Contract version: **1**. Prepared on 3 October 2026; extended on 4 October 2026.
-Status: **local source and contracts verified**. The 4 October migrations and
-routes (late feedback, opinions, Undo, catalog seed) are NOT applied or
-deployed to hosted Supabase yet; see section 12.
+Status: **local source and contracts verified**. The hosted project runs an
+earlier product-api deployment. The 4 October migrations, routes (late
+feedback, opinions, Undo, catalog seed) and the Gemini adapter are NOT applied
+or deployed to hosted Supabase yet; see section 12.
 
 Send this file to the web/mobile developer. It describes the implemented local
 PoC contract, with complete JSON payloads that can be used as mock responses.
@@ -401,9 +402,13 @@ GET /plans/history returns data as an array of PlanVersionEntity objects, with
 the same version shape shown above, newest first. Every accepted generation,
 revision, or Undo increments the version. Old versions are preserved.
 
-**Runtime availability:** the provider adapter is unconnected. After valid
-prerequisites, generation returns 501 AI_NOT_CONFIGURED, not this successful
-sample. Clients can mock the sample while the AI collaborator adds the adapter.
+**Runtime availability:** the function plans with Gemini when the
+GEMINI_API_KEY and GEMINI_MODEL secrets are set. Without them, generation
+returns 501 AI_NOT_CONFIGURED after valid prerequisites instead of this sample,
+which stays a valid mock response. Gemini output goes through the same
+validation; output that still fails after one re-ask returns 502
+INVALID_AI_OUTPUT and saves nothing. Gym sessions use exercise IDs from the
+mobile exercise library, rep-tracked only, with no weights.
 
 ## 7. Chat
 
@@ -674,8 +679,10 @@ GET /chat/messages?plan_id=<PLAN_UUID> returns persisted ChatMessageEntity
 objects in data, oldest first. Both messages returned by POST are already
 persisted; merge by message ID rather than adding duplicates on retry/refetch.
 Quick-reply arrays and extra-workout outcomes are not part of this contract.
-The unconnected runtime chat adapter also returns AI_NOT_CONFIGURED after
-valid prerequisites; these successes are mocks.
+Without the Gemini secrets, chat also returns 501 AI_NOT_CONFIGURED after
+valid prerequisites. With them, a revision keeps the IDs of activities it
+keeps, mints new IDs for added ones, and returns completed and past sessions
+of the week unchanged, so a client diff by activity ID stays meaningful.
 
 ## 8. Completion and feedback
 
@@ -1003,10 +1010,11 @@ product-api.design-examples.json. Those files and this document regenerate with
 | Assistant profile summary | Separate specified AI call, evidence references, validation, freshness and fallback |
 | Web guest demo | Isolated anonymous bootstrap, demo data and AI limits |
 
-Profile edits do not trigger plan regeneration. Concurrent full-document edits
-have no profile revision guard yet. Device steps, local appearance, calendar
-permission state, and navigation do not need Supabase persistence. Private
-calendar event contents never go to this API.
+Profile edits do not trigger plan regeneration on the server; the mobile app
+regenerates the active week itself when planning answers change. Concurrent
+full-document edits have no profile revision guard yet. Device steps, local
+appearance, calendar permission state, and navigation do not need Supabase
+persistence. Private calendar event contents never go to this API.
 
 ## 12. Owner action to make the API available
 
@@ -1033,15 +1041,17 @@ the HTTP API or connect AI. The owner must complete these steps:
    fallback is supported); privileged persistence uses SUPABASE_SERVICE_ROLE_KEY
    inside the function only. Never share the server-only key with a client.
    Clients receive only the project URL and publishable configuration.
-6. The seed migration provides the catalog. For AI success, connect and
-   configure the PlanGenerator provider adapter. Until then generation returns
-   400 for missing prerequisites or 501 for disconnected AI. Undo, feedback, and
+6. The seed migration provides the catalog. For AI success, set the function
+   secrets with `supabase secrets set GEMINI_API_KEY=<KEY> GEMINI_MODEL=<MODEL_ID>`
+   (there is no default model). Without them generation and chat return 400
+   for missing prerequisites or 501 AI_NOT_CONFIGURED. Undo, feedback, and
    opinions need no AI.
 7. Share the actual base URL and client publishable configuration securely with
    the frontend developer, then smoke-test the authenticated journey on web and
    Expo. Confirm cross-account isolation and failed-revision preservation.
 
-Local verification already completed: 30 Supabase tests passed, Supabase
-typechecks passed, and Supabase lint and formatting passed.
-This does not prove hosted Auth, Deno bundling, provider integration, or actual
-device/browser operation. Supabase CLI and Deno are not installed here.
+Local verification already completed: 43 Supabase tests passed (including the
+Gemini adapter against canned answers), Supabase typechecks passed, and
+Supabase lint and formatting passed. This does not prove hosted Auth, Deno
+bundling, a live Gemini call, or actual device/browser operation. Supabase CLI
+and Deno are not installed here.

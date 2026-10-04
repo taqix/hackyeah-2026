@@ -43,9 +43,11 @@ function Rounds({ items }: { items: { state: RoundState; label: string }[] }) {
   );
 }
 
-/** 6.5: a countdown per round; the ring empties as time runs. Effort colour. */
-export function TimedPanel({ state }: { state: GymState }) {
+/** 6.5: a countdown per round; the ring empties as time runs. Effort colour. `ringSize` grows it on the desktop web. */
+export function TimedPanel({ state, ringSize = 236 }: { state: GymState; ringSize?: number }) {
   const { colors, fontFamily } = useTheme();
+  // The countdown's numerals scale with the ring (64 on the phone's 236).
+  const numeral = Math.round((ringSize * 64) / 236);
   const at = useNow(250).getTime();
   const step = state.steps[state.current];
   const sets = state.entries[state.current];
@@ -72,10 +74,11 @@ export function TimedPanel({ state }: { state: GymState }) {
         <CountdownRing
           value={hold ? left / hold : 0}
           color={colors.accent}
-          size={236}
+          size={ringSize}
+          stroke={ringSize > 236 ? 10 : undefined}
           accessibilityLabel={`${formatCountdown(left)} left of ${formatSeconds(step.holdSeconds)}. ${sub}`}>
           <Col gap={8} style={{ alignItems: 'center' }}>
-            <Text tabular style={{ fontFamily: fontFamily.displayBold, fontSize: 64, lineHeight: 68 }}>
+            <Text tabular style={{ fontFamily: fontFamily.displayBold, fontSize: numeral, lineHeight: numeral + 4 }}>
               {formatCountdown(left)}
             </Text>
             <Text variant="bodySm">{sub}</Text>

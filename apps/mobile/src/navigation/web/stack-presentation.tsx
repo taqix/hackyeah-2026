@@ -13,12 +13,11 @@ type ScreenOptions = Exclude<NonNullable<StackProps['screenOptions']>, (...args:
 
 /**
  * Root-stack routes the desktop web opens as dialogs over the page they came
- * from, and how wide: short tasks (feedback, logging a workout, changing one
- * answer). Everything else is a page beside the sidebar.
+ * from, and how wide: short tasks (feedback, changing one answer). Everything
+ * else, Log it included, is a page beside the sidebar.
  */
 const DIALOG_ROUTES: Readonly<Record<string, DialogSize>> = {
   'feedback/[logId]': 'sm',
-  'log/[sessionId]': 'md',
   'profile/edit/[section]': 'md',
 };
 

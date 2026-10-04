@@ -8,6 +8,7 @@ import { Button, Input, Question, RadioCard, RadioGroup, Segmented, Text } from 
 
 import { CHOOSE_AGAIN_OPTIONS, CHOOSE_AGAIN_QUESTION, FELT_OPTIONS, FELT_QUESTION } from './copy';
 import { FeedbackHeader } from './feedback-header';
+import { useRadioKeys } from './use-radio-keys';
 
 /** Room for the save error above the button. */
 const ERROR_SPACE = 56;
@@ -25,6 +26,8 @@ function saveErrorText(error: unknown): string {
  * again (optional), and a note our assistant reads. Pre-filled when editing.
  */
 export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => void }) {
+  const feltKeys = useRadioKeys();
+  const againKeys = useRadioKeys();
   const barPadding = useBottomBarPadding();
   const session = usePlannedSession(log.session_id);
   const save = useSaveFeedback();
@@ -41,14 +44,12 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
     );
   };
 
-  return (
+  const questions = (
     <>
-      <Content
-        gap={24}
-        bottomInset={save.isError ? BOTTOM_BAR_CLEARANCE + barPadding + ERROR_SPACE : 'bottomBar'}>
-        <FeedbackHeader log={log} session={log.session_id && !session.isError ? session.data : null} />
-        <Col gap={12}>
-          <Question>{FELT_QUESTION}</Question>
+      <FeedbackHeader log={log} session={log.session_id && !session.isError ? session.data : null} />
+      <Col gap={12}>
+        <Question>{FELT_QUESTION}</Question>
+        <View ref={feltKeys}>
           <RadioGroup label={FELT_QUESTION}>
             {FELT_OPTIONS.map((option) => (
               <RadioCard
@@ -60,11 +61,13 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
               />
             ))}
           </RadioGroup>
-        </Col>
-        <Col gap={12}>
-          <Question optional hint={title}>
-            {CHOOSE_AGAIN_QUESTION}
-          </Question>
+        </View>
+      </Col>
+      <Col gap={12}>
+        <Question optional hint={title}>
+          {CHOOSE_AGAIN_QUESTION}
+        </Question>
+        <View ref={againKeys}>
           <Segmented
             label={CHOOSE_AGAIN_QUESTION}
             options={CHOOSE_AGAIN_OPTIONS}
@@ -72,39 +75,51 @@ export function FeedbackForm({ log, onDone }: { log: ActivityLog; onDone: () => 
             // Optional: tapping the chosen answer again clears it.
             onChange={(value) => setChooseAgain(value === chooseAgain ? null : value)}
           />
-        </Col>
-        <Input
-          label="Anything to note (optional)"
-          placeholder="Shoes, weather, how your legs feel…"
-          hint="Our assistant reads notes when it plans your next weeks."
-          value={note}
-          onChangeText={setNote}
-          multiline
-          maxLength={500}
-          autoCapitalize="sentences"
-        />
+        </View>
+      </Col>
+      <Input
+        label="Anything to note (optional)"
+        placeholder="Shoes, weather, how your legs feel…"
+        hint="Our assistant reads notes when it plans your next weeks."
+        value={note}
+        onChangeText={setNote}
+        multiline
+        maxLength={500}
+        autoCapitalize="sentences"
+      />
+    </>
+  );
+
+  const actions = (
+    <Col gap={12} style={{ flex: 1 }}>
+      {save.isError ? (
+        <View accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <Text variant="bodySm" tone="danger">
+            {saveErrorText(save.error)}
+          </Text>
+        </View>
+      ) : null}
+      <Button
+        size="lg"
+        fullWidth
+        iconRight="check"
+        disabled={!felt}
+        loading={save.isPending}
+        onPress={submit}
+        accessibilityHint={felt ? undefined : 'Choose how it felt first.'}>
+        {save.isError ? 'Try again' : 'Save'}
+      </Button>
+    </Col>
+  );
+
+  return (
+    <>
+      <Content
+        gap={24}
+        bottomInset={save.isError ? BOTTOM_BAR_CLEARANCE + barPadding + ERROR_SPACE : 'bottomBar'}>
+        {questions}
       </Content>
-      <BottomBar>
-        <Col gap={12} style={{ flex: 1 }}>
-          {save.isError ? (
-            <View accessibilityRole="alert" accessibilityLiveRegion="polite">
-              <Text variant="bodySm" tone="danger">
-                {saveErrorText(save.error)}
-              </Text>
-            </View>
-          ) : null}
-          <Button
-            size="lg"
-            fullWidth
-            iconRight="check"
-            disabled={!felt}
-            loading={save.isPending}
-            onPress={submit}
-            accessibilityHint={felt ? undefined : 'Choose how it felt first.'}>
-            {save.isError ? 'Try again' : 'Save'}
-          </Button>
-        </Col>
-      </BottomBar>
+      <BottomBar>{actions}</BottomBar>
     </>
   );
 }

@@ -61,8 +61,17 @@ export function RestSheet({ state, onExtend, onSkip, onEdit }: RestSheetProps) {
   );
 }
 
-function RestBody({ state, rest, onExtend, onSkip, onEdit }: RestSheetProps & { rest: Rest }) {
+export type RestBodyProps = RestSheetProps & {
+  rest: Rest;
+  /** 200 in the sheet; the desktop web shows the rest on the page, larger. */
+  ringSize?: number;
+};
+
+/** The rest itself: what was saved, the recovery ring, what comes next, +15 s and skip. */
+export function RestBody({ state, rest, onExtend, onSkip, onEdit, ringSize = 200 }: RestBodyProps) {
   const { colors, fontFamily, radius } = useTheme();
+  // The numerals scale with the ring (52 on the sheet's 200).
+  const numeral = Math.round((ringSize * 52) / 200);
   const at = useNow(250).getTime();
   const left = Math.max(0, rest.endsAt - at);
   const saved = savedCopy(state, rest);
@@ -90,13 +99,14 @@ function RestBody({ state, rest, onExtend, onSkip, onEdit }: RestSheetProps & { 
         <CountdownRing
           value={rest.totalMs ? left / rest.totalMs : 0}
           color={colors.recovery}
-          size={200}
+          size={ringSize}
+          stroke={ringSize > 200 ? 10 : undefined}
           accessibilityLabel={`Rest, ${formatCountdown(left)} left`}>
           <Col gap={6} style={{ alignItems: 'center' }}>
             <Text variant="label" tone="secondary">
               Rest
             </Text>
-            <Text tabular style={{ fontFamily: fontFamily.displayBold, fontSize: 52, lineHeight: 56 }}>
+            <Text tabular style={{ fontFamily: fontFamily.displayBold, fontSize: numeral, lineHeight: numeral + 4 }}>
               {formatCountdown(left)}
             </Text>
           </Col>

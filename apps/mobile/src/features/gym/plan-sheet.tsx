@@ -67,7 +67,7 @@ function PlanStep({ n, step, detail, state, onPress }: { n: number; step: GymSte
   );
 }
 
-function PlanMinutes({ startedAt, plannedMinutes }: { startedAt: number; plannedMinutes: number }) {
+export function PlanMinutes({ startedAt, plannedMinutes }: { startedAt: number; plannedMinutes: number }) {
   const minutes = Math.floor((useNow(1000).getTime() - startedAt) / 60_000);
   return (
     <Text variant="label" tone="tertiary" tabular>
@@ -85,9 +85,54 @@ export type PlanSheetProps = {
   onGoTo: (exercise: number) => void;
 };
 
+/** Every exercise with where it stands; a tap does that one now. `onCurrent` answers a tap on the current one. */
+export function PlanSteps({
+  state,
+  lastWeight,
+  onGoTo,
+  onCurrent,
+}: {
+  state: GymState;
+  lastWeight: number | null;
+  onGoTo: (exercise: number) => void;
+  onCurrent?: () => void;
+}) {
+  return (
+    <>
+      {state.steps.map((step, i) => {
+        const sets = state.entries[i];
+        const stepState: StepState = i === state.current ? 'current' : isExerciseDone(sets) ? 'done' : 'next';
+        const detail = i === state.current ? currentDetail(step, sets, lastWeight) : plannedLabel(step);
+        return (
+          <PlanStep
+            key={i}
+            n={i + 1}
+            step={step}
+            detail={detail}
+            state={stepState}
+            onPress={() => (i === state.current ? onCurrent?.() : onGoTo(i))}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** The plan's footnote: exercises can be done in any order. */
+export function PlanNote() {
+  const { colors } = useTheme();
+  return (
+    <Row gap={8} style={styles.note}>
+      <Icon name="info" size={16} color={colors.textTertiary} />
+      <Text variant="caption" style={{ flex: 1 }}>
+        Machine taken? Tap any exercise to do it now. The one you leave keeps its sets.
+      </Text>
+    </Row>
+  );
+}
+
 /** 6.6: where you are, and what to do next if a machine is taken. */
 export function PlanSheet({ state, startedAt, plannedMinutes, lastWeight, onClose, onGoTo }: PlanSheetProps) {
-  const { colors } = useTheme();
   return (
     <Sheet visible={state.sheet === 'plan'} onClose={onClose} label="Today's plan">
       <View style={styles.head}>
@@ -95,28 +140,9 @@ export function PlanSheet({ state, startedAt, plannedMinutes, lastWeight, onClos
         <PlanMinutes startedAt={startedAt} plannedMinutes={plannedMinutes} />
       </View>
       <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 2 }}>
-        {state.steps.map((step, i) => {
-          const sets = state.entries[i];
-          const stepState: StepState = i === state.current ? 'current' : isExerciseDone(sets) ? 'done' : 'next';
-          const detail = i === state.current ? currentDetail(step, sets, lastWeight) : plannedLabel(step);
-          return (
-            <PlanStep
-              key={i}
-              n={i + 1}
-              step={step}
-              detail={detail}
-              state={stepState}
-              onPress={() => (i === state.current ? onClose() : onGoTo(i))}
-            />
-          );
-        })}
+        <PlanSteps state={state} lastWeight={lastWeight} onGoTo={onGoTo} onCurrent={onClose} />
       </ScrollView>
-      <Row gap={8} style={styles.note}>
-        <Icon name="info" size={16} color={colors.textTertiary} />
-        <Text variant="caption" style={{ flex: 1 }}>
-          Machine taken? Tap any exercise to do it now. The one you leave keeps its sets.
-        </Text>
-      </Row>
+      <PlanNote />
     </Sheet>
   );
 }

@@ -1,26 +1,35 @@
 import { useRouter } from 'expo-router';
 import { type ReactNode, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import { useCreateLog, useUpdateLog } from '@/api/hooks';
+import { type ActivityLog, isApiError, type LogSource, type PlannedSession, type SportDefinition } from '@/api/types';
 import {
-  type ActivityLog,
-  isApiError,
-  type LogSource,
-  type PlannedSession,
-  type SportDefinition,
-  type SportMetric,
-} from '@/api/types';
-import { BackButton, BottomBar, Col, Content, H1, Kicker, Screen, TopBar } from '@/components/layout';
+  BackButton,
+  BottomBar,
+  Col,
+  Content,
+  H1,
+  Kicker,
+  layoutModeFor,
+  Screen,
+  TopBar,
+  useLayout,
+} from '@/components/layout';
 import { Button, Text } from '@/components/ui';
 import { now } from '@/lib/clock';
-import { toIsoWithOffset } from '@/lib/dates';
-import { sessionStart } from '@/lib/sessions';
+import { formatLongDate, toIsoWithOffset } from '@/lib/dates';
+import { sessionStart, sessionTimeLabel } from '@/lib/sessions';
 import { routes } from '@/navigation/routes';
-import { ActivityImportError, activityImport } from '@/services/activity-import';
+import {
+  ActivityImportError,
+  type ActivityImportResult,
+  activityImport,
+  browserFile,
+} from '@/services/activity-import';
 
 import { FileImport, FileImported } from './file-import';
-import { MetricField } from './metric-field';
+import { LogDesktop } from './log-desktop';
+import { MetricFields } from './metric-fields';
 import {
   type FieldValue,
   type FormValues,
@@ -28,7 +37,6 @@ import {
   formMetrics,
   importErrorMessage,
   initialValues,
-  isCompact,
   parseForm,
   pickActivity,
   valuesFromImport,
@@ -47,17 +55,6 @@ export type LogFormProps = {
 };
 
 type ImportedFile = { name: string; startedAt: string | null };
-
-/** Numbers and text two to a row (a grid once there are 2+ metrics); yes/no and chips full width. */
-function fieldRows(metrics: SportMetric[]): SportMetric[][] {
-  const rows: SportMetric[][] = [];
-  for (const m of metrics) {
-    const last = rows[rows.length - 1];
-    if (metrics.length > 1 && isCompact(m) && last?.length === 1 && isCompact(last[0])) last.push(m);
-    else rows.push([m]);
-  }
-  return rows;
-}
 
 /** When it started: the plan's time once that has passed, otherwise just now minus its length. */
 function defaultStart(session: PlannedSession | null, durationSeconds: number): string {
@@ -81,6 +78,9 @@ function saveErrorMessage(error: unknown): string {
  */
 export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
   const router = useRouter();
+  const { isDesktop, width } = useLayout();
+  // A dialog on the desktop web keeps the phone layout, but the browser reads the file, not a phone.
+  const readIn = layoutModeFor(width) === 'compact' ? undefined : 'Read in your browser';
   const createLog = useCreateLog();
   const updateLog = useUpdateLog();
   const metrics = sport ? formMetrics(sport) : [];
@@ -104,11 +104,12 @@ export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
 
   const setField = (key: string, value: FieldValue) => setValues((current) => ({ ...current, [key]: value }));
 
-  async function chooseFile() {
+  /** Fills the form from a picked or dropped file; Remove puts back what was typed before. */
+  async function importFrom(read: () => Promise<ActivityImportResult>) {
     setImportError(null);
     setImporting(true);
     try {
-      const result = await activityImport.pickAndImport();
+      const result = await read();
       if (result.status === 'cancelled') return;
       const activity = pickActivity(result.data);
       if (!activity) {
@@ -124,6 +125,9 @@ export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
       setImporting(false);
     }
   }
+
+  const chooseFile = () => importFrom(() => activityImport.pickAndImport());
+  const dropFile = (dropped: File) => void importFrom(() => activityImport.importFile(browserFile(dropped)));
 
   function removeFile() {
     setFile(null);
@@ -174,6 +178,40 @@ export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
     );
   }
 
+  if (isDesktop) {
+    return (
+      <LogDesktop
+        kicker={kicker}
+        title={session?.title ?? log?.title ?? sport?.name ?? 'What did you do?'}
+        planned={
+          session
+            ? `${formatLongDate(sessionStart(session))} · ${sessionTimeLabel(session)}`
+            : log
+              ? formatLongDate(log.started_at)
+              : null
+        }
+        sportId={sport?.id ?? session?.sport_id ?? null}
+        header={header}
+        fields={
+          sport ? (
+            <MetricFields sport={sport} metrics={metrics} values={values} errors={errors} onChange={setField} onSubmit={submit} />
+          ) : null
+        }
+        caption={sport ? formCaption(metrics, sport.id, !!file) : null}
+        fileName={file?.name ?? null}
+        importing={importing}
+        importError={importError}
+        onChooseFile={() => void chooseFile()}
+        onDropFile={dropFile}
+        onRemoveFile={removeFile}
+        saveError={saveError}
+        saving={saving}
+        canSubmit={!!sport}
+        onSubmit={submit}
+      />
+    );
+  }
+
   return (
     <Screen>
       <TopBar left={<BackButton />} />
@@ -186,27 +224,11 @@ export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
         {sport ? (
           <>
             {file ? (
-              <FileImported name={file.name} onRemove={removeFile} />
+              <FileImported name={file.name} onRemove={removeFile} detail={readIn} />
             ) : (
-              <FileImport onChoose={() => void chooseFile()} busy={importing} error={importError} />
+              <FileImport onChoose={() => void chooseFile()} onDropFile={dropFile} busy={importing} error={importError} />
             )}
-            <View accessibilityLabel={sport.name} style={styles.fields}>
-              {fieldRows(metrics).map((row) => (
-                <View key={row.map((m) => m.key).join('+')} style={styles.row}>
-                  {row.map((m) => (
-                    <View key={m.key} style={styles.cell}>
-                      <MetricField
-                        metric={m}
-                        value={values[m.key] ?? null}
-                        error={errors[m.key]}
-                        onChange={(value) => setField(m.key, value)}
-                      />
-                    </View>
-                  ))}
-                  {row.length === 1 && metrics.length > 1 && isCompact(row[0]) ? <View style={styles.cell} /> : null}
-                </View>
-              ))}
-            </View>
+            <MetricFields sport={sport} metrics={metrics} values={values} errors={errors} onChange={setField} />
             <Text variant="caption">{formCaption(metrics, sport.id, !!file)}</Text>
           </>
         ) : null}
@@ -224,9 +246,3 @@ export function LogForm({ kicker, session, log, sport, header }: LogFormProps) {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  fields: { gap: 16 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  cell: { flex: 1, minWidth: 0 },
-});

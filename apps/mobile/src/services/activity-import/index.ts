@@ -1,3 +1,4 @@
+export { browserFile } from './browser-file';
 export { activityImport } from './device-import';
 export { MAX_ACTIVITY_FILE_BYTES, MAX_ACTIVITY_SAMPLES, parseActivityFile } from './parser';
 export { createActivityImportService } from './service';

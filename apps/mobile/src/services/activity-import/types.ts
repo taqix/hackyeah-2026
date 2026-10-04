@@ -44,9 +44,19 @@ export type ActivityImportResult =
   | { status: 'cancelled' }
   | { status: 'imported'; data: ActivityImport };
 
+/** The driver owns the temporary copy; dispose must never delete the original. */
+export interface PickedActivityFile {
+  name: string;
+  sizeBytes: number | null;
+  readBytes(): Promise<Uint8Array>;
+  dispose(): Promise<void>;
+}
+
 export interface ActivityImportService {
   /** Call from a user action. The system picker grants access to the chosen file. */
   pickAndImport(): Promise<ActivityImportResult>;
+  /** A file handed over without the picker (dropped on the web form), checked and parsed the same way. */
+  importFile(file: PickedActivityFile): Promise<ActivityImportResult>;
 }
 
 export type ActivityImportErrorCode =

@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { useLog, usePlannedSession, useSport } from '@/api/hooks';
 import { type ActivityLog, isGymSession, type LoggedSet, type PlannedSession, type SportDefinition } from '@/api/types';
 import { Button, Card, Icon, IconButton, ListRow } from '@/components/ui';
-import { Body, BottomBar, Col, Content, H1, Kicker, Screen, TopBar } from '@/components/layout';
+import { Body, BottomBar, Col, Content, DESKTOP_GUTTER, H1, Kicker, Screen, TopBar, useLayout } from '@/components/layout';
 import { formatDayLong, formatMinutes } from '@/lib/dates';
 import { routes } from '@/navigation/routes';
 import { useTheme } from '@/theme';
@@ -15,6 +16,8 @@ import { buildSteps, type GymStep, setsFor } from './model';
 import { GymError, GymLoading } from './screen-states';
 
 const KIND_ICON = { reps: 'dumbbell', time: 'timer' } as const;
+/** The desktop web's column for the summary, centred in the focus screen. */
+const REVIEW_WIDTH = 640;
 
 /** A step for a logged exercise the plan doesn't list. */
 function stepFromSets(sets: LoggedSet[]): GymStep {
@@ -53,6 +56,7 @@ function reviewRows(log: ActivityLog, session: PlannedSession | undefined, sport
 export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId: string }) {
   const router = useRouter();
   const { colors } = useTheme();
+  const { isDesktop } = useLayout();
   const logQuery = useLog(logId);
   const sessionQuery = usePlannedSession(sessionId);
   const sportQuery = useSport(logQuery.data?.sport_id);
@@ -76,10 +80,24 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
   // A saved session's sets are final: read-only, and feedback has its own entry points.
   const locked = !!log.actuals_locked;
 
+  const finish = locked ? (
+    <Button size="lg" fullWidth iconRight="check" onPress={close}>
+      Done
+    </Button>
+  ) : (
+    <Button size="lg" fullWidth iconRight="arrow-right" onPress={() => router.replace(routes.feedback(log.id))}>
+      Continue
+    </Button>
+  );
+
   return (
     <Screen>
-      <TopBar right={<IconButton icon="x" accessibilityLabel="Close" onPress={close} />} />
-      <Content gap={20} bottomInset="bottomBar">
+      <TopBar
+        style={isDesktop ? styles.column : undefined}
+        right={<IconButton icon="x" accessibilityLabel="Close" onPress={close} />}
+      />
+      {/* The desktop web keeps the button under the summary instead of a bar pinned to the window. */}
+      <Content gap={20} bottomInset={isDesktop ? 'safe' : 'bottomBar'} maxWidth={REVIEW_WIDTH}>
         <Col gap={6}>
           <Kicker>{`${formatDayLong(log.started_at)} · ${formatMinutes(minutes)}`}</Kicker>
           <H1>Done for today.</H1>
@@ -113,19 +131,15 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
             );
           })}
         </Card>
+        {isDesktop ? finish : null}
       </Content>
-      <BottomBar>
-        {locked ? (
-          <Button size="lg" fullWidth iconRight="check" onPress={close}>
-            Done
-          </Button>
-        ) : (
-          <Button size="lg" fullWidth iconRight="arrow-right" onPress={() => router.replace(routes.feedback(log.id))}>
-            Continue
-          </Button>
-        )}
-      </BottomBar>
+      {isDesktop ? null : <BottomBar>{finish}</BottomBar>}
       <FixSetsSheet log={log} target={fixing === null ? null : (rows[fixing] ?? null)} onClose={() => setFixing(null)} />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  // The close button's icon lines up with the column's edge.
+  column: { width: '100%', maxWidth: REVIEW_WIDTH + DESKTOP_GUTTER * 2, alignSelf: 'center', paddingHorizontal: DESKTOP_GUTTER - 12 },
+});

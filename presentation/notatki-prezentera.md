@@ -1,8 +1,8 @@
 # Movo — notatki do prezentacji
 
-Pierwszy etap oceny: jury czyta samą prezentację PDF, bez wystąpienia zespołu. Poniższe notatki są scenariuszem na ewentualny finał, do aktualnych 10 slajdów prezentacji HTML/PDF. Tekst „Do powiedzenia” można wykorzystać podczas wystąpienia; uwagi są dla prowadzącego i nie trzeba ich odczytywać.
+Pierwszy etap oceny: jury czyta samą prezentację PDF, bez wystąpienia zespołu. Poniższe notatki są scenariuszem na ewentualny finał, do aktualnych 8 slajdów prezentacji HTML/PDF. Slajdy 4, 5 i 7 pokazują zrzuty z działającej aplikacji (konto demo, dane testowe), a nie rysunki koncepcyjne. Tekst „Do powiedzenia” można wykorzystać podczas wystąpienia; uwagi są dla prowadzącego i nie trzeba ich odczytywać.
 
-Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu jest mniej, skróć opisy funkcji i zostaw pełny przykład ze slajdu 8.
+Proponowane tempo: około 4–5 minut, zależnie od długości pauz. Gdy czasu jest mniej, skróć opisy funkcji i zostaw pełny przykład ze slajdu 5.
 
 ## Slajd 1 — Movo: ruch, który pasuje do twojego życia
 
@@ -14,7 +14,7 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Przejście:** „Dlaczego skupiamy się właśnie na regularności?”
 
-**Uwaga:** przedstawiamy koncepcję produktu. Ekrany w tej prezentacji są mockupami; nie stanowią dowodu wdrożenia funkcji.
+**Uwaga:** pokazujemy działający prototyp. Ekrany na slajdach 4, 5 i 7 to zrzuty z aplikacji (konto demo, dane testowe); interfejs jest dziś po angielsku.
 
 ## Slajd 2 — Problem: trudno zacząć, trudniej wytrwać
 
@@ -43,47 +43,35 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 > Naszą grupą docelową są początkujący i osoby wracające po przerwie. Chcą poczuć się lepiej i znaleźć ruch, który zmieści się w ich tygodniu. Wielu ma za sobą kilka nieudanych prób: plan był za trudny, nie pasował do obowiązków albo sama aktywność nie sprawiała przyjemności. Potrzebują prostego sposobu, żeby zacząć ponownie i utrzymać rytm. To dla tych osób projektujemy Movo.
 
-**Przejście:** „Dlatego zaczynamy od małego kroku, który da się wykonać”.
+**Przejście:** „Dlatego zaczynamy od planu, który mieści się w ich tygodniu”.
 
 **Uwagi:** slajd opisuje grupę docelową, bez danych osobowych. Sztywny plan, zbyt wysoka trudność i brak przyjemności są barierami, które chcemy zbadać; podane wcześniej procenty nie dowodzą, że to one powodują porzucanie aplikacji. Średnio zaawansowani i zaawansowani są dodatkową grupą, a nie punktem wyjścia projektu.
 
-## Slajd 4 — Podejście Movo: najmniejszy wykonalny krok
+## Slajd 4 — Plan i kalendarz: plan wokół zajętości
 
-**Cel:** wyjaśnić, jak filozofia produktu odpowiada na potrzeby odbiorcy.
-
-**Do powiedzenia:**
-
-> W Movo chcemy zacząć od tego, co użytkownik może zrobić dzisiaj. Dla jednej osoby będzie to krótki trening w domu, dla innej spacer. Na początku dobieramy łagodny poziom i zostawiamy miejsce na zmianę planu. Chcemy też umożliwić próbowanie różnych aktywności, żeby użytkownik znalazł coś, do czego chce wracać. Jeśli dziś ma tylko 15 minut, plan powinien to uwzględnić.
-
-**Przejście:** „Jak przekładamy to na konkretny tydzień?”
-
-**Uwaga:** przyjemność, regularność i łatwiejszy powrót są celami projektu, a nie potwierdzonymi wynikami. Odkrywanie różnych form ruchu to kierunek produktu; nie sugeruj gotowego katalogu wszystkich sportów.
-
-## Slajd 5 — Plan i kalendarz: wyszukiwanie dostępnych slotów
-
-**Cel:** pokazać generowanie planu i aktywne dopasowanie terminów do kalendarza użytkownika.
+**Cel:** pokazać, że plan powstaje z odpowiedzi użytkownika i układa się wokół jego zajętości — na zrzutach z działającej aplikacji.
 
 **Do powiedzenia:**
 
-> Użytkownik określa cel, poziom, sprzęt i czas. Movo tworzy na tej podstawie plan, a synchronizacja z osobistym kalendarzem pozwala wyszukać wolne terminy na sesje. W przykładzie spotkanie kończy się o 18:30, a kolejny obowiązek zaczyna o 19:00. W tym oknie mieści się 20-minutowy trening. To właśnie wykorzystanie dostępności użytkownika chcemy podkreślić: plan ma pasować do jego rzeczywistego harmonogramu.
+> Użytkownik odpowiada na kilka pytań: od czego zaczyna, ile dni i minut ma dla siebie, gdzie może się ruszać i jakim sprzętem dysponuje. Movo układa z tego tydzień. Po połączeniu z kalendarzem aplikacja czyta tylko zajętość — kiedy jesteś zajęty, a nie co masz zapisane — i planuje sesje w wolnych oknach. Sesje można też zapisać z powrotem do kalendarza. Każda zmiana planu tworzy nową wersję, więc widać historię i można się cofnąć.
 
-**Przejście:** „Użytkownik może też zmienić plan przez rozmowę w aplikacji”.
+**Przejście:** „Plan zmienia się nie przez ustawienia, tylko przez rozmowę”.
 
-**Uwagi:** zespół wskazał synchronizację i wyszukiwanie slotów jako funkcje produktu. Ekran pozostaje mockupem i nie wykonuje prawdziwego połączenia. Przed finałem potwierdź stan wdrożenia; nie obiecuj obsługi konkretnego dostawcy kalendarza bez potwierdzenia.
+**Uwagi:** oba ekrany to zrzuty z aplikacji, z konta demo (dane testowe, tydzień 3). Plan, historia wersji i logowanie treningu działają. Połączenie z kalendarzem jest w toku — opisuj je jako sposób działania produktu, nie jako gotową integrację, i nie obiecuj konkretnego dostawcy kalendarza.
 
-## Slajd 6 — Czat z asystentem treningowym: zmiana planu przez rozmowę
+## Slajd 5 — Czat z asystentem treningowym: zmiana planu przez rozmowę
 
-**Cel:** pokazać, że informacja od użytkownika prowadzi do konkretnej zmiany.
+**Cel:** pokazać, że jedna wiadomość daje konkretną zmianę planu, a nie samą odpowiedź.
 
 **Do powiedzenia:**
 
-> Movo ma czat z asystentem treningowym w aplikacji. Użytkownik może zapytać o ćwiczenia albo zgłosić zmianę sytuacji, na przykład: „Wczoraj było za trudno, a dziś mam tylko 15 minut”. W pokazanym przykładzie odpowiedzią jest spokojniejsza, krótsza sesja z mniejszą liczbą powtórzeń i dłuższymi przerwami. Ważny jest rezultat rozmowy: użytkownik wie, co może zrobić teraz. Podobnie chcemy pomagać przy zmianie grafiku lub powrocie po opuszczonym treningu.
+> To prawdziwa historia czatu z konta demo. Użytkowniczka napisała: „Przenieś wszystko na poranki i skróć piątek”. Asystent zmienił plan i pokazał kartę z podsumowaniem: wszystkie sesje o 7:00, piątek krótszy. Następnego dnia dopisała trening spoza planu — godzinę piłki nożnej. Movo zapisało aktywność i zostawiło plan bez zmian. Każda taka zmiana ma własną wersję planu, więc można ją cofnąć.
 
-**Przejście:** „Jak takie podejście pozycjonujemy wobec istniejących aplikacji?”
+**Przejście:** „Jak to wygląda na tle istniejących aplikacji?”
 
-**Uwagi:** rozmowa jest przykładowa. Plan biznesowy zakłada AI przy tworzeniu i edycji planu; nie obiecuj dostępu do ludzkiego trenera, jeśli nie ma takiej usługi. Automatyczna progresja ciężarów została w planie biznesowym umieszczona w etapie 2 — nie przedstawiaj jej jako gotowej funkcji MVP.
+**Uwagi:** zmiany planu generuje asystent AI; nie obiecuj kontaktu z trenerem-człowiekiem. Automatyczna progresja ciężarów pozostaje poza zakresem tej wersji.
 
-## Slajd 7 — Porównanie funkcji: Movo, Runna i Hevy
+## Slajd 6 — Porównanie funkcji: Movo, Runna i Hevy
 
 **Cel:** pokazać konkretne funkcje Movo wobec dwóch rozpoznawalnych konkurentów.
 
@@ -101,57 +89,42 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 - Hevy ma Hevy Trainer i [integrację z ChatGPT](https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT); nie przedstawiaj go jako samego dziennika ani jako produktu bez pomocy konwersacyjnej.
 - Kolumna Movo opisuje koncepcję i funkcje wskazane przez zespół. Wdrożenie oraz przewaga dla użytkownika wymagają osobnego potwierdzenia.
 
-## Slajd 8 — Odkrywanie aktywności: ruch, do którego chcesz wracać
+## Slajd 7 — Odkrywanie aktywności: ruch, do którego chcesz wracać
 
-**Cel:** pokazać osobną wartość produktu, bez powtarzania adaptacji przez czat ze slajdu 6.
-
-**Do powiedzenia:**
-
-> Początkujący nie musi jeszcze wiedzieć, jaki sport lubi. Movo ma pomagać odkrywać aktywności zgodne z preferencjami, możliwościami i dostępnością. Można zacząć od spaceru, krótkiej sesji mobilności albo prostego treningu siłowego. Po aktywności użytkownik mówi, jak było, a te odczucia pomagają dopasować kolejne propozycje. Chcemy ułatwić znalezienie formy ruchu, do której chce wracać.
-
-**Przejście:** „Taką pomoc chcemy oferować w modelu subskrypcyjnym”.
-
-**Uwagi:** propozycje są przykładami koncepcji, nie dowodem gotowego katalogu aktywności. Nie obiecuj wsparcia dla dowolnego sportu. Slajd nie wymaga interakcji i jest czytelny w PDF.
-
-## Slajd 9 — Business plan: 14 dni na start, potem subskrypcja
-
-**Cel:** przedstawić model przychodów, proponowane ceny i sposób walidacji.
+**Cel:** pokazać odkrywanie aktywności jako osobną wartość, na ekranie preferencji z aplikacji.
 
 **Do powiedzenia:**
 
-> Na start zakładamy polski rynek i 14 dni pełnego dostępu bez opłat. Później użytkownik może wybrać subskrypcję. Proponowane ceny brutto to 29,99 zł miesięcznie, 76,47 zł za kwartał oraz 251,92 zł za rok. Dłuższe plany mają rabat i są płatne z góry. Te kwoty chcemy zweryfikować. Początkowo planujemy docierać do użytkowników przez treści, sklepy z aplikacjami i współpracę z trenerami oraz klubami. Przed zwiększeniem wydatków na reklamę sprawdzimy, czy ludzie korzystają z produktu i przechodzą na płatny plan.
+> Początkujący nie musi wiedzieć, jaki sport lubi. W Movo wybiera formy ruchu, które chce próbować, i decyduje, ile nowości chce dostawać: od „zostań przy moich wyborach” po „pomóż mi odkrywać”. Po sesji zaznacza, czy wybrałby ją ponownie, a kolejne propozycje biorą to pod uwagę. Dzięki temu plan nie zamyka nikogo w jednej dyscyplinie na starcie.
 
-**Przejście:** „Dlatego następny etap skupiamy na sprawdzeniu zachowania użytkowników”.
+**Przejście:** „Na koniec: co już działa, a co jest przed nami”.
 
-**Jeśli pojawią się pytania:**
+**Uwagi:** katalog sportów jest ograniczony — ekran pokazuje sześć form ruchu i wyszukiwarkę kolejnych. Nie obiecuj wsparcia dla dowolnej dyscypliny. Slajd nie wymaga interakcji i jest czytelny w PDF.
 
-- Kwartalny rabat wynosi 15%, a roczny 30% względem ceny miesięcznej. Przeliczenia to odpowiednio 25,49 zł i 20,99 zł miesięcznie; nie są to kwoty miesięcznego obciążenia w tych planach.
-- Główne ryzyko biznesowe to konwersja po okresie próbnym i utrzymanie płacącego użytkownika przy dostępności darmowych alternatyw.
-- Mierzymy odsetek osób, które zrobiły co najmniej trzy treningi w pierwszych 14 dniach; nie wymagamy tego jako warunku korzystania i nie twierdzimy, że w 14 dni powstaje trwały nawyk.
-- Decyzja o wymaganiu karty podczas triala pozostaje otwarta. Dostęp do historii po trialu w trybie odczytu jest propozycją, nie ustaloną funkcją.
-- Główne planowane koszty: infrastruktura i AI, obsługa subskrypcji, publikacja w sklepach, wsparcie oraz obsługa księgowa i prawna.
-- Plan biznesowy zawiera orientacyjne LTV około 225 zł i scenariusze konwersji 3%, 6% oraz 10%. To model oparty na założeniach, bez kosztów infrastruktury i wsparcia. Nie podawaj tych liczb jako wyników Movo ani bezpiecznego budżetu pozyskania użytkownika.
+## Slajd 8 — Co dalej: co już działa i co jest następne
 
-## Slajd 10 — Co dalej: pierwszy krok i kolejny
-
-**Cel:** zamknąć prezentację planem walidacji i obietnicą produktu.
+**Cel:** rozdzielić stan prototypu od planów i zamknąć prezentację.
 
 **Do powiedzenia:**
 
-> Dziś pokazujemy koncepcję i mockup. Następnie chcemy porozmawiać z osobami z naszej grupy docelowej i sprawdzić działający prototyp w zamkniętej becie. Zmierzymy, czy użytkownicy wykonują pierwszą aktywność, pozostają aktywni po czterech tygodniach i wracają po opuszczonym treningu. Zapytamy też, czy plan jest wykonalny i przyjemny. Te wyniki pomogą ustalić dalszy rozwój. Movo ma pomagać zrobić pierwszy krok i kolejny — nawet kiedy tydzień nie idzie zgodnie z planem.
+> Po lewej jest to, co działa w aplikacji, którą widzieliście na poprzednich slajdach: onboarding, plan tygodniowy z odpowiedzi użytkownika, czat zmieniający plan, kalendarz z historią wersji i logowaniem treningu — na telefonie i w przeglądarce, z trybem demo. Po prawej dwa następne kroki. Pierwszy to zegarek i wearables: Apple Health, Health Connect i Garmin, żeby trening logował się sam. Drugi to polska wersja aplikacji — dziś interfejs jest po angielsku. Movo ma pomagać wrócić do ruchu także wtedy, kiedy tydzień nie idzie zgodnie z planem.
 
 **Zakończenie:** „Dziękujemy. Chętnie odpowiemy na pytania”.
 
-**Uwagi:** plan biznesowy proponuje rozmowy z 15–20 osobami, betę z kilkudziesięcioma użytkownikami, a potem start w Polsce. Integracje z Apple Health, Health Connect i Garmin oraz automatyczna progresja są planowane po walidacji. Nie sugeruj gotowych integracji ani istniejących wyników pilotażu. Jeśli aplikacja jest już dalej niż mockup, zaktualizuj zarówno ten fragment, jak i slajd 10.
+**Uwagi:**
+
+- Zegarek i polska wersja to plany, nie funkcje w kodzie. Mów o nich w czasie przyszłym.
+- Nie podawaj wyników pilotażu ani liczb o retencji — na razie ich nie mamy.
+- Jeśli padnie pytanie o synchronizację z kalendarzem, powiedz wprost, na jakim etapie jest połączenie z Google Calendar; nie przedstawiaj go jako gotowego.
 
 ## Materiały i decyzje przed finalnym wystąpieniem
 
-- Uzupełnić źródła statystyk ze slajdu 2.
-- Potwierdzić, które funkcje rzeczywiście działają w prototypie, szczególnie synchronizacja kalendarza, wyszukiwanie wolnych slotów i dostosowanie przez czat.
+- Odświeżyć zrzuty ekranu (`presentation/assets/screens/`), jeśli aplikacja zmieni wygląd przed finałem. Pochodzą z konta demo z danymi testowymi.
+- Ustalić jedno zdanie o stanie połączenia z kalendarzem i trzymać się go na wszystkich slajdach.
 - Uzgodnić język dotyczący AI i trenera; nie sugerować ludzkiej obsługi bez potwierdzenia.
-- Zachować informację, że ceny i efekty produktu wymagają walidacji.
+- Zachować informację, że efekty produktu wymagają walidacji.
 
-Podstawa notatek: rozmowa zespołu, bieżąca prezentacja `index.html` oraz dostarczony „Plan biznesowy – aplikacja do planów treningowych” z 4 października 2026 r.
+Podstawa notatek: rozmowa zespołu, bieżąca prezentacja `index.html`, aplikacja Movo (konto demo) oraz „Plan biznesowy – aplikacja do planów treningowych” z 4 października 2026 r.
 
 Źródła wykorzystane wcześniej do porównania konkurencji:
 
@@ -170,3 +143,13 @@ Dodatkowe źródła porównania funkcji, sprawdzone 4.10.2026:
 - [Runna — synchronizacja kalendarza](https://support.runna.com/en/articles/8601606-syncing-runna-to-your-calendar-scheduling-your-workouts)
 - [Hevy — aplikacja w ChatGPT](https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT)
 - [Strava — subskrypcja Runna i czat wsparcia](https://support.strava.com/hc/en-us/articles/15401576-strava-and-runna-subscription-faqs)
+
+## Załącznik — jeśli jury zapyta o model biznesowy
+
+Prezentacja nie ma slajdu o monetyzacji. Gdyby padło pytanie:
+
+- Model: 14 dni pełnego dostępu, potem subskrypcja (miesięczna lub roczna). Obok darmowy tydzień planu bez adaptacji, żeby aplikacja miała sens także dla osoby, która nie kupi subskrypcji.
+- Ceny: plan biznesowy zespołu zakłada abonament miesięczny z rabatem za kwartał i rok. Kwoty są założeniem do walidacji, dlatego nie podajemy ich ani na slajdach, ani w odpowiedzi jako czegoś ustalonego.
+- Pozyskanie użytkowników: treści o realnym pierwszym tygodniu, współpraca z trenerami, klubami i fizjoterapeutami (rozliczenie od aktywnego użytkownika, nie od instalacji), pakiety dla pracodawców i uczelni jako drugi etap.
+- Zanim zwiększymy budżet reklamowy, chcemy zobaczyć: pierwszy trening w ciągu 7 dni, aktywność po 4 tygodniach, konwersję po okresie próbnym oraz koszt pozyskania wobec wartości subskrypcji. To plan pomiaru, nie wyniki.
+- Główne ryzyko: konwersja po okresie próbnym i utrzymanie płacącego użytkownika przy dostępności darmowych alternatyw.

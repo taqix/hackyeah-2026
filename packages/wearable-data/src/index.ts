@@ -31,3 +31,11 @@ export type {
   Checkpoint,
   IngestOutcome,
 } from './types.js';
+export {
+  extractWorkoutSummary,
+  DEFAULT_CONFIG,
+  ExtractionError,
+  type WorkoutExtractionConfig,
+  type WorkoutFileSummary,
+  type WorkoutFileMetric,
+} from './workout/index.js';

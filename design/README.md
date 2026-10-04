@@ -385,7 +385,10 @@ Rules:
   message: **Try again** resends it, **Edit message** puts it back in the box.
 - Requests outside the plan's rules get a reason and a nearby option, never a
   silent workaround: done days, sports outside the catalog, the 7:00–21:00
-  window, one session a day, 5, 10 or 20 minutes, beginner scope. The valid part
+  window, 5, 10 or 20 minutes, beginner scope. One session per local date is the
+  default; an explicit chat request can authorize multiple sessions for that
+  modification, while free slots, buffers and protected workouts still apply
+  (see the [Gemini contract](../docs/features/gemini-json-contract.md)). The valid part
   of a request still applies (8.7); an asked-for length snaps to the nearest
   allowed one below.
 - A missed session (8.15): free slots inside the preferred window come first as
@@ -495,9 +498,10 @@ The Calendar tab answers one question: when are my sessions, and when were
 they? It replaced the Plan tab in the review.
 
 - **Calendar (10):** Wednesday 21 October, week 3. A month of sessions: a mark
-  per session under its date (done filled, planned in the accent, skipped a
-  hollow ring) and each day's full label for screen readers. Tap a day for its
-  sessions (an added workout carries **Extra**), or the next session on a free
+  per session under its date (done filled, planned in the accent, skipped or a
+  past session nobody logged a dashed ring) and each day's full label for
+  screen readers. Tap a day for its sessions (an added workout carries
+  **Extra**, an unlogged one **Not logged**), or the next session on a free
   day. Private events and what they contain never show, and the line under the
   day says so. The month pages back to the first session and stops at the last
   planned day: plans go one week ahead. **Plan history** is a section below,

@@ -40,7 +40,8 @@ previews without implying that their activity generation is available.
   on collaborators' machines for judging.
 - **Web:** React marketing pages plus a dashboard supporting the same core journey.
   Provide fast guest entry for demonstrations.
-- **Backend:** NestJS with TypeScript, shared by both clients.
+- **Proof-of-concept backend:** Supabase Auth, PostgreSQL/RLS, and a shared Edge
+  Function API. NestJS remains in the repository for future backend work.
 
 ## Accounts and guest demo
 
@@ -52,6 +53,10 @@ preferences, a plan, and activity history. Never use a shared guest login.
 Preferences are stored on the server, one JSON document per person, so they
 follow the account to a new phone.
 
+Equipment, available locations, and avoidances accept custom text values rather
+than a fixed option catalog. Clients may suggest common choices without limiting
+what a person can describe.
+
 Guest visitors can explore the core journey, including plan changes, without
 altering another visitor's data. Apply limits to guest AI use. Define retention
 and cleanup before a public launch; guest-to-permanent account conversion is
@@ -59,8 +64,10 @@ not required for the first MVP.
 
 ## Plan generation and revisions
 
-NestJS owns AI provider integration. The provider and model are TBD; clients
-consume a stable application API rather than provider-specific responses.
+The proof of concept uses the prepared [Supabase product API](features/supabase-product-api.md).
+Its Edge Function owns AI orchestration and validated persistence. The provider
+and model remain unconnected in this scaffold; clients consume shared contracts
+and synthetic examples while the AI collaborator adds the adapter.
 
 Return structured plans and validate them against the application contract before
 saving. The server checks supported sport, plan shape, activity identifiers,
@@ -70,6 +77,10 @@ failure must not leave a partial active plan.
 
 Plans cover one week ahead: the next week is planned at the end of the current
 one, so a changing calendar is read as late as possible. History is kept in full.
+
+Plans default to one session per local date. An explicit chat request can authorize
+multiple sessions on a date during modification; every session must still fit
+calendar availability and avoid overlaps, including preparation and wrap-up time.
 
 Save every accepted generation as a new version and replace the active version
 atomically. Preserve completed activity records and the plan version to which

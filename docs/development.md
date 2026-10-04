@@ -70,16 +70,16 @@ database. Document the chosen CLI installation and versions during scaffolding.
 
 Expose these root script names during scaffolding:
 
-| Planned command | Responsibility |
-| --- | --- |
-| `pnpm dev:backend` | Start the API with local configuration. |
-| `pnpm dev:web` | Start the React web application. |
-| `pnpm dev:mobile` | Start Expo with a reachable API URL. |
-| `pnpm format:check` | Check formatting without modifying files. |
-| `pnpm lint` | Lint all application and shared packages. |
-| `pnpm typecheck` | Type-check backend, web, mobile, and shared packages. |
-| `pnpm test` | Run automated application tests. |
-| `pnpm build` | Build shared dependencies, backend, and web. |
+| Planned command     | Responsibility                                        |
+| ------------------- | ----------------------------------------------------- |
+| `pnpm dev:backend`  | Start the API with local configuration.               |
+| `pnpm dev:web`      | Start the React web application.                      |
+| `pnpm dev:mobile`   | Start Expo with a reachable API URL.                  |
+| `pnpm format:check` | Check formatting without modifying files.             |
+| `pnpm lint`         | Lint all application and shared packages.             |
+| `pnpm typecheck`    | Type-check backend, web, mobile, and shared packages. |
+| `pnpm test`         | Run automated application tests.                      |
+| `pnpm build`        | Build shared dependencies, backend, and web.          |
 
 On a physical mobile device, `localhost` refers to that device. Document the
 backend's reachable development URL, bind address, and Expo network setup when
@@ -87,16 +87,21 @@ the mobile scaffold lands. Test that URL on the actual judging device.
 
 ## Application and data boundaries
 
-- Supabase provides PostgreSQL and Auth. Clients sign in using Supabase Auth and
-  send their access token to NestJS.
-- NestJS verifies tokens, derives the user identity, and enforces record ownership.
+- The current proof-of-concept path is the [Supabase product API](features/supabase-product-api.md):
+  clients use Supabase Auth and call the prepared Edge Function with their session.
+- The Edge Function verifies tokens, derives identity, validates DTOs and AI output,
+  and uses owner-scoped reads plus transactional RPC writes.
   Never trust a client-provided user ID as authorization.
-- Application data goes through NestJS. Keep database and privileged Supabase
-  credentials on the backend; use suitable database permissions and policies.
-- The guest endpoint seeds data only for the requesting anonymous identity and
-  can be retried without duplicating demo plans.
-- Keep AI credentials and prompts on the backend. Validate AI output as untrusted
+- RLS enforces owner access; privileged Supabase credentials remain server-only.
+  Product tables and functions are prepared locally and are not deployed.
+- Guest bootstrap and limits remain follow-up work; no real or demo data is seeded
+  by the current product API migrations.
+- Keep AI credentials and prompts in the server function. Validate AI output as untrusted
   input and apply changes in a database transaction.
+  Backend AI communication, configuration, and prompts live together under
+  `apps/backend/src/ai/`. Nest copies `ai/prompts/**/*.txt` into the compiled
+  output for production and watch mode; the test runner copies the same assets
+  beside its compiled AI modules. Docker includes them through the backend build.
 - Keep controllers thin; put use-case behavior in services and persistence behind
   an explicit boundary. Do not introduce abstraction layers without a concrete need.
 
@@ -104,6 +109,11 @@ Suggested relational entities are user profiles, preferences, sport catalog,
 plans, plan versions, scheduled activities, completion/feedback records, and
 chat messages. Finalize columns and relationships in migrations when implementing
 the corresponding feature. Auth identities remain managed by Supabase Auth.
+
+Available product API checks are `npm run test:supabase`,
+`npm run typecheck:supabase`, and `npm run lint:supabase`. Regenerate its client
+schemas/examples with `npm run schema:product`. The AI adapter is disabled;
+actual Edge/Auth runtime smoke checks and owner deployment remain pending.
 
 ## Code conventions
 
@@ -202,5 +212,8 @@ complete an activity, and observe a chat revision on a real device or emulator.
 6. Complete web dashboard, mobile journey, completion, and feedback.
 7. Wire required PR checks and verify the local judging demo.
 
-Cloud hosting is deferred. Select the AI model before integrating live generation.
+Cloud hosting is deferred. The server-side AI planning adapter is implemented;
+see [AI plan generation](features/ai-plan-generation.md) for setup, checks, and
+the remaining endpoint/storage integration. Configure and verify the chosen
+provider/model before enabling live generation.
 Track illness-specific behavior as a future feature.

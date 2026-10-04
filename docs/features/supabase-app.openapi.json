@@ -1,0 +1,6730 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Movo proposed application API",
+    "version": "2.0.0-draft",
+    "description": "Proposed schema for the complete web/mobile design reviewed 2026-10-03. No listed application route is verified deployed. Authoritative host is NestJS; Supabase Auth is called directly with the SDK. Supabase supplies PostgreSQL. Cross-field/domain constraints in descriptions require runtime validation and transactional enforcement. Read docs/features/supabase-app-schema.md for live readiness findings and open product decisions."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v2",
+      "description": "Proposed NestJS mount; currently only /health exists."
+    }
+  ],
+  "security": [
+    {
+      "SupabaseAccessToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Profile"
+    },
+    {
+      "name": "Catalog"
+    },
+    {
+      "name": "Guest"
+    },
+    {
+      "name": "Plans"
+    },
+    {
+      "name": "Activities"
+    },
+    {
+      "name": "Logging"
+    },
+    {
+      "name": "Chat"
+    },
+    {
+      "name": "Feedback"
+    }
+  ],
+  "paths": {
+    "/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "summary": "Load saved answers and revision counters",
+        "tags": [
+          "Profile"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateProfile",
+        "summary": "Save validated answers without implicitly revising this week",
+        "tags": [
+          "Profile"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [
+          "profile",
+          "product_request_receipt",
+          "profile_summary"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sports": {
+      "get": {
+        "operationId": "listSports",
+        "summary": "Read catalog including clearly marked preview sports",
+        "tags": [
+          "Catalog"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SportsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "generation_enabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ]
+      }
+    },
+    "/sports/suggestions": {
+      "post": {
+        "operationId": "suggestSports",
+        "summary": "Rank enabled sports using saved answers",
+        "tags": [
+          "Catalog"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionInput"
+              }
+            }
+          }
+        },
+        "description": "Read-only computation, no provider call or database write. Ranking algorithm remains to be agreed."
+      }
+    },
+    "/guest/bootstrap": {
+      "post": {
+        "operationId": "bootstrapGuest",
+        "summary": "Idempotently seed this anonymous web identity",
+        "tags": [
+          "Guest"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "profile",
+          "plan",
+          "plan_week",
+          "plan_version",
+          "planned_activity",
+          "activity_state",
+          "activity_completion",
+          "session_feedback",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestBootstrapResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestBootstrapInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plans/current": {
+      "get": {
+        "operationId": "getCurrentPlan",
+        "summary": "Read the canonical snapshot for a week",
+        "tags": [
+          "Plans"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "week_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Monday in profile timezone; defaults to current local week."
+          }
+        ]
+      }
+    },
+    "/plans/history": {
+      "get": {
+        "operationId": "listPlanHistory",
+        "summary": "Read immutable accepted versions, newest first",
+        "tags": [
+          "Plans"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          },
+          {
+            "name": "week_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/plans/versions/{version_id}": {
+      "get": {
+        "operationId": "getPlanVersion",
+        "summary": "Read one owned historical version",
+        "tags": [
+          "Plans"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanVersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/plans/generate": {
+      "post": {
+        "operationId": "generatePlan",
+        "summary": "Generate and atomically activate a one-week beginner plan",
+        "tags": [
+          "Plans"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [
+          "plan",
+          "plan_week",
+          "plan_version",
+          "planned_activity",
+          "activity_state",
+          "product_request_receipt",
+          "ai_usage"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneratePlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePlanInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plans/{plan_id}/undo": {
+      "post": {
+        "operationId": "undoPlanChange",
+        "summary": "Restore the previous eligible snapshot as a new version",
+        "tags": [
+          "Plans"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "plan_week",
+          "plan_version",
+          "chat_message",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoPlanInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/activities": {
+      "get": {
+        "operationId": "listActivities",
+        "summary": "Read canonical planned sessions and outcomes for a local range",
+        "tags": [
+          "Activities"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitiesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Exclusive local date. Range must be positive and <=31 days."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/calendar": {
+      "get": {
+        "operationId": "getCalendar",
+        "summary": "Read canonical sessions and extra workouts without private events",
+        "tags": [
+          "Activities"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Exclusive local date. Range must be positive and <=31 days."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/activities/{activity_id}/start": {
+      "post": {
+        "operationId": "startActivity",
+        "summary": "Start and lock an eligible gym session",
+        "tags": [
+          "Activities"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "activity_state",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartActivityInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "activity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/gym/history": {
+      "get": {
+        "operationId": "getGymHistory",
+        "summary": "Read actual exercise history for last-weight prefill",
+        "tags": [
+          "Activities"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GymHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "exercise_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ExerciseId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/completions": {
+      "get": {
+        "operationId": "listCompletions",
+        "summary": "Read preserved completion history",
+        "tags": [
+          "Logging"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      },
+      "post": {
+        "operationId": "completeActivity",
+        "summary": "Save actuals, feedback and completed state atomically",
+        "tags": [
+          "Logging"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [
+          "activity_completion",
+          "session_feedback",
+          "activity_state",
+          "profile",
+          "profile_summary",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteActivityInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/messages": {
+      "get": {
+        "operationId": "listChatMessages",
+        "summary": "Read the owned conversation, newest first",
+        "tags": [
+          "Chat"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessagesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/chat": {
+      "post": {
+        "operationId": "sendChat",
+        "summary": "Revise, move, skip, clarify, reply or log an extra workout",
+        "tags": [
+          "Chat"
+        ],
+        "x-current-status": "partial-draft",
+        "x-supabase-writes": [
+          "chat_message",
+          "plan_week",
+          "plan_version",
+          "planned_activity",
+          "activity_state",
+          "extra_workout",
+          "session_feedback",
+          "profile",
+          "profile_summary",
+          "product_request_receipt",
+          "ai_usage"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendChatInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extra-workouts": {
+      "get": {
+        "operationId": "listExtraWorkouts",
+        "summary": "Read extras independently of planned progress",
+        "tags": [
+          "Logging"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtraWorkoutsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/extra-workouts/{workout_id}": {
+      "put": {
+        "operationId": "updateExtraWorkout",
+        "summary": "Edit an owned extra through the generic log form",
+        "tags": [
+          "Logging"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "extra_workout",
+          "session_feedback",
+          "profile",
+          "profile_summary",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtraWorkoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExtraInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/extra-workouts/{workout_id}/undo": {
+      "post": {
+        "operationId": "undoExtraWorkout",
+        "summary": "Tombstone an extra without changing the plan",
+        "tags": [
+          "Logging"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "extra_workout",
+          "profile",
+          "profile_summary",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedExtraResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoExtraInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/feedback": {
+      "get": {
+        "operationId": "listFeedback",
+        "summary": "Read dated feedback and opinions",
+        "tags": [
+          "Feedback"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "description": "Opaque owner-scoped cursor; stable descending timestamp/id order."
+          }
+        ]
+      }
+    },
+    "/feedback/{feedback_id}": {
+      "put": {
+        "operationId": "updateOpinion",
+        "summary": "Change or clear one choose-again opinion",
+        "tags": [
+          "Feedback"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "session_feedback",
+          "profile",
+          "profile_summary",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpinionInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "feedback_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/feedback/reset": {
+      "post": {
+        "operationId": "resetOpinions",
+        "summary": "Clear opinions while preserving actuals, effort and notes",
+        "tags": [
+          "Feedback"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "session_feedback",
+          "profile",
+          "profile_summary",
+          "product_request_receipt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetOpinionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetOpinionsInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/summary": {
+      "get": {
+        "operationId": "getProfileSummary",
+        "summary": "Read derived statements, evidence and freshness",
+        "tags": [
+          "Profile"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/summary/refresh": {
+      "post": {
+        "operationId": "refreshProfileSummary",
+        "summary": "Retry a validated evidence-based summary rebuild",
+        "tags": [
+          "Profile"
+        ],
+        "x-current-status": "missing",
+        "x-supabase-writes": [
+          "profile_summary",
+          "product_request_receipt",
+          "ai_usage"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, state, idempotency or eligibility conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or AI not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSummaryInput"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SupabaseAccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Verified Supabase Auth user access token. Anonymous Auth identities allowed only on the web guest path; application ownership always from verified token."
+      }
+    },
+    "schemas": {
+      "UUID": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "Instant": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+      },
+      "SportId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 19,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "description": "Positive PostgreSQL bigint as decimal string. Runtime must reject values above 9223372036854775807."
+      },
+      "ExerciseId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100,
+        "pattern": "^[a-z][a-z0-9_:-]*$"
+      },
+      "Timezone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100,
+        "description": "Runtime-validated IANA timezone."
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "contract_version": {
+            "const": "2"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "contract_version",
+          "request_id",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "INVALID_REQUEST",
+                  "UNAUTHENTICATED",
+                  "NOT_FOUND",
+                  "VERSION_CONFLICT",
+                  "PROFILE_CONFLICT",
+                  "FEEDBACK_CONFLICT",
+                  "STATE_CONFLICT",
+                  "REQUEST_CONFLICT",
+                  "ALREADY_COMPLETED",
+                  "ACTIVITY_LOCKED",
+                  "UNDO_UNAVAILABLE",
+                  "PAYLOAD_TOO_LARGE",
+                  "RATE_LIMITED",
+                  "AI_NOT_CONFIGURED",
+                  "INVALID_AI_OUTPUT",
+                  "PROVIDER_UNAVAILABLE",
+                  "DATA_UNAVAILABLE",
+                  "INTERNAL_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "retryable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryable"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "Preferences": {
+        "type": "object",
+        "properties": {
+          "starting_comfort": {
+            "type": "string",
+            "enum": [
+              "starting_out",
+              "occasionally_active",
+              "some_routine"
+            ]
+          },
+          "sessions_per_week": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "session_minutes": {
+            "type": "integer",
+            "minimum": 5,
+            "multipleOf": 5,
+            "maximum": 60
+          },
+          "preferred_window": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "start_hour": {
+                    "type": "integer",
+                    "minimum": 7,
+                    "maximum": 20
+                  },
+                  "end_hour": {
+                    "type": "integer",
+                    "minimum": 8,
+                    "maximum": 21
+                  }
+                },
+                "required": [
+                  "start_hour",
+                  "end_hour"
+                ],
+                "additionalProperties": false,
+                "description": "end_hour > start_hour; full 7–21 selection normalized to null. Preferred time is a target; actual free-time fit is mandatory."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "activity_interests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SportId"
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 20
+          },
+          "discovery_preference": {
+            "type": "string",
+            "enum": [
+              "selected_only",
+              "occasional",
+              "explore"
+            ]
+          },
+          "available_locations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "home",
+                "outdoors",
+                "gym",
+                "pool"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true,
+            "maxItems": 4
+          },
+          "available_equipment": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "mat",
+                "resistance_band",
+                "dumbbells",
+                "bicycle",
+                "stationary_bike"
+              ]
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 5
+          },
+          "avoidances": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "jumping",
+                "floor_exercises",
+                "noisy_activities"
+              ]
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 3
+          },
+          "starting_obstacles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "time",
+                "low_energy",
+                "boredom",
+                "uncertainty",
+                "discomfort"
+              ]
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 5
+          },
+          "excluded_activity_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SportId"
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 20
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "preferred_company": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "alone",
+                "others"
+              ]
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "starting_comfort",
+          "sessions_per_week",
+          "session_minutes",
+          "preferred_window",
+          "activity_interests",
+          "discovery_preference",
+          "available_locations",
+          "available_equipment",
+          "avoidances",
+          "starting_obstacles",
+          "excluded_activity_types",
+          "timezone"
+        ],
+        "additionalProperties": false,
+        "description": "One source-of-truth JSON per person. Empty activity_interests requires explore; catalog references validated at runtime. preferred_company is proposed for the web and requires agreement.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "activity_interests": {
+                  "maxItems": 0
+                }
+              },
+              "required": [
+                "activity_interests"
+              ]
+            },
+            "then": {
+              "properties": {
+                "discovery_preference": {
+                  "const": "explore"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "feedback_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Preferences"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "created_at",
+          "updated_at",
+          "profile_revision",
+          "feedback_revision",
+          "preferences"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateProfileInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_profile_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_profile_revision",
+          "username",
+          "preferences"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000001",
+            "expected_profile_revision": 0,
+            "username": "Ana",
+            "preferences": {
+              "starting_comfort": "starting_out",
+              "sessions_per_week": 3,
+              "session_minutes": 20,
+              "preferred_window": {
+                "start_hour": 7,
+                "end_hour": 11
+              },
+              "activity_interests": [
+                "1",
+                "2"
+              ],
+              "discovery_preference": "occasional",
+              "available_locations": [
+                "outdoors",
+                "home"
+              ],
+              "available_equipment": [],
+              "avoidances": [
+                "jumping"
+              ],
+              "starting_obstacles": [
+                "time"
+              ],
+              "excluded_activity_types": [],
+              "timezone": "Europe/Warsaw"
+            }
+          }
+        ]
+      },
+      "MetricValueSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "integer"
+              },
+              "minimum": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maximum": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "number"
+              },
+              "minimum": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maximum": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "string"
+              },
+              "enum": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "maxItems": 20
+              },
+              "maxLength": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200
+              }
+            },
+            "required": [
+              "type",
+              "enum"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "MetricDefinition": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]{0,39}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_scale": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "represents_session_duration": {
+            "type": "boolean"
+          },
+          "value_schema": {
+            "$ref": "#/components/schemas/MetricValueSchema"
+          }
+        },
+        "required": [
+          "key",
+          "description",
+          "required",
+          "unit",
+          "display_unit",
+          "display_scale",
+          "represents_session_duration",
+          "value_schema"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "key": "duration",
+            "description": "Time",
+            "required": true,
+            "unit": "s",
+            "display_unit": "min",
+            "display_scale": 60,
+            "represents_session_duration": true,
+            "value_schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "Sport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SportId"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "is_gym": {
+            "type": "boolean"
+          },
+          "generation_enabled": {
+            "type": "boolean"
+          },
+          "catalog_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricDefinition"
+            },
+            "minItems": 0,
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "is_gym",
+          "generation_enabled",
+          "catalog_revision",
+          "metrics"
+        ],
+        "additionalProperties": false,
+        "description": "Unique metric keys; no calories. Each non-gym log has exactly one required duration metric stored as seconds. Preview rows are not generation-enabled."
+      },
+      "SuggestionInput": {
+        "type": "object",
+        "properties": {
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "profile_revision"
+        ],
+        "additionalProperties": false
+      },
+      "SportSuggestion": {
+        "type": "object",
+        "properties": {
+          "sport_id": {
+            "$ref": "#/components/schemas/SportId"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "sport_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "Slot": {
+        "type": "object",
+        "properties": {
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "start_at",
+          "end_at"
+        ],
+        "additionalProperties": false,
+        "description": "Half-open interval; end > start, runtime validated."
+      },
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "device_calendar",
+              "manual"
+            ]
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "source",
+          "captured_at",
+          "slots"
+        ],
+        "additionalProperties": false,
+        "description": "Sorted non-overlapping free slots only. Manual is explicitly supplied by the user. A denied/error calendar read cannot produce slots. Slots are ephemeral; receipts persist their canonical input hash, not the interval payload."
+      },
+      "RepTarget": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "reps"
+          },
+          "repetitions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "kind",
+          "repetitions"
+        ],
+        "additionalProperties": false
+      },
+      "TimeTarget": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "time"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "kind",
+          "duration_seconds"
+        ],
+        "additionalProperties": false
+      },
+      "SetTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RepTarget"
+          },
+          {
+            "$ref": "#/components/schemas/TimeTarget"
+          }
+        ]
+      },
+      "GymExercise": {
+        "type": "object",
+        "properties": {
+          "exercise_id": {
+            "$ref": "#/components/schemas/ExerciseId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "rest_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetTarget"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "exercise_id",
+          "name",
+          "description",
+          "rest_seconds",
+          "sets"
+        ],
+        "additionalProperties": false,
+        "description": "Catalog-owned exercise ID. Sets are uniformly reps or time for one exercise. Never contains planned weight.",
+        "examples": [
+          {
+            "exercise_id": "leg_press",
+            "name": "Leg press",
+            "description": "Move slowly through a comfortable range.",
+            "rest_seconds": 60,
+            "sets": [
+              {
+                "kind": "reps",
+                "repetitions": 10
+              },
+              {
+                "kind": "reps",
+                "repetitions": 10
+              },
+              {
+                "kind": "reps",
+                "repetitions": 10
+              }
+            ]
+          }
+        ]
+      },
+      "ActivityPart": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "description",
+          "duration_seconds"
+        ],
+        "additionalProperties": false
+      },
+      "PlannedActivity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sport_id": {
+            "$ref": "#/components/schemas/SportId"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "minimum": 5,
+            "multipleOf": 5,
+            "maximum": 60
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityPart"
+            },
+            "minItems": 0,
+            "maxItems": 10
+          },
+          "gym_exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GymExercise"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "id",
+          "sport_id",
+          "title",
+          "description",
+          "start_at",
+          "duration_minutes",
+          "optional",
+          "parts",
+          "gym_exercises"
+        ],
+        "additionalProperties": false,
+        "description": "Stable UUID across moves/shortening. Gym/non-gym shape, catalog references, part/set total duration, unique exercises and beginner scope are runtime validated."
+      },
+      "PlanSnapshot": {
+        "type": "object",
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlannedActivity"
+            },
+            "minItems": 0,
+            "maxItems": 7
+          }
+        },
+        "required": [
+          "week_start",
+          "timezone",
+          "activities"
+        ],
+        "additionalProperties": false,
+        "description": "Monday local week. Zero activities is valid. Unique activity IDs, at most one planned session per local day, no overlaps, and sessions fitting week/free slots are runtime checks.",
+        "examples": [
+          {
+            "week_start": "2026-10-05",
+            "timezone": "Europe/Warsaw",
+            "activities": []
+          }
+        ]
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "id",
+          "profile_id",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "PlanVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "generate",
+              "revise",
+              "undo"
+            ]
+          },
+          "base_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/PlanSnapshot"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "id",
+          "plan_id",
+          "profile_id",
+          "version",
+          "week_start",
+          "origin",
+          "base_version_id",
+          "request_id",
+          "plan",
+          "summary",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "ActivePlan": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "version": {
+            "$ref": "#/components/schemas/PlanVersion"
+          }
+        },
+        "required": [
+          "plan",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "GeneratePlanInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sport_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_version",
+          "sport_id",
+          "week_start",
+          "availability"
+        ],
+        "additionalProperties": false,
+        "description": "expected_version is 0 for a new week or that week's active version. sport_id null allows mobile discovery from saved interests. Validate allowed current/next week, saved answers, catalog support, availability, quota; no slots produces an empty snapshot.",
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000002",
+            "expected_version": 0,
+            "sport_id": "2",
+            "week_start": "2026-10-05",
+            "availability": {
+              "source": "device_calendar",
+              "captured_at": "2026-10-04T16:00:00+02:00",
+              "slots": [
+                {
+                  "start_at": "2026-10-05T07:00:00+02:00",
+                  "end_at": "2026-10-05T11:00:00+02:00"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "ActivityState": {
+        "type": "object",
+        "properties": {
+          "activity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "started",
+              "skipped",
+              "completed"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skipped_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "activity_id",
+          "status",
+          "revision",
+          "started_at",
+          "skipped_at",
+          "completed_at"
+        ],
+        "additionalProperties": false
+      },
+      "ActivityView": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/PlannedActivity"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ActivityState"
+          }
+        },
+        "required": [
+          "activity",
+          "plan_version_id",
+          "week_start",
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "StartActivityInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_state_revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "request_id",
+          "plan_version_id",
+          "expected_state_revision"
+        ],
+        "additionalProperties": false,
+        "description": "Only an eligible gym activity in its canonical week can start. Lock against concurrent revisions."
+      },
+      "MetricValues": {
+        "type": "object",
+        "maxProperties": 5,
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 200
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "description": "Values and keys validated against the owned activity sport's catalog revision; canonical units; no calories."
+      },
+      "MetricSources": {
+        "type": "object",
+        "maxProperties": 5,
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "additionalProperties": {
+          "type": "string",
+          "enum": [
+            "typed",
+            "planned_default",
+            "fit",
+            "gpx"
+          ]
+        },
+        "description": "Exactly the supplied metric keys. Planned default is user-confirmed, not inferred actual performance."
+      },
+      "RepLog": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "kind": {
+            "const": "reps"
+          },
+          "repetitions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "weight_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "index",
+          "kind",
+          "repetitions",
+          "weight_kg"
+        ],
+        "additionalProperties": false
+      },
+      "TimeLog": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "kind": {
+            "const": "time"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "index",
+          "kind",
+          "duration_seconds"
+        ],
+        "additionalProperties": false
+      },
+      "SetLog": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RepLog"
+          },
+          {
+            "$ref": "#/components/schemas/TimeLog"
+          }
+        ]
+      },
+      "ExerciseLog": {
+        "type": "object",
+        "properties": {
+          "exercise_id": {
+            "$ref": "#/components/schemas/ExerciseId"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetLog"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "exercise_id",
+          "sets"
+        ],
+        "additionalProperties": false,
+        "description": "Unique set indices and exercise IDs. Referenced planned exercise and tracking kind must match for planned completions."
+      },
+      "GymLog": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExerciseLog"
+        },
+        "minItems": 0,
+        "maxItems": 20,
+        "examples": [
+          [
+            {
+              "exercise_id": "leg_press",
+              "sets": [
+                {
+                  "index": 1,
+                  "kind": "reps",
+                  "repetitions": 10,
+                  "weight_kg": 8
+                }
+              ]
+            },
+            {
+              "exercise_id": "plank",
+              "sets": [
+                {
+                  "index": 1,
+                  "kind": "time",
+                  "duration_seconds": 17
+                }
+              ]
+            }
+          ]
+        ]
+      },
+      "FeedbackInput": {
+        "type": "object",
+        "properties": {
+          "effort": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "okay",
+              "hard",
+              "too_much"
+            ]
+          },
+          "choose_again": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "maybe",
+                  "no"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "effort",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "Feedback": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completion_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extra_workout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "effort": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "okay",
+              "hard",
+              "too_much"
+            ]
+          },
+          "choose_again": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "maybe",
+                  "no"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1000
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "id",
+          "profile_id",
+          "completion_id",
+          "extra_workout_id",
+          "revision",
+          "effort",
+          "choose_again",
+          "notes",
+          "updated_at"
+        ],
+        "additionalProperties": false,
+        "description": "Exactly one owned target link; opinion null means no opinion. Reset preserves effort and notes."
+      },
+      "CompleteActivityInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "actual_duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValues"
+          },
+          "metric_sources": {
+            "$ref": "#/components/schemas/MetricSources"
+          },
+          "gym_log": {
+            "$ref": "#/components/schemas/GymLog"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/FeedbackInput"
+          }
+        },
+        "required": [
+          "request_id",
+          "plan_version_id",
+          "activity_id",
+          "completed_at",
+          "actual_duration_seconds",
+          "metrics",
+          "metric_sources",
+          "gym_log",
+          "feedback"
+        ],
+        "additionalProperties": false,
+        "description": "Original owned version must contain the activity. No duplicate completion across versions. Match duration metric to actual_duration_seconds; reject future completion beyond documented clock-skew tolerance. Early end still completes.",
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000003",
+            "plan_version_id": "00000000-0000-4000-8000-000000000010",
+            "activity_id": "00000000-0000-4000-8000-000000000011",
+            "completed_at": "2026-10-05T07:22:00+02:00",
+            "actual_duration_seconds": 1260,
+            "metrics": {
+              "duration": 1260,
+              "distance": 2140
+            },
+            "metric_sources": {
+              "duration": "fit",
+              "distance": "fit"
+            },
+            "gym_log": [],
+            "feedback": {
+              "effort": "okay",
+              "choose_again": null,
+              "notes": "Comfortable pace."
+            }
+          }
+        ]
+      },
+      "Completion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "actual_duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValues"
+          },
+          "metric_sources": {
+            "$ref": "#/components/schemas/MetricSources"
+          },
+          "gym_log": {
+            "$ref": "#/components/schemas/GymLog"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/Feedback"
+          }
+        },
+        "required": [
+          "id",
+          "profile_id",
+          "request_id",
+          "plan_version_id",
+          "activity_id",
+          "completed_at",
+          "actual_duration_seconds",
+          "metrics",
+          "metric_sources",
+          "gym_log",
+          "feedback"
+        ],
+        "additionalProperties": false
+      },
+      "ExtraWorkout": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sport_id": {
+            "$ref": "#/components/schemas/SportId"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "actual_duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValues"
+          },
+          "metric_sources": {
+            "$ref": "#/components/schemas/MetricSources"
+          },
+          "gym_log": {
+            "$ref": "#/components/schemas/GymLog"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Feedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "profile_id",
+          "request_id",
+          "revision",
+          "sport_id",
+          "title",
+          "occurred_at",
+          "actual_duration_seconds",
+          "metrics",
+          "metric_sources",
+          "gym_log",
+          "feedback",
+          "created_at",
+          "deleted_at"
+        ],
+        "additionalProperties": false,
+        "description": "History only; never included in planned progress. Created through validated chat. Deleted extras no longer provide summary evidence."
+      },
+      "UpdateExtraInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sport_id": {
+            "$ref": "#/components/schemas/SportId"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "actual_duration_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValues"
+          },
+          "metric_sources": {
+            "$ref": "#/components/schemas/MetricSources"
+          },
+          "gym_log": {
+            "$ref": "#/components/schemas/GymLog"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "sport_id",
+          "title",
+          "occurred_at",
+          "actual_duration_seconds",
+          "metrics",
+          "metric_sources",
+          "gym_log",
+          "feedback"
+        ],
+        "additionalProperties": false
+      },
+      "UndoExtraInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision"
+        ],
+        "additionalProperties": false
+      },
+      "DeletedExtra": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "deleted_at"
+        ],
+        "additionalProperties": false
+      },
+      "GymHistoryEntry": {
+        "type": "object",
+        "properties": {
+          "exercise_id": {
+            "$ref": "#/components/schemas/ExerciseId"
+          },
+          "completion_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetLog"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "exercise_id",
+          "completion_id",
+          "completed_at",
+          "sets"
+        ],
+        "additionalProperties": false
+      },
+      "Calendar": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityView"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "extras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraWorkout"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "has_earlier": {
+            "type": "boolean"
+          },
+          "planned_through": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sessions",
+          "extras",
+          "has_earlier",
+          "planned_through"
+        ],
+        "additionalProperties": false,
+        "description": "Only canonical version per week, including locked outcomes. Extras separate. No private events. Page merged results via next_cursor; max 31-day query span."
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "plan_updated",
+                  "reply",
+                  "clarification",
+                  "workout_added"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plan_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          }
+        },
+        "required": [
+          "id",
+          "plan_id",
+          "role",
+          "content",
+          "outcome",
+          "plan_version_id",
+          "request_id",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "QuickReply": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "label",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "SendChatInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "activity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          }
+        },
+        "required": [
+          "request_id",
+          "plan_id",
+          "expected_version",
+          "message"
+        ],
+        "additionalProperties": false,
+        "description": "Server reads authoritative history. Availability required to schedule/move; missing free-time context yields clarification, not invented slots. Extra logging can clarify and save without availability. Skip is an explicit state transition committed with a version change.",
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000004",
+            "plan_id": "00000000-0000-4000-8000-000000000020",
+            "expected_version": 2,
+            "message": "Move Friday to Saturday morning.",
+            "activity_id": "00000000-0000-4000-8000-000000000011",
+            "availability": {
+              "source": "device_calendar",
+              "captured_at": "2026-10-04T16:00:00+02:00",
+              "slots": [
+                {
+                  "start_at": "2026-10-05T07:00:00+02:00",
+                  "end_at": "2026-10-05T11:00:00+02:00"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "ActivityChange": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "added",
+              "removed",
+              "modified",
+              "skipped"
+            ]
+          },
+          "activity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlannedActivity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlannedActivity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "activity_id",
+          "before",
+          "after",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "description": "Computed by server from validated snapshots and outcome transitions, not trusted AI diffs."
+      },
+      "UnfulfilledChange": {
+        "type": "object",
+        "properties": {
+          "activity_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "activity_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "ChangeSet": {
+        "type": "object",
+        "properties": {
+          "from_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "to_version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityChange"
+            },
+            "minItems": 0,
+            "maxItems": 14
+          },
+          "not_changed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnfulfilledChange"
+            },
+            "minItems": 0,
+            "maxItems": 7
+          },
+          "kept_activity_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 0,
+            "uniqueItems": true,
+            "maxItems": 7
+          },
+          "undo_available": {
+            "type": "boolean"
+          },
+          "undo_unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "from_version_id",
+          "to_version_id",
+          "changes",
+          "not_changed",
+          "kept_activity_ids",
+          "undo_available",
+          "undo_unavailable_reason"
+        ],
+        "additionalProperties": false
+      },
+      "PlanUpdatedResult": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "const": "plan_updated"
+          },
+          "active_plan": {
+            "$ref": "#/components/schemas/ActivePlan"
+          },
+          "change_set": {
+            "$ref": "#/components/schemas/ChangeSet"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "outcome",
+          "active_plan",
+          "change_set",
+          "messages"
+        ],
+        "additionalProperties": false
+      },
+      "ReplyResult": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "const": "reply"
+          },
+          "active_plan": {
+            "type": "null"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "outcome",
+          "active_plan",
+          "messages"
+        ],
+        "additionalProperties": false
+      },
+      "ClarificationResult": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "const": "clarification"
+          },
+          "active_plan": {
+            "type": "null"
+          },
+          "quick_replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuickReply"
+            },
+            "minItems": 0,
+            "maxItems": 10
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "outcome",
+          "active_plan",
+          "quick_replies",
+          "messages"
+        ],
+        "additionalProperties": false
+      },
+      "WorkoutAddedResult": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "const": "workout_added"
+          },
+          "active_plan": {
+            "type": "null"
+          },
+          "extra_workout": {
+            "$ref": "#/components/schemas/ExtraWorkout"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "outcome",
+          "active_plan",
+          "extra_workout",
+          "messages"
+        ],
+        "additionalProperties": false
+      },
+      "ChatResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PlanUpdatedResult"
+          },
+          {
+            "$ref": "#/components/schemas/ReplyResult"
+          },
+          {
+            "$ref": "#/components/schemas/ClarificationResult"
+          },
+          {
+            "$ref": "#/components/schemas/WorkoutAddedResult"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "outcome"
+        }
+      },
+      "UndoPlanInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "change_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "target_version_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_version",
+          "change_request_id",
+          "target_version_id"
+        ],
+        "additionalProperties": false,
+        "description": "Target must be the immediate prior snapshot of the newest eligible change in the same owned week. Restore as a new immutable version, preserve all logged/locked records; otherwise 409.",
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000005",
+            "expected_version": 3,
+            "change_request_id": "00000000-0000-4000-8000-000000000004",
+            "target_version_id": "00000000-0000-4000-8000-000000000010"
+          }
+        ]
+      },
+      "UpdateOpinionInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "choose_again": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "maybe",
+                  "no"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "choose_again"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000006",
+            "expected_revision": 1,
+            "choose_again": null
+          }
+        ]
+      },
+      "ResetOpinionsInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_feedback_revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_feedback_revision"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000007",
+            "expected_feedback_revision": 4
+          }
+        ]
+      },
+      "ResetOpinionsResult": {
+        "type": "object",
+        "properties": {
+          "cleared_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "feedback_revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "cleared_count",
+          "feedback_revision"
+        ],
+        "additionalProperties": false
+      },
+      "PreferenceEvidence": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "preference"
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^/"
+          },
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "kind",
+          "field",
+          "profile_revision",
+          "label",
+          "detail"
+        ],
+        "additionalProperties": false,
+        "description": "Server verified fact snapshot from a preference JSON pointer at the cited revision. Old snapshots are displayed only with the summary marked stale/updating."
+      },
+      "FeedbackEvidence": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "feedback"
+          },
+          "feedback_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feedback_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "kind",
+          "feedback_id",
+          "feedback_revision",
+          "label",
+          "detail"
+        ],
+        "additionalProperties": false,
+        "description": "Server verifies ownership, current fact and nondeleted log; never treats skip or missing opinion as a dislike."
+      },
+      "Evidence": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PreferenceEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/FeedbackEvidence"
+          }
+        ]
+      },
+      "SummaryStatement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "Summary": {
+        "type": "object",
+        "properties": {
+          "profile_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "feedback_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryStatement"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "profile_revision",
+          "feedback_revision",
+          "generated_at",
+          "statements"
+        ],
+        "additionalProperties": false,
+        "description": "Derived, no write authority. Saved only after semantic evidence validation; excludes name/email/steps/calendar contents from model context."
+      },
+      "SummaryState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "updating",
+              "unavailable",
+              "insufficient_data"
+            ]
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Summary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "summary"
+        ],
+        "additionalProperties": false,
+        "description": "Retain previous validated text marked updating during refresh; failed generation hides summary without hiding answers. Server compares source revisions before replacing derived content."
+      },
+      "RefreshSummaryInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_profile_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expected_feedback_revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_profile_revision",
+          "expected_feedback_revision"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "request_id": "00000000-0000-4000-8000-000000000008",
+            "expected_profile_revision": 1,
+            "expected_feedback_revision": 4
+          }
+        ]
+      },
+      "GuestBootstrapInput": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "additionalProperties": false
+      },
+      "GuestBootstrapResult": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "active_plan": {
+            "$ref": "#/components/schemas/ActivePlan"
+          },
+          "completions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Completion"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "profile",
+          "active_plan",
+          "completions"
+        ],
+        "additionalProperties": false,
+        "description": "Only verified anonymous identity. Seed once per owner even across distinct bootstrap request IDs. Reject normal accounts; never overwrite real data with demo data."
+      },
+      "ProfileResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "SportsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sport"
+            },
+            "minItems": 0,
+            "maxItems": 500
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "SuggestionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SportSuggestion"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "GuestBootstrapResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GuestBootstrapResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "CurrentPlanResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivePlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "PlanVersionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PlanVersion"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "PlanHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanVersion"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "GeneratePlanResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActivePlan"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ActivitiesResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityView"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Calendar"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ActivityStateResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActivityState"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "GymHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GymHistoryEntry"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "CompletionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Completion"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "CompletionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Completion"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ChatMessagesResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ChatResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "UndoPlanResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PlanUpdatedResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ExtraWorkoutsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraWorkout"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ExtraWorkoutResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExtraWorkout"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "DeletedExtraResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeletedExtra"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "FeedbackListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feedback"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "FeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Feedback"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ResetOpinionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResetOpinionsResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "SummaryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SummaryState"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "x-alternative-server": "https://<project-ref>.supabase.co/functions/v1/product-api/v2 (only after explicit adoption of the Supabase-only architecture)",
+  "x-auth-sdk-operations": [
+    "signUp",
+    "signInWithPassword",
+    "signInWithOAuth:google",
+    "resetPasswordForEmail",
+    "updateUser:password",
+    "refreshSession",
+    "signOut",
+    "signInAnonymously:web-only"
+  ],
+  "x-maximum-request-bytes": 65536
+}

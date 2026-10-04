@@ -7,6 +7,10 @@
     "packages/*"
   ],
   "scripts": {
+    "test:supabase": "node --import tsx --test supabase/tests/*.test.mjs supabase/tests/*.test.ts",
+    "typecheck:supabase": "tsc -p supabase/tsconfig.json",
+    "lint:supabase": "eslint --config supabase/eslint.config.mjs supabase/functions supabase/tests supabase/scripts",
+    "schema:product": "npm run build --workspace=@hackyeah/contracts && node --import tsx supabase/scripts/export-schema.ts",
     "start": "npm run start --workspace=@hackyeah/mobile",
     "android": "npm run android --workspace=@hackyeah/mobile",
     "ios": "npm run ios --workspace=@hackyeah/mobile",
@@ -23,7 +27,10 @@
     "test:wearables": "npm run build:wearables && npm run test --workspace=@hackyeah/wearable-data",
     "pretypecheck": "npm run build:wearables",
     "format:wearables": "prettier --check \"packages/**/*.{ts,json,cjs}\" \"docs/features/wearable-extraction.md\"",
-    "demo:wearables": "npm run build:wearables && node packages/wearable-data/examples/import-fit.ts"
+    "demo:wearables": "npm run build:wearables && node packages/wearable-data/examples/import-fit.ts",
+    "build:plans": "npm run build --workspace=@hackyeah/backend",
+    "test:plans": "npm run test --workspace=@hackyeah/backend",
+    "typecheck:plans": "npm run typecheck --workspace=@hackyeah/backend"
   },
   "devDependencies": {
     "eslint": "9.39.5",

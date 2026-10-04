@@ -12,7 +12,9 @@ below before changing a feature.
   responsibility per module, a pure domain layer, and no behaviour change in a refactor
   without evidence.
 - Share API contracts in `packages/contracts`; keep client UI separate.
-- Supabase provides Auth and PostgreSQL. NestJS owns application data and AI calls.
+- The proof of concept uses Supabase Auth, PostgreSQL/RLS, and Edge Functions
+  directly from both clients. See `docs/features/supabase-product-api.md`.
+  NestJS remains available for future backend work; it is not required by this path.
 - Validate requests and AI output; enforce authenticated user ownership.
 - Validated chat revisions replace the active plan immediately. Preserve prior
   versions and completed activities.
@@ -42,6 +44,7 @@ below before changing a feature.
 - [Grilling session decisions](docs/grilling-summary.md)
 - [Mobile review decisions, 3 October](docs/mobile-review-2026-10-03.md) — newer where they differ
 - [Design reference: screens, tokens, preview](design/README.md) — read before building UI
+- [Mobile app on a mocked API](docs/features/mobile-mock-app.md) — how screens get data, the demo account and how to swap in the real API
 
 An Expo starter and wearable contracts/extraction packages exist. Backend, dashboard and CI are planned;
 do not claim planned commands or checks are already available.

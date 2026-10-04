@@ -1,8 +1,9 @@
+import "reflect-metadata";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { NestFactory } from "@nestjs/core";
 import type { INestApplication } from "@nestjs/common";
-import { AppModule } from "../src/app.module";
+import { AppModule } from "../src/app.module.js";
 
 let app: INestApplication;
 let url: string;

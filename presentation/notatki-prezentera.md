@@ -1,6 +1,6 @@
 # Movo — notatki do prezentacji
 
-Scenariusz do aktualnych 10 slajdów prezentacji HTML/PDF. Tekst „Do powiedzenia” można wykorzystać podczas wystąpienia; uwagi są dla prowadzącego i nie trzeba ich odczytywać.
+Pierwszy etap oceny: jury czyta samą prezentację PDF, bez wystąpienia zespołu. Poniższe notatki są scenariuszem na ewentualny finał, do aktualnych 10 slajdów prezentacji HTML/PDF. Tekst „Do powiedzenia” można wykorzystać podczas wystąpienia; uwagi są dla prowadzącego i nie trzeba ich odczytywać.
 
 Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu jest mniej, skróć opisy funkcji i zostaw pełny przykład ze slajdu 8.
 
@@ -41,11 +41,11 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Do powiedzenia:**
 
-> Wyobraźmy sobie Kasię, która ma 29 lat, pracuje i kilka razy próbowała zacząć ćwiczyć. Nie przygotowuje się do zawodów. Chce poczuć się lepiej i znaleźć ruch, który zmieści się w jej tygodniu. Jeśli plan jest za trudny albo nie da się go pogodzić z obowiązkami, kolejna próba się urywa. Podobnie może być z kimś, kogo przytłoczyła rozbudowana aplikacja treningowa. To dla tych osób projektujemy Movo.
+> Naszą grupą docelową są początkujący i osoby wracające po przerwie. Chcą poczuć się lepiej i znaleźć ruch, który zmieści się w ich tygodniu. Jeśli plan jest za trudny albo nie da się go pogodzić z obowiązkami, kolejna próba się urywa. Podobnie może być z kimś, kogo przytłoczyła rozbudowana aplikacja treningowa. To dla tych osób projektujemy Movo.
 
 **Przejście:** „Dlatego zaczynamy od małego kroku, który da się wykonać”.
 
-**Uwagi:** Kasia jest przykładową personą. Sztywny plan, zbyt wysoka trudność i brak przyjemności są barierami, które chcemy zbadać; podane wcześniej procenty nie dowodzą, że to one powodują porzucanie aplikacji. Średnio zaawansowani i zaawansowani są dodatkową grupą, a nie punktem wyjścia projektu.
+**Uwagi:** slajd opisuje grupę docelową, bez danych osobowych. Sztywny plan, zbyt wysoka trudność i brak przyjemności są barierami, które chcemy zbadać; podane wcześniej procenty nie dowodzą, że to one powodują porzucanie aplikacji. Średnio zaawansowani i zaawansowani są dodatkową grupą, a nie punktem wyjścia projektu.
 
 ## Slajd 4 — Podejście Movo: najmniejszy wykonalny krok
 
@@ -59,63 +59,59 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 
 **Uwaga:** przyjemność, regularność i łatwiejszy powrót są celami projektu, a nie potwierdzonymi wynikami. Odkrywanie różnych form ruchu to kierunek produktu; nie sugeruj gotowego katalogu wszystkich sportów.
 
-## Slajd 5 — Plan i kalendarz: miejsce na ruch w codziennym dniu
+## Slajd 5 — Plan i kalendarz: wyszukiwanie dostępnych slotów
 
-**Cel:** pokazać konfigurację planu i jego związek z harmonogramem.
+**Cel:** pokazać generowanie planu i aktywne dopasowanie terminów do kalendarza użytkownika.
 
 **Do powiedzenia:**
 
-> Użytkownik podaje cel, doświadczenie, dostępny sprzęt i czas. W naszym przykładzie dopiero zaczyna, ćwiczy bez sprzętu i może przeznaczyć dwa razy po 20 minut tygodniowo. Na tej podstawie Movo ma zaproponować aktywności, ich trudność i dni odpoczynku. Połączenie z kalendarzem ma pomóc umieścić trening obok codziennych obowiązków. Użytkownik otrzymuje jasną odpowiedź: co zrobić i kiedy.
+> Użytkownik określa cel, poziom, sprzęt i czas. Movo tworzy na tej podstawie plan, a synchronizacja z osobistym kalendarzem pozwala wyszukać wolne terminy na sesje. W przykładzie spotkanie kończy się o 18:30, a kolejny obowiązek zaczyna o 19:00. W tym oknie mieści się 20-minutowy trening. To właśnie wykorzystanie dostępności użytkownika chcemy podkreślić: plan ma pasować do jego rzeczywistego harmonogramu.
 
-**Przejście:** „Tydzień rzadko przebiega dokładnie tak, jak go zaplanowaliśmy”.
+**Przejście:** „Użytkownik może też zmienić plan przez rozmowę w aplikacji”.
 
-**Uwagi:**
+**Uwagi:** zespół wskazał synchronizację i wyszukiwanie slotów jako funkcje produktu. Ekran pozostaje mockupem i nie wykonuje prawdziwego połączenia. Przed finałem potwierdź stan wdrożenia; nie obiecuj obsługi konkretnego dostawcy kalendarza bez potwierdzenia.
 
-- Widok kalendarza jest mockupem, bez rzeczywistej synchronizacji.
-- Nie deklaruj automatycznego odczytywania wolnych terminów, jeśli taka funkcja nie działa.
-- W planie biznesowym MVP obejmuje kreator i edytor planu wspierane przez AI oraz prosty zapis treningu. Zakres synchronizacji z kalendarzem trzeba uzgodnić z faktycznym prototypem.
-
-## Slajd 6 — Czat i dostosowanie: wsparcie po pierwszym planie
+## Slajd 6 — Czat z asystentem treningowym: zmiana planu przez rozmowę
 
 **Cel:** pokazać, że informacja od użytkownika prowadzi do konkretnej zmiany.
 
 **Do powiedzenia:**
 
-> Samo otrzymanie planu nie rozwiązuje wszystkich trudności. Użytkownik może powiedzieć: „Wczoraj było za trudno, a dziś mam tylko 15 minut”. W pokazanym przykładzie odpowiedzią jest spokojniejsza, krótsza sesja z mniejszą liczbą powtórzeń i dłuższymi przerwami. Ważny jest rezultat rozmowy: użytkownik wie, co może zrobić teraz. Podobnie chcemy pomagać przy zmianie grafiku lub powrocie po opuszczonym treningu.
+> Movo ma czat z asystentem treningowym w aplikacji. Użytkownik może zapytać o ćwiczenia albo zgłosić zmianę sytuacji, na przykład: „Wczoraj było za trudno, a dziś mam tylko 15 minut”. W pokazanym przykładzie odpowiedzią jest spokojniejsza, krótsza sesja z mniejszą liczbą powtórzeń i dłuższymi przerwami. Ważny jest rezultat rozmowy: użytkownik wie, co może zrobić teraz. Podobnie chcemy pomagać przy zmianie grafiku lub powrocie po opuszczonym treningu.
 
 **Przejście:** „Jak takie podejście pozycjonujemy wobec istniejących aplikacji?”
 
 **Uwagi:** rozmowa jest przykładowa. Plan biznesowy zakłada AI przy tworzeniu i edycji planu; nie obiecuj dostępu do ludzkiego trenera, jeśli nie ma takiej usługi. Automatyczna progresja ciężarów została w planie biznesowym umieszczona w etapie 2 — nie przedstawiaj jej jako gotowej funkcji MVP.
 
-## Slajd 7 — Konkurencja: nasz punkt wyjścia to początkujący człowiek
+## Slajd 7 — Porównanie funkcji: Movo, Runna i Hevy
 
-**Cel:** wyjaśnić pozycjonowanie bez pomniejszania możliwości konkurencji.
+**Cel:** pokazać konkretne funkcje Movo wobec dwóch rozpoznawalnych konkurentów.
 
 **Do powiedzenia:**
 
-> Istnieją już dobre narzędzia treningowe. Hevy skupia się na treningu siłowym i programowaniu. Runna na planach biegowych. TrainingPeaks łączy planowanie wielu sportów z analizą i współpracą z trenerem. Garmin Connect daje dane z urządzeń i wsparcie treningowe. Personalizacja i dostosowanie planu już istnieją. Nasz kierunek to prosty proces dla osoby początkującej: od pierwszej aktywności, przez zmianę planu, aż do powrotu po przerwie. Chcemy sprawdzić, czy ten proces ułatwia jej regularny ruch.
+> Wyróżnienie Movo budujemy wokół połączenia osobistego kalendarza, czatu i wyboru aktywności. Runna oferuje synchronizację treningów do kalendarza; my kładziemy nacisk na wyszukiwanie wolnych slotów między obowiązkami. Hevy ma integrację z ChatGPT; w Movo rozmowa o zmianie sesji odbywa się w samej aplikacji. Chcemy też dobierać różne formy ruchu według preferencji, zamiast zaczynać od wybranego sportu. To zestaw funkcji, który projektujemy dla osoby szukającej prostego startu.
 
-**Przejście:** „Najłatwiej pokazać tę różnicę na codziennym przykładzie”.
+**Przejście:** „Wybór aktywności jest równie ważny jak znalezienie czasu”.
 
 **Uwagi:**
 
-- Nie mów, że Hevy jest wyłącznie dziennikiem: Hevy Trainer generuje programy i wspiera progresję.
-- Nie mów, że Runna nie dostosowuje planu do samopoczucia: oferuje funkcję „Not Feeling 100%”.
-- Nie przedstawiaj AI, wielu sportów ani samej personalizacji jako wyjątkowej przewagi.
-- Prostota dla początkujących i lepsza regularność pozostają hipotezami do sprawdzenia.
-- Tabela pokazuje główne obszary oferty, nie wszystkie funkcje. Nie zawiera porównania cen.
+- Dokumentacja Runna opisuje eksport treningów przez kanał iCalendar. Nie potwierdzono w sprawdzonych materiałach wyszukiwania wolnych slotów w osobistym kalendarzu.
+- Niepotwierdzone nie oznacza, że funkcja na pewno nie istnieje.
+- Hevy ma Hevy Trainer i integrację z ChatGPT; nie przedstawiaj go jako samego dziennika ani jako produktu bez pomocy konwersacyjnej.
+- Runna ma czat wsparcia, adaptację planu i treningi uzupełniające; nie twierdź, że oferuje wyłącznie bieganie ani że nie ma czatu.
+- Kolumna Movo opisuje koncepcję i funkcje wskazane przez zespół. Wdrożenie oraz przewaga dla użytkownika wymagają osobnego potwierdzenia.
 
-## Slajd 8 — Przykład dostosowania: gdy zmienia się dzień, zmienia się plan
+## Slajd 8 — Odkrywanie aktywności: ruch, do którego chcesz wracać
 
-**Cel:** opowiedzieć pełny scenariusz, który działa także w statycznym PDF.
+**Cel:** pokazać osobną wartość produktu, bez powtarzania adaptacji przez czat ze slajdu 6.
 
 **Do powiedzenia:**
 
-> Wróćmy do osoby, która chce ćwiczyć dwa razy w tygodniu, bez sprzętu, po pracy. Pierwszy plan to 20 minut ruchu w domu w środę i spacer w piątek. W środę pojawia się dodatkowy obowiązek i zostaje tylko 10 minut. Movo ma zaproponować krótszą sesję, co widać po prawej. A jeśli środowy trening wypadnie całkowicie, kolejny krok może być lekką aktywnością w piątek. Chcemy pomóc wrócić do wykonalnego planu bez dokładania wszystkich zaległości naraz.
+> Początkujący nie musi jeszcze wiedzieć, jaki sport lubi. Movo ma pomagać odkrywać aktywności zgodne z preferencjami, możliwościami i dostępnością. Można zacząć od spaceru, krótkiej sesji mobilności albo prostego treningu siłowego. Po aktywności użytkownik mówi, jak było, a te odczucia pomagają dopasować kolejne propozycje. Chcemy ułatwić znalezienie formy ruchu, do której chce wracać.
 
 **Przejście:** „Taką pomoc chcemy oferować w modelu subskrypcyjnym”.
 
-**Uwagi:** prawa strona pokazuje skrócenie treningu do 10 minut. Powrót po opuszczonym dniu jest osobnym wariantem, opisanym po lewej. Nie przedstawiaj obu sytuacji jako jednej zmiany widocznej na ekranie. To statyczny przykład koncepcji, nie uruchomiony generator planu.
+**Uwagi:** propozycje są przykładami koncepcji, nie dowodem gotowego katalogu aktywności. Nie obiecuj wsparcia dla dowolnego sportu. Slajd nie wymaga interakcji i jest czytelny w PDF.
 
 ## Slajd 9 — Business plan: 14 dni na start, potem subskrypcja
 
@@ -151,7 +147,7 @@ Proponowane tempo: około 5–6 minut, zależnie od długości pauz. Gdy czasu j
 ## Materiały i decyzje przed finalnym wystąpieniem
 
 - Uzupełnić źródła statystyk ze slajdu 2.
-- Potwierdzić, które funkcje rzeczywiście działają w prototypie, szczególnie synchronizacja kalendarza i dostosowanie przez czat.
+- Potwierdzić, które funkcje rzeczywiście działają w prototypie, szczególnie synchronizacja kalendarza, wyszukiwanie wolnych slotów i dostosowanie przez czat.
 - Uzgodnić język dotyczący AI i trenera; nie sugerować ludzkiej obsługi bez potwierdzenia.
 - Zachować informację, że ceny i efekty produktu wymagają walidacji.
 
@@ -167,3 +163,10 @@ Podstawa notatek: rozmowa zespołu, bieżąca prezentacja `index.html` oraz dost
 - [Garmin Connect+](https://www.garmin.com/en-CA/p/1565777/)
 
 Źródła wymienione w planie biznesowym — do doprecyzowania i weryfikacji przed cytowaniem statystyk: Kidman i in., „When and Why Adults Abandon Lifestyle Behavior and Mental Health Mobile Apps”, JMIR 2024; RetentionCheck, „Fitness App Retention & Churn Rate 2026” (w dokumencie oznaczone jako szacunki redakcyjne).
+
+
+Dodatkowe źródła porównania funkcji, sprawdzone 4.10.2026:
+
+- [Runna — synchronizacja kalendarza](https://support.runna.com/en/articles/8601606-syncing-runna-to-your-calendar-scheduling-your-workouts)
+- [Hevy — aplikacja w ChatGPT](https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT)
+- [Strava — subskrypcja Runna i czat wsparcia](https://support.strava.com/hc/en-us/articles/15401576-strava-and-runna-subscription-faqs)

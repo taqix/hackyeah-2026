@@ -11,3 +11,14 @@
   .cover,.cover[hidden]{display:flex!important}
   .slide:last-child{break-after:auto;page-break-after:auto}
 }
+
+/* More descriptive slides for the first round, reviewed without a speaker. */
+.stats .range-separator{display:inline-block;font-size:.65em;letter-spacing:0;margin:0 .12em;vertical-align:.13em}
+.persona .lead{font-size:24px}.persona p{font-size:22px}
+.calendar-slide h2{font-size:66px}.calendar-slide .lead{font-size:25px;margin:25px 0}
+.feature-steps{margin-top:25px}.feature-steps article{display:flex;gap:20px;padding:18px 0;border-top:1px solid #24211c35}.feature-steps article>span{font-size:17px;padding-top:5px;opacity:.7}.feature-steps h3{font-size:25px;margin-bottom:9px}.feature-steps p{font-size:21px;line-height:1.45}
+.simple-list p{font-size:21px;padding:15px 0}.simple-list p b{color:var(--cream)}
+.feature-comparison{table-layout:fixed}.comparison .feature-comparison{font-size:21px;margin-top:36px}.feature-comparison thead th{font-size:17px}.comparison .feature-comparison th,.comparison .feature-comparison td{width:auto;padding:23px 18px;vertical-align:top;line-height:1.45}.feature-comparison th:first-child{width:24%}.feature-comparison .our-feature{background:#d5e4f6;font-weight:600}.comparison .comparison-note{font-size:23px;margin-top:27px}.comparison .sources{font-size:15px;margin-top:20px}
+.discovery h2{font-size:70px}.discovery .lead{font-size:25px;margin:25px 0}.discovery .feature-steps{margin-top:20px}.discovery .feature-steps article{padding:16px 0}.activity-option{border-top:1px solid var(--line);padding:23px 0}.activity-option:first-of-type{margin-top:25px}.activity-option span{font-size:16px;color:#486d9a}.activity-option h3{font-size:27px;margin:12px 0 7px}.activity-option p{font-size:19px}
+.comparison h2{font-size:62px}.comparison .feature-comparison{margin-top:30px}.comparison .feature-comparison th,.comparison .feature-comparison td{padding:17px 18px}.comparison .comparison-note{margin-top:22px;font-size:22px}.comparison .sources{margin-top:17px;font-size:14px}
+.discovery h2{font-size:62px}.discovery .lead{font-size:24px;margin:22px 0}.discovery .feature-steps article{padding:14px 0}.discovery .feature-steps h3{font-size:24px}.discovery .feature-steps p{font-size:20px}.discovery .activity-option{padding:18px 0}.discovery .activity-option:first-of-type{margin-top:15px}

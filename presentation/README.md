@@ -18,8 +18,8 @@ Następnie otwórz http://localhost:8080.
 - Home / End: pierwszy lub ostatni slajd.
 - F: pełny ekran; N: notatki prowadzącego; O: spis slajdów.
 - Na ekranie dotykowym: przesunięcie w poziomie.
-- Adres z `#8` otwiera bezpośrednio slajd demo.
-- Slajd 8 przedstawia statyczny przykład dostosowania; żaden slajd nie wymaga klikania.
+- Adres z `#8` otwiera bezpośrednio slajd o odkrywaniu aktywności.
+- Slajd 8 przedstawia odkrywanie aktywności; żaden slajd nie wymaga klikania.
 
 ## Edycja
 
@@ -37,3 +37,13 @@ W przeglądarce wybierz Drukuj → Zapisz jako PDF. CSS definiuje format 16:9 (1
 - https://www.runna.com/features
 - https://www.trainingpeaks.com/athlete-features/
 - https://www.garmin.com/en-GB/garmin-technology/garmin-coach/
+
+
+Pierwszy etap oceny odbywa się bez wystąpienia: slajdy opisują funkcje bez odwoływania się do narracji prowadzącego. Notatki w `notatki-prezentera.md` służą do ewentualnej prezentacji w finale.
+
+Porównanie na slajdzie 7 ograniczono do Runna i Hevy. „Niepotwierdzone” oznacza brak potwierdzenia funkcji w sprawdzonych materiałach, a nie dowód jej braku.
+
+Dodatkowe źródła:
+- https://support.runna.com/en/articles/8601606-syncing-runna-to-your-calendar-scheduling-your-workouts
+- https://help.hevyapp.com/hc/en-us/articles/43652076665239-What-is-the-Hevy-App-on-ChatGPT
+- https://support.strava.com/hc/en-us/articles/15401576-strava-and-runna-subscription-faqs

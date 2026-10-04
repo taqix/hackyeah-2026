@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button, Card, Icon, type IconName, PressableScale, Skeleton, Text } from '@/components/ui';
-import { Col, Row } from '@/components/layout';
+import { Col, Row, useLayout } from '@/components/layout';
 import { useTheme } from '@/theme';
 
 /** Quiet note on a sunken card (prototype Note). */
@@ -69,7 +69,10 @@ export function RowsSkeleton({ count = 3, disc = 40 }: { count?: number; disc?: 
   );
 }
 
-/** One statement of the summary: its text and source; opens Why we think this (9.3). */
+/**
+ * One statement of the summary: its text and source; opens Why we think this (9.3).
+ * On the desktop web the hairline moves to a wrapper and the row gets a hover fill.
+ */
 export function StatementRow({
   text,
   source,
@@ -83,27 +86,44 @@ export function StatementRow({
   divider?: boolean;
   onPress: () => void;
 }) {
-  const { colors, motion } = useTheme();
-  return (
+  const { colors, motion, radius } = useTheme();
+  const { isDesktop } = useLayout();
+  const hairline = divider ? { borderTopWidth: 1, borderTopColor: colors.borderSubtle } : null;
+  const row = (
     <PressableScale
       onPress={onPress}
       scaleTo={motion.pressScaleCard}
+      focusRing={isDesktop ? 'inset' : 'outline'}
       accessibilityRole="button"
       accessibilityLabel={`${text} Source: ${source}.`}
       accessibilityHint="Shows why we think this"
-      style={[styles.statement, divider ? { borderTopWidth: 1, borderTopColor: colors.borderSubtle } : null]}>
-      <Col gap={6} style={styles.fill}>
-        <Text variant="body">{text}</Text>
-        <Row gap={6}>
-          <Icon name={icon} size={14} color={colors.textTertiary} />
-          <Text variant="caption" style={styles.fill}>
-            {source}
-          </Text>
-        </Row>
-      </Col>
-      <Icon name="chevron-right" size={18} color={colors.textTertiary} />
+      style={({ hovered }) => [
+        styles.statement,
+        isDesktop
+          ? [styles.desktopRow, { borderRadius: radius.sm, backgroundColor: hovered ? colors.hoverWash : 'transparent' }]
+          : hairline,
+      ]}>
+      {({ hovered }) => (
+        <>
+          <Col gap={6} style={styles.fill}>
+            <Text variant="body">{text}</Text>
+            <Row gap={6}>
+              <Icon name={icon} size={14} color={colors.textTertiary} />
+              <Text variant="caption" style={styles.fill}>
+                {source}
+              </Text>
+            </Row>
+          </Col>
+          <Icon
+            name="chevron-right"
+            size={18}
+            color={isDesktop && hovered ? colors.textSecondary : colors.textTertiary}
+          />
+        </>
+      )}
     </PressableScale>
   );
+  return isDesktop ? <View style={hairline}>{row}</View> : row;
 }
 
 /** A titled block of rows (Section heading, then rows with hairlines between). */
@@ -132,4 +152,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 56,
   },
+  desktopRow: { paddingHorizontal: 12, marginHorizontal: -12 },
 });

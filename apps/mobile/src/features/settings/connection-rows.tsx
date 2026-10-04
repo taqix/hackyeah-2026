@@ -268,6 +268,24 @@ export function StepsConnectionRow() {
   );
 }
 
+/**
+ * The web has no device calendar or step counter, so instead of rows that can
+ * only say "Not available" it says where they connect: the phone app.
+ */
+export function PhoneOnlyRow({ divider = false }: { divider?: boolean }) {
+  return (
+    <ListRow
+      icon="smartphone"
+      discTone="quiet"
+      discSize={36}
+      title="Phone calendar and steps"
+      detail="These connect in the Movo app on your phone"
+      right={<StatusNote>Phone app</StatusNote>}
+      divider={divider}
+    />
+  );
+}
+
 /** Watches are not connected yet (README › Profile: shown as Later). */
 export function WatchConnectionRow() {
   return (

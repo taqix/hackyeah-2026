@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
 import { useAccount } from '@/api/hooks';
-import { Col } from '@/components/layout';
+import { isGuest } from '@/api/types';
+import { Col, useLayout } from '@/components/layout';
 import { ListRow, Skeleton } from '@/components/ui';
+import { GuestAccount } from '@/features/auth';
 
 import { InlineError } from './inline-error';
 import { NameSheet } from './name-sheet';
@@ -12,6 +14,8 @@ import { deviceTimeZone, timeZoneCity } from './time-zone';
 export function AccountRows() {
   const account = useAccount();
   const [editingName, setEditingName] = useState(false);
+  // On the desktop web the time zone comes from the browser, not a phone.
+  const zoneSource = useLayout().isDesktop ? 'from your browser' : 'from your phone';
 
   if (account.isPending) {
     return (
@@ -33,14 +37,19 @@ export function AccountRows() {
 
   const { user, timezone } = account.data;
   const zone = deviceTimeZone(timezone);
+  // A web guest has no email: its card offers to save the account instead.
+  const guest = isGuest(user);
   return (
     <>
-      <ListRow
-        icon="mail"
-        discSize={36}
-        title={user.email}
-        detail={user.provider === 'google' ? 'Signed in with Google' : 'Signed in with email'}
-      />
+      <GuestAccount user={user} />
+      {guest ? null : (
+        <ListRow
+          icon="mail"
+          discSize={36}
+          title={user.email}
+          detail={user.provider === 'google' ? 'Signed in with Google' : 'Signed in with email'}
+        />
+      )}
       <ListRow
         icon="user-round"
         discSize={36}
@@ -48,9 +57,9 @@ export function AccountRows() {
         detail={user.name ?? 'Not added yet'}
         accessibilityHint="Changes the name we greet you by"
         onPress={() => setEditingName(true)}
-        divider
+        divider={!guest}
       />
-      <ListRow icon="globe" discSize={36} title="Time zone" detail={`${timeZoneCity(zone)} · from your phone`} divider />
+      <ListRow icon="globe" discSize={36} title="Time zone" detail={`${timeZoneCity(zone)} · ${zoneSource}`} divider />
       <NameSheet visible={editingName} onClose={() => setEditingName(false)} current={user.name} />
     </>
   );

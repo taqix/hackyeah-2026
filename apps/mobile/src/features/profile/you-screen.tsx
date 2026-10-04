@@ -1,27 +1,26 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
-import {
-  useAssistantSummary,
-  useFeedbackOverview,
-  usePlanState,
-  usePreferences,
-  useSession,
-  useSports,
-} from '@/api/hooks';
-import { IconButton, ListRow, Skeleton, SuggestionCard, Text } from '@/components/ui';
-import { Col, Content, H1, Kicker, Row, Screen } from '@/components/layout';
+import { useFeedbackOverview, usePlanState, usePreferences, useSession, useSports } from '@/api/hooks';
+import { IconButton, ListRow, Text } from '@/components/ui';
+import { Col, Content, H1, Kicker, Row, Screen, useLayout } from '@/components/layout';
 import { useNow } from '@/lib/clock';
-import { PREFERENCE_SECTIONS, SECTION_META, sectionLine } from '@/lib/preference-options';
 import { useBottomClearance } from '@/navigation/bottom-clearance';
-import { routes } from '@/navigation/routes';
-import { useTheme } from '@/theme';
 
-import { cardKicker, feedbackCounts, youKicker } from './labels';
+import { AnswerRows } from './answer-rows';
+import { feedbackCounts, youKicker } from './labels';
 import { ErrorState, Group, RowsSkeleton } from './pieces';
+import { SummaryCard } from './summary-card';
+import { YouDashboard } from './you-dashboard';
 
-/** You (9, and 9.1 in week one): our assistant's summary on top, then everything that shapes the plan. */
+/** You (9, and 9.1 in week one): a dashboard on the desktop web, the phone layout everywhere else. */
 export function YouScreen() {
+  const { isDesktop } = useLayout();
+  return isDesktop ? <YouDashboard /> : <YouPhone />;
+}
+
+/** Our assistant's summary on top, then everything that shapes the plan. */
+function YouPhone() {
   const router = useRouter();
   const today = useNow();
   const clearance = useBottomClearance();
@@ -51,31 +50,6 @@ export function YouScreen() {
   );
 }
 
-/**
- * The summary card. While it rebuilds it keeps the old text marked as updating;
- * when it can't be written (or fails to load) the card hides and the answers stay.
- */
-function SummaryCard({ today }: { today: Date }) {
-  const router = useRouter();
-  const { radius } = useTheme();
-  const summary = useAssistantSummary();
-
-  if (summary.isPending) return <Skeleton height={220} radius={radius.xl} />;
-  const data = summary.data;
-  if (!data || data.status === 'unavailable' || !data.title) return null;
-
-  return (
-    <SuggestionCard
-      tone="dawn"
-      kicker={cardKicker(data, today)}
-      title={data.title}
-      body={data.headline}
-      actionLabel="See why"
-      onAction={() => router.push('/profile/summary')}
-    />
-  );
-}
-
 /** One row per onboarding step, then Your feedback. */
 function Answers() {
   const router = useRouter();
@@ -98,17 +72,7 @@ function Answers() {
   return (
     <Group title="What shapes your plan" gap={2}>
       {prefs ? (
-        PREFERENCE_SECTIONS.map((section, i) => (
-          <ListRow
-            key={section}
-            icon={SECTION_META[section].icon}
-            title={SECTION_META[section].label}
-            detail={sectionLine(section, prefs, sports.data)}
-            divider={i > 0}
-            onPress={() => router.push(routes.profileEdit(section))}
-            accessibilityHint="Opens this question to change your answer"
-          />
-        ))
+        <AnswerRows preferences={prefs} sports={sports.data} />
       ) : (
         <Text variant="bodySm" style={styles.empty}>
           No answers saved yet.

@@ -3,8 +3,9 @@ import { useState } from 'react';
 
 // The one screen allowed to reach into the mock: it drives the mock itself.
 import { DEMO_EMAIL, DEMO_PASSWORD, useDemoSettings, WRONG_PASSWORD } from '@/api/mock';
-import { BackButton, Col, Content, Row, Screen, Section, TopBar } from '@/components/layout';
+import { BackButton, Col, Content, H1, Row, Screen, Section, TopBar, useLayout } from '@/components/layout';
 import { Button, Card, Icon, ListRow, Segmented, type SegmentedOption, Text } from '@/components/ui';
+import { BackLink } from '@/features/profile/panel';
 import { ConfirmSheet } from '@/features/settings/confirm-sheet';
 import { now, useNow } from '@/lib/clock';
 import { formatLongDate, formatTime } from '@/lib/dates';
@@ -23,6 +24,7 @@ const LATENCY: SegmentedOption<number>[] = [
 export function DemoScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { isDesktop } = useLayout();
   const demo = useDemoSettings();
   const current = useNow(15_000);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -52,8 +54,14 @@ export function DemoScreen() {
 
   return (
     <Screen>
-      <TopBar left={<BackButton />} title="Demo controls" />
-      <Content gap={28}>
+      {isDesktop ? null : <TopBar left={<BackButton />} title="Demo controls" />}
+      <Content gap={28} maxWidth={720}>
+        {isDesktop ? (
+          <Col gap={12}>
+            <BackLink label="Settings" href="/settings" />
+            <H1>Demo controls</H1>
+          </Col>
+        ) : null}
         <Card variant="sunken" padding={16}>
           <Row gap={12} style={{ alignItems: 'flex-start' }}>
             <Icon name="info" size={18} color={colors.textSecondary} />

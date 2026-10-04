@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -9,6 +10,7 @@ import { now } from '@/lib/clock';
 import { type DateLike, diffDays, formatDayDate, formatDayLong, toLocalDate } from '@/lib/dates';
 import { sessionStart } from '@/lib/sessions';
 import { sportIcon } from '@/lib/sport-visuals';
+import { routes } from '@/navigation/routes';
 
 import { WorkoutError, WorkoutLoading } from '../screen-state';
 import { LogForm } from './log-form';
@@ -82,6 +84,8 @@ export function LogScreen({ sessionId, logId }: { sessionId: string; logId?: str
 
   const session = sessionQuery.data ?? null;
   const log = logQuery.data ?? null;
+  // A saved session's actuals are final; its own screen shows them instead.
+  if (log?.actuals_locked) return <Redirect href={routes.session(log.session_id ?? sessionId)} />;
   const sportId = log?.sport_id ?? session?.sport_id ?? picked;
   const sport = sports.find((s) => s.id === sportId) ?? null;
   const choosing = isNew && !log;

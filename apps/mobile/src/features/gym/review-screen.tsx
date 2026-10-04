@@ -73,6 +73,8 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
 
   const rows = reviewRows(log, sessionQuery.data, sportQuery.data);
   const minutes = Math.max(1, Math.round(log.duration_seconds / 60));
+  // A saved session's sets are final: read-only, and feedback has its own entry points.
+  const locked = !!log.actuals_locked;
 
   return (
     <Screen>
@@ -81,11 +83,14 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
         <Col gap={6}>
           <Kicker>{`${formatDayLong(log.started_at)} · ${formatMinutes(minutes)}`}</Kicker>
           <H1>Done for today.</H1>
-          <Body>Here&apos;s what you logged. Tap a line to fix it.</Body>
+          <Body>
+            {locked ? "Here's what you logged. Saved sessions stay as they are." : "Here's what you logged. Tap a line to fix it."}
+          </Body>
         </Col>
         <Card padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
           {rows.map((row, i) => {
             const done = row.sets.length > 0;
+            const fixable = done && !locked;
             const detail = doneSummary(row.step, row.sets);
             return (
               <ListRow
@@ -96,12 +101,13 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
                 discTone="quiet"
                 discSize={36}
                 divider={i > 0}
+                // Saved rows have no onPress: plain, not dimmed. Only exercises not done are dimmed.
                 disabled={!done}
                 chevron={false}
                 right={done ? <Icon name="check" size={18} strokeWidth={2.25} color={colors.success} /> : undefined}
-                onPress={done ? () => setFixing(i) : undefined}
+                onPress={fixable ? () => setFixing(i) : undefined}
                 accessibilityLabel={`${row.step.name}, ${detail}`}
-                accessibilityHint={done ? 'Opens the sets to fix a number' : undefined}
+                accessibilityHint={fixable ? 'Opens the sets to fix a number' : undefined}
                 style={{ minHeight: 64 }}
               />
             );
@@ -109,9 +115,15 @@ export function GymReviewScreen({ sessionId, logId }: { sessionId: string; logId
         </Card>
       </Content>
       <BottomBar>
-        <Button size="lg" fullWidth iconRight="arrow-right" onPress={() => router.replace(routes.feedback(log.id))}>
-          Continue
-        </Button>
+        {locked ? (
+          <Button size="lg" fullWidth iconRight="check" onPress={close}>
+            Done
+          </Button>
+        ) : (
+          <Button size="lg" fullWidth iconRight="arrow-right" onPress={() => router.replace(routes.feedback(log.id))}>
+            Continue
+          </Button>
+        )}
       </BottomBar>
       <FixSetsSheet log={log} target={fixing === null ? null : (rows[fixing] ?? null)} onClose={() => setFixing(null)} />
     </Screen>

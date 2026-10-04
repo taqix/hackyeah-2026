@@ -280,38 +280,48 @@ freeze the week.
   the same week. That makes mid-week revisions possible, and lets a same-week
   regeneration after an answers edit keep past sessions.
 
-### Hosted project state (FitnessApp, read-only check on 4 October 2026)
+### Hosted project state (FitnessApp, after the push on 4 October 2026)
 
-**Database and function**
-- Applied migrations: `20261003130000` and `20261003140000`. The wearable
-  migration is not applied. New migrations must therefore start after
-  `20261003140000`.
-- Every table is empty: 0 users, profiles, sports, plans and completions. The
-  catalog seed is required before generation can work.
-- `product-api` is deployed (version 3, `verify_jwt = true`). An unauthenticated
-  call reaches the handler and gets its 401 envelope. OPTIONS returns 204.
-- Function secrets hold only the platform defaults; there is no `GEMINI_*`.
-- The project uses the new keys: the client gets `sb_publishable_…`, and the
-  platform provides `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to
-  the function.
-- If the gateway rejects valid user JWTs (new signing keys), deploy with
-  `verify_jwt = false`. The handler verifies every token with Auth
-  independently.
+**Database**
+- Applied migrations, recorded in `supabase_migrations.schema_migrations`:
+  - `20261003130000` and `20261003140000` (already there)
+  - `20261004100000_feedback_opinions_undo` (new)
+  - `20261004110000_sport_catalog_seed` (new)
+- The wearable migration `20261003120000` is still not applied, on purpose.
+- The catalog has 22 sports: 7 working (Walking, Strength, Running, Cycling,
+  Swimming, Mobility, Football) and 15 previews. Every public table has RLS
+  enabled.
+- Security advisors report two expected warnings: `complete_activity` and
+  `update_completion_feedback` are `SECURITY DEFINER` RPCs callable by
+  `authenticated`, and both derive the owner from `auth.uid()`.
+  Leaked-password protection is off; it is a dashboard toggle.
+
+**Function**
+- `product-api` is redeployed with the Gemini adapter and the new routes, and
+  `verify_jwt = true` is kept.
+- The project signs user tokens with ES256. If the gateway ever rejects valid
+  tokens, decide on `verify_jwt = false`. The handler verifies every token
+  with Auth itself.
+- Function secrets: `GEMINI_API_KEY` and `GEMINI_MODEL` (`gemini-3.8-flash`)
+  are set, alongside the platform defaults (`SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, …).
+- `gemini-3.8-flash` rejects `minItems`/`maxItems` in `responseJsonSchema`
+  with a bare 400 INVALID_ARGUMENT. The adapter describes counts instead and
+  enforces them locally.
 
 **Auth**
-- Email sign-in is on with autoconfirm, so signup returns a session at once.
-  Google sign-in is off (no client ID).
-- `site_url` is `http://localhost:3000` and the redirect allowlist is empty.
-- The app reads `GET /auth/v1/settings` and hides Google while the provider is
-  off.
+- Email sign-in is on with autoconfirm. Google sign-in is off (no client ID);
+  the app reads `GET /auth/v1/settings` and hides the button.
+- The redirect allowlist holds `hackyeah2026://auth/{callback,reset}`,
+  `exp://**/--/auth/{callback,reset}` and
+  `http://localhost:8081/auth/{callback,reset}`. `site_url` is still
+  `http://localhost:3000`.
 
 ### Open decisions and dependencies (owner)
 
-- Before anything runs live, the owner must:
-  - apply the migrations
-  - deploy `product-api`
-  - set the `GEMINI_API_KEY`/`GEMINI_MODEL` secrets
-  - configure the Google provider and allowlist the redirect URLs
+- Google sign-in: configure the Google provider (client ID and secret) in the
+  Supabase dashboard.
+- Optional: enable leaked-password protection.
 - Whether `lookupEmail` may reveal account existence is still open. Mobile
   asks for a password first and offers "Create an account" instead; there is
   no enumeration.

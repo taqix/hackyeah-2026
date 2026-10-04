@@ -5,28 +5,14 @@ import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icon, type IconName } from '@/components/ui/icon';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/theme';
 
 import { TAB_BAR_HEIGHT, tabBarBottomOffset } from './bottom-clearance';
+import { activeNavFill, withAlpha } from './nav-colors';
 import { useOpenChat } from './open-chat';
-
-type TabRoute = 'index' | 'calendar' | 'you';
-
-const TAB_ITEMS: { route: TabRoute; label: string; icon: IconName }[] = [
-  { route: 'index', label: 'Today', icon: 'sun' },
-  { route: 'calendar', label: 'Calendar', icon: 'calendar' },
-  { route: 'you', label: 'You', icon: 'user-round' },
-];
-
-/** `#RRGGBB` plus an alpha, for the prototype's color-mix(... transparent) fills. */
-function withAlpha(hex: string, alpha: number) {
-  const value = hex.replace('#', '');
-  if (value.length !== 6) return hex;
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));
-  return `rgba(${r},${g},${b},${alpha})`;
-}
+import { TAB_ITEMS, type TabRoute } from './tab-items';
 
 /** Android resizes the window for the keyboard, which would lift the bar over the input. */
 function useAndroidKeyboardVisible() {
@@ -127,10 +113,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                   onLongPress={() => onTabLongPress(item.route)}
                   style={({ pressed }) => [
                     styles.item,
-                    active && {
-                      backgroundColor: withAlpha(colors.textPrimary, 0.07),
-                      borderColor: withAlpha(colors.textPrimary, 0.05),
-                    },
+                    active && activeNavFill(colors),
                     pressed && { transform: [{ scale: theme.motion.pressScale }] },
                   ]}>
                   <Icon

@@ -28,6 +28,8 @@ import { AuthSessionSync } from '@/features/auth/session-sync';
 import { SetupScreen } from '@/features/setup/setup-screen';
 import { debugLog, debugLogsEnabled } from '@/lib/debug-log';
 import { NavigationLogger } from '@/navigation/navigation-logger';
+import { useDialogRouteOptions, webScreenLayout } from '@/navigation/web/stack-presentation';
+import { WebShell } from '@/navigation/web/web-shell';
 import { fontFamily, ThemeProvider, useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -92,6 +94,8 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { scheme, colors } = useTheme();
+  // Desktop web: feedback, Log it and editing an answer open as dialogs over the page. Empty elsewhere.
+  const dialog = useDialogRouteOptions();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme: NavigationTheme = {
     ...base,
@@ -109,21 +113,28 @@ function RootNavigator() {
   return (
     <NavigationThemeProvider value={navigationTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgApp } }}>
-        <Stack.Screen name="index" options={{ animation: 'none' }} />
-        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-        <Stack.Screen
-          name="coach"
-          options={{ presentation: Platform.OS === 'android' ? 'modal' : 'fullScreenModal' }}
-        />
-        <Stack.Screen name="feedback/[logId]" options={{ presentation: 'modal' }} />
-        <Stack.Screen
-          name="gym/[sessionId]"
-          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
-        />
-      </Stack>
+      {/* The desktop web's sidebar and coach dock around the stack; iOS and Android get the stack alone. */}
+      <WebShell>
+        <Stack
+          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgApp } }}
+          screenLayout={Platform.OS === 'web' ? webScreenLayout : undefined}>
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          <Stack.Screen
+            name="coach"
+            options={{ presentation: Platform.OS === 'android' ? 'modal' : 'fullScreenModal' }}
+          />
+          <Stack.Screen name="feedback/[logId]" options={{ presentation: 'modal', ...dialog }} />
+          <Stack.Screen name="log/[sessionId]" options={dialog} />
+          <Stack.Screen name="profile/edit/[section]" options={dialog} />
+          <Stack.Screen
+            name="gym/[sessionId]"
+            options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+          />
+        </Stack>
+      </WebShell>
     </NavigationThemeProvider>
   );
 }

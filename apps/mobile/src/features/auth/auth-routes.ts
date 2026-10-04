@@ -29,3 +29,9 @@ export function requestErrorMessage(error: unknown): string {
   if (isApiError(error, 'timeout')) return 'That took too long to answer. Try again.';
   return 'Something went wrong on our side. Try again.';
 }
+
+/** Continue with Google: Auth's own reason when there is one (sign-ups off, didn't finish), else the usual copy. */
+export function googleErrorMessage(error: unknown): string {
+  if (isApiError(error) && error.code !== 'offline' && error.code !== 'timeout') return error.message;
+  return requestErrorMessage(error);
+}

@@ -8,7 +8,7 @@ import { Button, Divider, Input, SuggestionCard, Text } from '@/components/ui';
 import { Col, Content, Row, Screen } from '@/components/layout';
 import { useTheme } from '@/theme';
 
-import { EMAIL_FORMAT_ERROR, looksLikeEmail, normalizeEmail, passwordRoute } from './auth-routes';
+import { EMAIL_FORMAT_ERROR, googleErrorMessage, looksLikeEmail, normalizeEmail, passwordRoute } from './auth-routes';
 import { GoogleButton } from './google-button';
 import { KeyboardFrame } from './keyboard-frame';
 import { Legal } from './legal';
@@ -100,7 +100,13 @@ export function WelcomeScreen() {
           {offerGoogle ? (
             <>
               <GoogleButton onPress={continueWithGoogle} loading={google.isPending} disabled={lookup.isPending} />
-              {google.isError ? <RequestAlert error={google.error} onRetry={continueWithGoogle} /> : null}
+              {google.isError ? (
+                <RequestAlert
+                  error={google.error}
+                  onRetry={continueWithGoogle}
+                  message={googleErrorMessage(google.error)}
+                />
+              ) : null}
               <OrDivider />
             </>
           ) : null}

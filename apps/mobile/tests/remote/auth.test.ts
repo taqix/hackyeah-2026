@@ -273,7 +273,14 @@ test('Google on a phone opens the browser and trades the returned code for a ses
   });
   const signedIn = await client.signInWithGoogle();
   assert.deepEqual(oauth, [
-    { provider: 'google', options: { redirectTo: 'hackyeah2026://auth/callback', skipBrowserRedirect: true } },
+    {
+      provider: 'google',
+      options: {
+        redirectTo: 'hackyeah2026://auth/callback',
+        skipBrowserRedirect: true,
+        queryParams: { prompt: 'select_account' },
+      },
+    },
   ]);
   assert.deepEqual(opened, [['https://example.supabase.co/auth/v1/authorize?provider=google', 'hackyeah2026://auth/callback']]);
   assert.deepEqual(exchanges, ['abc123']);
@@ -306,7 +313,57 @@ test('Google on the web hands the page to supabase-js and never settles', async 
     new Promise((resolve) => setTimeout(() => resolve('pending'), 10)),
   ]);
   assert.equal(settled, 'pending');
-  assert.deepEqual(oauth, [{ provider: 'google', options: { redirectTo: 'http://localhost:8081/auth/callback' } }]);
+  assert.deepEqual(oauth, [
+    {
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:8081/auth/callback', queryParams: { prompt: 'select_account' } },
+    },
+  ]);
+});
+
+test('Expo Go returns to its exp:// callback, and the browser is told to come back there', async () => {
+  const opened: string[] = [];
+  const exchanges: string[] = [];
+  const expoGo = 'exp://192.168.1.20:8081/--/auth/callback';
+  const { client } = authSection(googlePort(exchanges, []), {
+    redirectUrl: (path) => `exp://192.168.1.20:8081/--/${path}`,
+    openAuthSession: async (_url, redirectUrl) => {
+      opened.push(redirectUrl);
+      // Supabase may put the code in the fragment as well as the query.
+      return { type: 'success', url: `${expoGo}#code=frag-code` };
+    },
+  });
+  await client.signInWithGoogle();
+  assert.deepEqual(opened, [expoGo]);
+  assert.deepEqual(exchanges, ['frag-code']);
+});
+
+test("Supabase's own refusals keep their copy; other Google failures say Google did not finish", async () => {
+  // error=access_denied with Supabase's error_code is a refusal, not the person declining.
+  const signupOff = authSection(googlePort([], []), {
+    openAuthSession: async () => ({
+      type: 'success',
+      url: 'hackyeah2026://auth/callback?error=access_denied&error_code=signup_disabled&error_description=Signups+not+allowed',
+    }),
+  });
+  await assert.rejects(
+    signupOff.client.signInWithGoogle(),
+    (error) => !isSignInCancelled(error) && isApiError(error) && /New accounts can't be created/.test(error.message),
+  );
+
+  const stale = authSection(
+    { ...googlePort([], []), exchangeCodeForSession: async () => answer(null, authError('flow_state_expired')) },
+    { openAuthSession: async () => ({ type: 'success', url: 'hackyeah2026://auth/callback?code=late' }) },
+  );
+  await assert.rejects(
+    stale.client.signInWithGoogle(),
+    (error) => isApiError(error, 'unauthorized') && error.message === "Google sign-in didn't finish. Try again.",
+  );
+
+  const refused = authSection(googlePort([], []), {
+    openAuthSession: async () => ({ type: 'success', url: 'hackyeah2026://auth/callback?error=server_error&error_description=x' }),
+  });
+  await assert.rejects(refused.client.signInWithGoogle(), (error) => isApiError(error, 'unknown') && /didn't finish/.test(error.message));
 });
 
 /* ------------------------------------------------------------ Redirects */

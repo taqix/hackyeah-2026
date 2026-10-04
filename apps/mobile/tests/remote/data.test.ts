@@ -107,7 +107,7 @@ test('reads are shared while loading, cached for a short time, and refetched aft
   assert.equal(count('/plans/history'), 3, 'stale after the TTL');
   const before = count('/plans/current');
   clock.now = new Date(clock.now.getTime() + 20_000);
-  data.setCurrentPlan(null);
+  data.setCurrentPlan(null, await data.userId());
   assert.equal(await data.currentPlan(), null);
   assert.equal(count('/plans/current'), before, 'a primed value skips the request');
 });
@@ -131,6 +131,33 @@ test("another user's sign-in drops everything cached", async () => {
   assert.equal(count('/plans/history'), 2);
   state.current = null;
   await assert.rejects(data.userId(), (error: Error & { code?: string }) => error.code === 'unauthorized');
+});
+
+test("a write's answer is cached only while its account is the one signed in", async () => {
+  const v1 = version(1, '2026-10-05', [activity(1)]);
+  const plan = { plan: PLAN, version: v1 };
+  const profile = { id: uuid(1), username: null, created_at: null, preferences: null };
+  const { data, state, count } = setup({ routes: { '/profile': fail(404, 'NOT_FOUND') } });
+  const ana = await data.userId();
+
+  // Signed out while the write ran: nothing is kept for whoever signs in next.
+  data.reset();
+  data.setCurrentPlan(plan, ana);
+  data.setProfile(profile, ana);
+  assert.equal(await data.currentPlan(), null);
+  assert.equal(await data.profile(), null);
+  assert.equal(count('/plans/current'), 1);
+
+  // Another account has read meanwhile: its cache stays its own.
+  state.current = session(uuid(77), 'token-2');
+  await data.userId();
+  data.setCurrentPlan(plan, ana);
+  assert.equal(await data.currentPlan(), null);
+  assert.equal(count('/plans/current'), 2);
+
+  data.setCurrentPlan(plan, uuid(77));
+  assert.equal((await data.currentPlan())?.version.id, v1.id, "the account's own write is kept");
+  assert.equal(count('/plans/current'), 2);
 });
 
 test('sport IDs translate between slugs and catalog IDs', async () => {

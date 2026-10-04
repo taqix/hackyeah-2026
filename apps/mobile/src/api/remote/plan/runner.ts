@@ -184,10 +184,8 @@ export function createPlanRunner({ http, data, deps }: RemoteContext): PlanRunne
       bodies.delete(body.request_id);
       bodies.delete(job.requestId);
       // A plan built for an account that has since signed out never reaches the next one's cache.
-      if ((await data.userId().catch(() => null)) === job.userId) {
-        data.setCurrentPlan(result);
-        data.invalidate('history');
-      }
+      data.setCurrentPlan(result, job.userId);
+      data.invalidate('history');
       return result;
     } catch (error) {
       const failure = fail(job, error);

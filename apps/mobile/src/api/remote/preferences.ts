@@ -52,15 +52,16 @@ export function createRemotePreferences(ctx: RemoteContext): ApiClient['preferen
     },
 
     async save(preferences) {
+      const userId = await ctx.data.userId();
       const [profile, ids] = await Promise.all([ctx.data.profile(), ctx.data.sportIds()]);
       const document = preferencesToWire(preferences, ids.toWire);
       const body: UpdateProfileDto = { username: profile?.username ?? null, preferences: document };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);
-      ctx.data.setProfile(saved);
+      ctx.data.setProfile(saved, userId);
       const kept = saved.preferences ?? document;
       if (profile?.preferences && planningFieldsChanged(profile.preferences, kept)) {
-        // Only a plan in use is re-planned; replanActiveWeek checks that and never rejects.
-        void replanActiveWeek(ctx);
+        // Only this account's plan in use is re-planned; replanActiveWeek checks that and never rejects.
+        void replanActiveWeek(ctx, userId);
       }
       return preferencesFromWire(kept, ids.toApp);
     },

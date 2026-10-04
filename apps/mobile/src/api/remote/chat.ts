@@ -120,6 +120,8 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
       if (text.length > MAX_MESSAGE_LENGTH) {
         throw new ApiError('validation', 'That message is too long. Keep it under 2,000 characters.');
       }
+      // Who the turn is for: its answer is cached only while the same account is signed in.
+      const userId = await ctx.data.userId();
       const current = await ctx.data.currentPlan();
       if (!current) throw new ApiError('conflict', NOT_READY);
 
@@ -150,7 +152,7 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
 
       const changed = result.outcome === 'plan_updated';
       if (changed) {
-        ctx.data.setCurrentPlan(result.active_plan);
+        ctx.data.setCurrentPlan(result.active_plan, userId);
         ctx.data.invalidate('history', 'chat');
       } else {
         ctx.data.invalidate('chat');
@@ -164,6 +166,7 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
     },
 
     async undo(messageId) {
+      const userId = await ctx.data.userId();
       const current = await ctx.data.currentPlan();
       if (!current) throw new ApiError('conflict', CANT_UNDO);
       let body = undoBodies.get(messageId);
@@ -191,7 +194,7 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
         throw error;
       }
       undoBodies.delete(messageId);
-      ctx.data.setCurrentPlan(result);
+      ctx.data.setCurrentPlan(result, userId);
       ctx.data.invalidate('history', 'chat');
       return { messages: [], plan_changed: true, active_version: result.version.version };
     },

@@ -48,14 +48,15 @@ function checkMonday(weekStart: LocalDate) {
  * from: same week, expected_version the active one, a new request_id, free
  * time from now. Runs in the background and never rejects; a failure shows
  * as a note in the plan state, and the week stays as it was. A week that is
- * already over is left alone.
+ * already over is left alone. Nothing is re-planned once `userId`, whose
+ * answers changed, is no longer the signed-in account.
  */
-export async function replanActiveWeek(ctx: RemoteContext): Promise<void> {
+export async function replanActiveWeek(ctx: RemoteContext, userId: string): Promise<void> {
   try {
-    const userId = await ctx.data.userId();
     const runner = planRunner(ctx);
     // Answers saved twice in a row: the second re-plan waits for the first.
     await runner.running(userId)?.done.catch(() => undefined);
+    if ((await ctx.data.userId()) !== userId) return;
     const current = await ctx.data.currentPlan();
     if (!current) return;
     const weekStart = current.version.plan.week_start;

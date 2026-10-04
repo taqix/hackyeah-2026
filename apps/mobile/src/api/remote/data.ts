@@ -80,10 +80,14 @@ export interface RemoteData {
    */
   findActivity(activityId: string): Promise<FoundActivity | null>;
 
-  /** Store what PUT /profile returned, skipping a reload. */
-  setProfile(value: ProfileEntity): void;
-  /** Store the plan a write returned (generate, chat plan_updated, undo), skipping a reload. */
-  setCurrentPlan(value: ActivePlanDto | null): void;
+  /**
+   * Store what PUT /profile returned, skipping a reload. `userId` is who the
+   * write was for (read before it was sent): an answer that arrives after a
+   * sign-out or another account's first read is dropped, never cached for them.
+   */
+  setProfile(value: ProfileEntity, userId: string): void;
+  /** Store the plan a write returned (generate, chat plan_updated, undo) for `userId`, as setProfile. */
+  setCurrentPlan(value: ActivePlanDto | null, userId: string): void;
   /** Drop cached values so the next read refetches. No keys: everything. */
   invalidate(...keys: RemoteDataKey[]): void;
   /** Drop everything (sign-out). */
@@ -297,8 +301,12 @@ export function createRemoteData(http: ProductApi, deps: Pick<RemoteDeps, 'auth'
     versionByNumber: async (number) => (await allVersions()).find((v) => v.version === number) ?? null,
     completionByActivityId,
     findActivity,
-    setProfile: (value) => slots.profile.set(value),
-    setCurrentPlan: (value) => slots.currentPlan.set(value),
+    setProfile(value, forUser) {
+      if (owner === forUser) slots.profile.set(value);
+    },
+    setCurrentPlan(value, forUser) {
+      if (owner === forUser) slots.currentPlan.set(value);
+    },
     invalidate(...keys) {
       if (keys.length === 0) {
         clearAll();

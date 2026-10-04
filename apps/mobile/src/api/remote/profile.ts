@@ -94,6 +94,7 @@ export function createRemoteProfile(ctx: RemoteContext): ApiClient['profile'] {
     },
     async setSportExcluded(sportId, excluded) {
       // PUT /profile replaces the whole document, so start from a fresh read.
+      const userId = await ctx.data.userId();
       ctx.data.invalidate('profile');
       const [profile, ids] = await Promise.all([ctx.data.profile(), ctx.data.sportIds()]);
       const preferences = profile?.preferences;
@@ -111,7 +112,7 @@ export function createRemoteProfile(ctx: RemoteContext): ApiClient['profile'] {
         preferences: { ...preferences, excluded_activity_types: next },
       };
       const saved = await ctx.http.put<ProfileEntity>('/profile', body);
-      ctx.data.setProfile(saved);
+      ctx.data.setProfile(saved, userId);
       return feedbackOverview(ctx);
     },
   };

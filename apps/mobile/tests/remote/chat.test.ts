@@ -21,11 +21,13 @@ import {
   activity,
   completion,
   fail,
+  fakeAuth,
   fakeDeps,
   memoryStorage,
   ok,
   PLAN_ID,
   scriptedFetch,
+  session,
   SPORTS,
   USER_ID,
   uuid,
@@ -113,7 +115,8 @@ function setup(server: Server) {
     if (p === '/sports') return ok(SPORTS);
     return fail(404, 'NOT_FOUND');
   });
-  const deps = fakeDeps({ fetch: fetch.fetch, storage, now: () => clock.now });
+  const signedIn = fakeAuth();
+  const deps = fakeDeps({ fetch: fetch.fetch, storage, now: () => clock.now, auth: signedIn.auth });
   const http = createProductApi({
     fetch: fetch.fetch,
     baseUrl: deps.productApiUrl,
@@ -124,7 +127,7 @@ function setup(server: Server) {
   const data = createRemoteData(http, deps);
   const ctx: RemoteContext = { http, data, deps, drafts: createDraftStore(storage, data.userId) };
   const posts = (p: string) => fetch.calls.filter((call) => call.init.method === 'POST' && path(call) === p);
-  return { chat: createRemoteChat(ctx), data, fetch, posts, clock, storage };
+  return { chat: createRemoteChat(ctx), data, fetch, posts, clock, storage, auth: signedIn.state };
 }
 
 /** A server that saves a chat turn: a reply, or a change to `revised`. */
@@ -291,6 +294,26 @@ test('send maps a stale version and a missing AI provider, and retries neither',
     fetch.calls.filter((call) => call.url.includes('/plans/current')).length > currentReads,
     'a stale version reloads the plan',
   );
+});
+
+test("a change that answers after another account signed in never reaches that account's plan", async () => {
+  const server: Server = { current: active(v2), history: [v2, v1], completions: [], chat: [] };
+  const { chat, data, auth } = setup(server);
+  let afterSwitch: Promise<unknown> = Promise.resolve();
+  server.post = (p, body) => {
+    const reply = turn(server, body as SendChatDto, v3);
+    // While the AI works, Ana signs out and Ben, who has no plan yet, signs in and reads his.
+    data.reset();
+    auth.current = session(uuid(77), 'token-2');
+    Object.assign(server, { current: null, history: [], chat: [] });
+    afterSwitch = data.currentPlan();
+    return reply;
+  };
+
+  const result = await chat.send({ text: 'Saturday to Sunday', about_session_id: null, base_version: null });
+  assert.equal(result.plan_changed, true, 'the change is still answered');
+  assert.equal(await afterSwitch, null);
+  assert.equal(await data.currentPlan(), null, "Ben's plan is not Ana's new one");
 });
 
 test('undo restores through POST /plans/undo for the active change only', async () => {

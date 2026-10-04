@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import { createRemoteRuntime } from '../../src/api/remote/client';
 import { planningFieldsChanged } from '../../src/api/remote/preferences';
 import type { Preferences } from '../../src/api/types';
-import { activity, fakeDeps, version } from './fakes';
+import type { FetchLike } from '../../src/api/remote/deps';
+import { activity, fakeAuth, fakeDeps, session, uuid, version } from './fakes';
 import { fakeServer, flush, gate, PREFERENCES } from './plan-fakes';
 
 process.env.TZ = 'Europe/Warsaw';
@@ -74,6 +75,31 @@ test('changed answers re-plan the active week in the background; the save does n
   held.open();
   await flush();
   assert.equal((await client.plan.getState()).active_version, 2);
+});
+
+test("answers saved as another account signs in neither fill that account's cache nor re-plan its week", async () => {
+  const server = fakeServer({ versions: [version(1, '2026-10-05', [activity(1, { start_at: '2026-10-09T07:00:00+02:00' })])] });
+  const signedIn = fakeAuth();
+  let switched: Promise<unknown> = Promise.resolve();
+  const fetch: FetchLike = async (url, init) => {
+    const response = await server.fetch(url, init);
+    if (init.method === 'PUT') {
+      // Ana signs out while her answers save; Ben signs in and reads his profile.
+      remote.data.reset();
+      signedIn.state.current = session(uuid(77), 'token-2');
+      server.state.profile = { id: uuid(77), username: 'ben', created_at: null, preferences: { ...PREFERENCES, sessions_per_week: 2 } };
+      switched = remote.client.preferences.get();
+    }
+    return response;
+  };
+  const remote = createRemoteRuntime(fakeDeps({ fetch, auth: signedIn.auth }));
+  await remote.client.plan.getState();
+
+  await remote.client.preferences.save({ ...APP_PREFERENCES, sessions_per_week: 4 });
+  await switched;
+  await flush();
+  assert.equal(server.generates().length, 0, "Ben's week is not re-planned from Ana's answers");
+  assert.equal((await remote.client.preferences.get())?.sessions_per_week, 2, "Ben's answers, not Ana's");
 });
 
 test('answers the planner does not read, or the same lists in another order, re-plan nothing', async () => {

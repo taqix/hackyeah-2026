@@ -5,6 +5,7 @@
  * imports.
  */
 import type { CaptureAvailability } from '../../services/calendar/plan-availability';
+import type { GoogleFetch } from '../../services/google-calendar/types';
 
 /* ---------------------------------------------------------------- Fetch */
 
@@ -54,6 +55,30 @@ export interface AuthSessionData {
   /** Seconds since epoch. */
   expires_at?: number;
   user: AuthUser;
+  /**
+   * Google's access token, present only on the session right after a Google
+   * sign-in or identity link (gone after the next refresh). Google Calendar
+   * stores it on connect.
+   */
+  provider_token?: string | null;
+  /** Google's refresh token, with `access_type=offline` and `prompt=consent`; same lifetime as `provider_token`. */
+  provider_refresh_token?: string | null;
+}
+
+/** One sign-in method linked to the user (`email`, `google`). */
+export interface AuthIdentity {
+  provider: string;
+  /** Google fills `email`, `full_name`, `name`, `sub`. */
+  identity_data?: { [key: string]: unknown };
+}
+
+/** The OAuth options the app passes to Google (sign-in, linking). */
+export interface OAuthOptions {
+  redirectTo?: string;
+  /** Space-separated extra scopes, e.g. Google Calendar's. */
+  scopes?: string;
+  skipBrowserRedirect?: boolean;
+  queryParams?: { [key: string]: string };
 }
 
 export type AuthEvent =
@@ -86,8 +111,20 @@ export interface AuthPort {
   }): Promise<AuthResult>;
   signInWithOAuth(credentials: {
     provider: 'google';
-    options?: { redirectTo?: string; skipBrowserRedirect?: boolean; queryParams?: { [key: string]: string } };
+    options?: OAuthOptions;
   }): Promise<{ data: { url: string | null }; error: AuthErrorLike | null }>;
+  /**
+   * Links Google to the signed-in user (PKCE). Needs manual linking switched
+   * on in Supabase Auth, else `manual_linking_disabled`.
+   */
+  linkIdentity(credentials: {
+    provider: 'google';
+    options?: OAuthOptions;
+  }): Promise<{ data: { url: string | null }; error: AuthErrorLike | null }>;
+  /** The signed-in user's linked identities. */
+  getUserIdentities(): Promise<{ data: { identities: AuthIdentity[] } | null; error: AuthErrorLike | null }>;
+  /** Puts a known session back (a Google Calendar connect that signed in another account). */
+  setSession(tokens: { access_token: string; refresh_token: string }): Promise<AuthResult>;
   exchangeCodeForSession(authCode: string): Promise<AuthResult>;
   resetPasswordForEmail(email: string, options?: { redirectTo?: string }): Promise<{ error: AuthErrorLike | null }>;
   updateUser(attributes: { password?: string; data?: object }): Promise<{
@@ -136,4 +173,11 @@ export interface RemoteDeps {
   openAuthSession(url: string, redirectUrl: string): Promise<AuthSessionResult>;
   /** A deep link back into the app, e.g. `redirectUrl('auth/callback')` → `hackyeah2026://auth/callback`. */
   redirectUrl(path: string): string;
+  /**
+   * The keychain or keystore (expo-secure-store) for the Google tokens. On
+   * web, where there is none, AsyncStorage (localStorage).
+   */
+  secureStorage: KeyValueStorage;
+  /** fetch for Google's own APIs: Calendar and token revocation. */
+  googleFetch: GoogleFetch;
 }

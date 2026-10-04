@@ -40,6 +40,7 @@ function startAuthSync(queryClient: QueryClient): () => void {
     if (!session) {
       flushed.clear();
       getRemoteRuntime().data.reset();
+      quietly(() => getRemoteRuntime().googleCalendar.forgetPending(), 'google calendar pending connect');
       if (previous) signedOut(queryClient);
       else queryClient.setQueryData(queryKeys.session, null);
       return;
@@ -52,6 +53,13 @@ function startAuthSync(queryClient: QueryClient): () => void {
       signedIn(queryClient, next);
     } else queryClient.setQueryData(queryKeys.session, next);
     if (event === 'PASSWORD_RECOVERY') setRecoveryPending(true);
+
+    // Right after a Google sign-in the session carries Google's tokens, once. If
+    // Data and privacy started a Google Calendar connect, keep them (web lands
+    // here after the page reloads). After the lock: capture may restore a session.
+    if (session.provider_token) {
+      setTimeout(() => quietly(() => getRemoteRuntime().googleCalendar.capture(session), 'google calendar capture'), 0);
+    }
 
     // Logs left as drafts by an earlier run are saved once per signed-in start.
     if (!flushed.has(next.user.id)) {
@@ -92,7 +100,13 @@ function startAuthSync(queryClient: QueryClient): () => void {
       // The kind only: the link's one-time code is never logged.
       debugLog('auth', `deep link auth/${kind}`);
       const { code } = authRedirectParams(url);
-      if (code) quietly(() => exchangeAuthCode(supabaseAuth, code, platform), `deep link auth/${kind} code exchange`);
+      if (code) {
+        quietly(async () => {
+          const session = await exchangeAuthCode(supabaseAuth, code, platform);
+          // A Google Calendar connect whose sheet reported a dismiss (Android) finishes here.
+          await getRemoteRuntime().googleCalendar.capture(session);
+        }, `deep link auth/${kind} code exchange`);
+      }
     };
     quietly(() => Linking.getInitialURL().then(handleLink));
     const links = Linking.addEventListener('url', ({ url }) => handleLink(url));

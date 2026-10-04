@@ -1,10 +1,12 @@
 import { type ReactNode, useState } from 'react';
 import { Linking, Platform, Switch } from 'react-native';
 
+import { getRemoteRuntime } from '@/api/remote/default';
 import { Button, ListRow, Spinner } from '@/components/ui';
-import { removeCalendarExport, useCalendarExportStatus } from '@/features/calendar-export';
+import { removeCalendarExport, removeGoogleCalendarExport, useCalendarExportStatus } from '@/features/calendar-export';
 import { useStepCounter } from '@/hooks/use-step-counter';
 import { setCalendarExportEnabled, useCalendarExportSetting } from '@/state/calendar-export';
+import { reloadGoogleCalendar, useGoogleCalendar } from '@/state/google-calendar';
 import { useTheme } from '@/theme';
 
 import { ConfirmSheet } from './confirm-sheet';
@@ -80,15 +82,22 @@ const EXPORT_TITLE = 'Add sessions to my calendar';
  * Opt-in, off by default (an extra beyond the design): planned sessions are
  * copied into a "Movo" calendar on this phone. Turning it on asks for calendar
  * access when needed; turning it off removes that calendar after a confirm.
+ * Sessions go to one Movo calendar only: when Google Calendar has them,
+ * turning this on first moves them here, after a confirm.
  */
 export function CalendarExportRow({ calendar }: { calendar: CalendarAccessControls }) {
   const { colors } = useTheme();
   const setting = useCalendarExportSetting();
   const status = useCalendarExportStatus();
+  const google = useGoogleCalendar().status;
   const [confirmingOff, setConfirmingOff] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [confirmingMove, setConfirmingMove] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const { access } = calendar;
+  const googleHasSessions = !!google?.connected && google.exportEnabled;
 
   const turnOn = async () => {
     if (access.status === 'denied' && !access.canAskAgain) {
@@ -102,6 +111,28 @@ export function CalendarExportRow({ calendar }: { calendar: CalendarAccessContro
   const closeConfirm = () => {
     setConfirmingOff(false);
     setRemoveError(null);
+  };
+
+  const closeMove = () => {
+    if (moving) return;
+    setConfirmingMove(false);
+    setMoveError(null);
+  };
+
+  const moveHere = async () => {
+    setMoving(true);
+    setMoveError(null);
+    try {
+      await getRemoteRuntime().googleCalendar.setExportEnabled(false);
+      await removeGoogleCalendarExport();
+      setConfirmingMove(false);
+      await turnOn();
+    } catch {
+      setMoveError("We couldn't remove the Movo calendar from Google. Try again, or delete it in Google Calendar.");
+    } finally {
+      setMoving(false);
+      void reloadGoogleCalendar();
+    }
   };
 
   const turnOff = async () => {
@@ -134,8 +165,12 @@ export function CalendarExportRow({ calendar }: { calendar: CalendarAccessContro
     right = (
       <Switch
         value={setting.enabled}
-        disabled={calendar.connecting || removing}
-        onValueChange={(value) => (value ? void turnOn() : setConfirmingOff(true))}
+        disabled={calendar.connecting || removing || moving}
+        onValueChange={(value) => {
+          if (!value) setConfirmingOff(true);
+          else if (googleHasSessions) setConfirmingMove(true);
+          else void turnOn();
+        }}
         trackColor={{ false: colors.borderStrong, true: colors.accent }}
         thumbColor={Platform.OS === 'android' ? colors.surfaceRaised : undefined}
         ios_backgroundColor={colors.borderStrong}
@@ -157,6 +192,16 @@ export function CalendarExportRow({ calendar }: { calendar: CalendarAccessContro
         onConfirm={() => void turnOff()}
         busy={removing}
         error={removeError}
+      />
+      <ConfirmSheet
+        visible={confirmingMove}
+        onClose={closeMove}
+        title="Add sessions to this phone instead?"
+        description="Sessions leave the Movo calendar in Google and go into a Movo calendar on this phone. Your plan stays the same."
+        confirmLabel="Use this phone"
+        onConfirm={() => void moveHere()}
+        busy={moving}
+        error={moveError}
       />
     </>
   );

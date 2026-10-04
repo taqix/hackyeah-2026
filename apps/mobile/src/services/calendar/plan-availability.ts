@@ -2,11 +2,12 @@
  * The free time sent with plan generation and chat (the product API's
  * `availability`). Relative imports only: Node tests compile this file.
  *
- * With calendar access, the device's free time inside the daily window
- * (`preferred_window`, 7–21 without one) on each day of the week. Without it
- * (denied, web, Expo Go), the window itself on each day. A denied or
- * unavailable calendar falls back to manual slots, never to an empty list:
- * `slots: []` means "no free time at all".
+ * Sources, in order: Google Calendar's free/busy when the person connected it
+ * for planning, else the device calendar when the app has access, else the
+ * daily window itself (denied, web, Expo Go). Each is cut to the daily window
+ * (`preferred_window`, 7–21 without one) on every day of the week. A failed
+ * read falls back to the next source, never to an empty list: `slots: []`
+ * means "no free time at all".
  */
 import type { LocalDate } from '../../api/types';
 import { addDays, atLocalTime, fromLocalDate, toIsoWithOffset } from '../../lib/dates';
@@ -24,7 +25,7 @@ export interface AvailabilitySlot {
 
 /** The contract's `availability`: at most 100 sorted, non-overlapping slots. */
 export interface Availability {
-  source: 'device_calendar' | 'manual';
+  source: 'google_calendar' | 'device_calendar' | 'manual';
   captured_at: string;
   slots: AvailabilitySlot[];
 }
@@ -42,9 +43,22 @@ export interface CaptureAvailabilityOptions {
   capturedAt?: Date;
   /** Calendars not to read as busy, besides the app's own export calendar (always skipped). */
   excludeCalendarIds?: string[];
+  /** The plan's IANA time zone, for the Google free/busy request. Defaults to the device's. */
+  timeZone?: string;
 }
 
 export type CaptureAvailability = (options: CaptureAvailabilityOptions) => Promise<Availability>;
+
+/** Free time from a calendar outside the device (Google Calendar); preferred over the device when present. */
+export interface FreeTimeSource {
+  /** Free intervals in [startDate, endDate). Rejects on any failure; never resolves with a guess. */
+  freeSlots(query: { startDate: Date; endDate: Date; timeZone: string }): Promise<CalendarFreeSlot[]>;
+}
+
+export interface AvailabilitySources {
+  /** Google Calendar, when connected and used for planning; null or omitted otherwise. */
+  google?: FreeTimeSource | null;
+}
 
 /** What the device read needs from the calendar service; tests pass a fake. */
 export type AvailabilityCalendar = Pick<CalendarService, 'getPermission' | 'listCalendars' | 'getEvents'>;
@@ -114,7 +128,16 @@ export function toDailySlots(
   return toSlots(intervals, options.minMinutes);
 }
 
-/** The instants the device read covers: [max(from, week start), week end). */
+/** The device's IANA zone, or UTC when the runtime cannot tell. */
+export function deviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
+/** The instants the calendar read covers: [max(from, week start), week end). */
 export function availabilityRange(options: CaptureAvailabilityOptions): { startDate: Date; endDate: Date } {
   const weekStart = fromLocalDate(options.weekStart).getTime();
   return {
@@ -124,14 +147,17 @@ export function availabilityRange(options: CaptureAvailabilityOptions): { startD
 }
 
 /**
- * Captures availability through `calendar`: the device read when access is
- * granted, manual slots when it is denied or unavailable. Any other read error
- * (`native-error`) propagates, so a failed read never goes out as an empty
- * device calendar.
+ * Captures availability: Google Calendar's free/busy when `sources.google` is
+ * given and the read works, else the device read when access is granted, else
+ * manual slots. A failed Google read (expired access, offline) falls back to
+ * the device, so it never goes out as an empty Google result. On the device,
+ * any read error other than missing access (`native-error`) propagates, so a
+ * failed read never goes out as an empty device calendar either.
  */
 export async function captureAvailabilityFrom(
   calendar: AvailabilityCalendar,
   options: CaptureAvailabilityOptions,
+  sources: AvailabilitySources = {},
 ): Promise<Availability> {
   const took = startTimer();
   // Debug builds: the source, why, how many slots and how long the read took; never event titles or times.
@@ -142,8 +168,29 @@ export async function captureAvailabilityFrom(
   };
   const { startDate, endDate } = availabilityRange(options);
   if (startDate >= endDate) return logged(manualAvailability(options), 'the week is over');
+  let fallback = '';
+  if (sources.google) {
+    try {
+      const free = await sources.google.freeSlots({ startDate, endDate, timeZone: options.timeZone ?? deviceTimeZone() });
+      return logged(
+        {
+          source: 'google_calendar',
+          captured_at: toIsoWithOffset(options.capturedAt ?? new Date()),
+          slots: toDailySlots(free, options),
+        },
+        'google free/busy',
+      );
+    } catch (error) {
+      debugWarn('calendar', `✕ google free/busy week=${options.weekStart} ${took()} ${errorLabel(error)}`, () =>
+        describeError(error),
+      );
+      fallback = `google failed (${errorLabel(error)}), `;
+    }
+  }
   const permission = await calendar.getPermission();
-  if (permission.status !== 'granted') return logged(manualAvailability(options), `calendar ${permission.status}`);
+  if (permission.status !== 'granted') {
+    return logged(manualAvailability(options), `${fallback}calendar ${permission.status}`);
+  }
   const capturedAt = options.capturedAt ?? new Date();
   try {
     const calendars = await calendar.listCalendars();
@@ -160,12 +207,12 @@ export async function captureAvailabilityFrom(
         captured_at: toIsoWithOffset(capturedAt),
         slots: toDailySlots(free, options),
       },
-      `${calendarIds ? calendarIds.length : calendars.length} of ${calendars.length} calendars read`,
+      `${fallback}${calendarIds ? calendarIds.length : calendars.length} of ${calendars.length} calendars read`,
     );
   } catch (error) {
     // Access revoked since the check: plan from the window, never as if the calendar were empty.
     if (error instanceof CalendarError && (error.code === 'permission-denied' || error.code === 'unavailable')) {
-      return logged(manualAvailability({ ...options, capturedAt }), `read failed: ${error.code}`);
+      return logged(manualAvailability({ ...options, capturedAt }), `${fallback}read failed: ${error.code}`);
     }
     debugWarn('calendar', `✕ availability week=${options.weekStart} ${took()} ${errorLabel(error)}`, () =>
       describeError(error),
@@ -174,7 +221,10 @@ export async function captureAvailabilityFrom(
   }
 }
 
-/** The availability to send: the device calendar when connected, the window otherwise. */
-export function captureAvailability(options: CaptureAvailabilityOptions): Promise<Availability> {
-  return captureAvailabilityFrom(deviceCalendar, options);
+/** The availability to send: Google Calendar or the device calendar when connected, the window otherwise. */
+export function captureAvailability(
+  options: CaptureAvailabilityOptions,
+  sources: AvailabilitySources = {},
+): Promise<Availability> {
+  return captureAvailabilityFrom(deviceCalendar, options, sources);
 }

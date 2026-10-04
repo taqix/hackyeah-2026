@@ -73,6 +73,12 @@ export function fakeAuth(initial: AuthSessionData | null = session()) {
     signInWithPassword: async () => result(state.current),
     signUp: async () => result(state.current),
     signInWithOAuth: async () => ({ data: { url: null }, error: null }),
+    linkIdentity: async () => ({ data: { url: null }, error: null }),
+    getUserIdentities: async () => ({
+      data: { identities: [{ provider: state.current?.user.app_metadata.provider ?? 'email', identity_data: {} }] },
+      error: null,
+    }),
+    setSession: async () => result(state.current),
     exchangeCodeForSession: async () => result(state.current),
     resetPasswordForEmail: async () => ({ error: null }),
     updateUser: async () => ({ data: { user: state.current?.user ?? null }, error: null }),
@@ -122,6 +128,10 @@ export function fakeDeps(overrides: Partial<RemoteDeps> = {}): RemoteDeps {
     platform: 'ios',
     openAuthSession: async () => ({ type: 'cancel' }),
     redirectUrl: (path) => `hackyeah2026://${path}`,
+    secureStorage: memoryStorage(),
+    googleFetch: async (url) => {
+      throw new Error(`No Google fetch scripted for ${url}`);
+    },
     ...overrides,
   };
 }

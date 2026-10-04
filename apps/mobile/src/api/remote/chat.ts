@@ -89,6 +89,7 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
         from: new Date(Math.max(now.getTime(), fromLocalDate(weekStart).getTime())),
         window: window ? [window.start_hour, window.end_hour] : null,
         capturedAt: now,
+        timeZone: current.version.plan.timezone,
       });
     } catch (error) {
       if (error instanceof ApiError) throw error;

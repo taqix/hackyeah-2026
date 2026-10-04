@@ -1,11 +1,13 @@
 /**
  * The remote adapter with its real dependencies: supabase-js (created on
- * first use), fetch, AsyncStorage, expo-crypto IDs, the calendar's free time,
- * the system browser for OAuth and app deep links. The only remote module that
- * imports React Native, Expo or supabase-js.
+ * first use), fetch, AsyncStorage, the secure store, expo-crypto IDs, the
+ * calendar's free time (Google Calendar first when connected), the system
+ * browser for OAuth and app deep links. The only remote module that imports
+ * React Native, Expo or supabase-js.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
@@ -16,7 +18,7 @@ import type { ApiClient } from '../client';
 import { apiConfig } from '../config';
 import { getSupabase } from '../supabase';
 import { createRemoteRuntime, type RemoteRuntime } from './client';
-import type { AuthPort, RemoteDeps } from './deps';
+import type { AuthPort, KeyValueStorage, RemoteDeps } from './deps';
 
 /**
  * supabase.auth behind the AuthPort, resolved on every call so the client is
@@ -28,6 +30,9 @@ export const supabaseAuth: AuthPort = {
   signInWithPassword: (credentials) => getSupabase().auth.signInWithPassword(credentials),
   signUp: (credentials) => getSupabase().auth.signUp(credentials),
   signInWithOAuth: (credentials) => getSupabase().auth.signInWithOAuth(credentials),
+  linkIdentity: (credentials) => getSupabase().auth.linkIdentity(credentials),
+  getUserIdentities: () => getSupabase().auth.getUserIdentities(),
+  setSession: (tokens) => getSupabase().auth.setSession(tokens),
   exchangeCodeForSession: (authCode) => getSupabase().auth.exchangeCodeForSession(authCode),
   resetPasswordForEmail: (email, options) => getSupabase().auth.resetPasswordForEmail(email, options),
   updateUser: (attributes) => getSupabase().auth.updateUser(attributes),
@@ -37,6 +42,29 @@ export const supabaseAuth: AuthPort = {
   startAutoRefresh: () => getSupabase().auth.startAutoRefresh(),
   stopAutoRefresh: () => getSupabase().auth.stopAutoRefresh(),
 };
+
+/**
+ * The Google tokens' home: the iOS keychain or Android keystore through
+ * expo-secure-store. Web has no secure store, so there they fall back to
+ * AsyncStorage (localStorage), where supabase-js keeps its own session too.
+ */
+const secureStorage: KeyValueStorage =
+  Platform.OS === 'web'
+    ? AsyncStorage
+    : {
+        getItem: (key) => SecureStore.getItemAsync(key),
+        setItem: (key, value) => SecureStore.setItemAsync(key, value),
+        removeItem: (key) => SecureStore.deleteItemAsync(key),
+      };
+
+/** Google Calendar's free/busy for planning when connected; any problem reading the setting means "not now". */
+async function googleFreeTime() {
+  try {
+    return await getRemoteRuntime().googleCalendar.freeTimeSource();
+  } catch {
+    return null;
+  }
+}
 
 function defaultDeps(): RemoteDeps {
   return {
@@ -48,7 +76,7 @@ function defaultDeps(): RemoteDeps {
     storage: AsyncStorage,
     now: () => new Date(),
     newId: newRequestId,
-    captureAvailability,
+    captureAvailability: async (options) => captureAvailability(options, { google: await googleFreeTime() }),
     platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web',
     async openAuthSession(url, redirectUrl) {
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
@@ -56,6 +84,8 @@ function defaultDeps(): RemoteDeps {
       return { type: result.type === 'cancel' ? 'cancel' : 'dismiss' };
     },
     redirectUrl: (path) => Linking.createURL(path),
+    secureStorage,
+    googleFetch: (url, init) => fetch(url, init),
   };
 }
 

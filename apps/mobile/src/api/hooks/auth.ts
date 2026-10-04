@@ -2,15 +2,22 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 
 import { api } from '@/api';
 import { queryKeys } from '@/api/query-keys';
+import { isSignInCancelled } from '@/api/remote/auth';
 import type { AuthSession } from '@/api/types';
 
-/** Everything cached except the session belongs to one user. */
+/** Everything cached except the session and the providers belongs to one user. */
 const isUserData = (key: readonly unknown[]) => key[0] !== 'auth';
 
 /** Store a fresh session and refetch anything a previous user left in the cache. */
-function signedIn(queryClient: QueryClient, session: AuthSession) {
+export function signedIn(queryClient: QueryClient, session: AuthSession) {
   queryClient.setQueryData(queryKeys.session, session);
   void queryClient.resetQueries({ predicate: (q) => isUserData(q.queryKey) });
+}
+
+/** After a sign-out: the session is null and nothing cached for the person is kept. */
+export function signedOut(queryClient: QueryClient) {
+  queryClient.setQueryData(queryKeys.session, null);
+  queryClient.removeQueries({ predicate: (q) => isUserData(q.queryKey) });
 }
 
 /** The signed-in session, or null. */
@@ -32,7 +39,10 @@ export function useSignInWithEmail() {
   });
 }
 
-/** 1.2: creates the account; rejects with `weak_password` under 8 characters or `email_taken`. */
+/**
+ * 1.2: creates the account; rejects with `weak_password` under 8 characters,
+ * `email_taken`, or `confirmation_required` when the email must be confirmed first.
+ */
 export function useSignUpWithEmail() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -41,12 +51,21 @@ export function useSignUpWithEmail() {
   });
 }
 
-/** Continue with Google. */
+/** Continue with Google. Resolves with null when the person closes Google without signing in. */
 export function useSignInWithGoogle() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.auth.signInWithGoogle(),
-    onSuccess: (session) => signedIn(queryClient, session),
+    mutationFn: async (): Promise<AuthSession | null> => {
+      try {
+        return await api.auth.signInWithGoogle();
+      } catch (error) {
+        if (isSignInCancelled(error)) return null;
+        throw error;
+      }
+    },
+    onSuccess: (session) => {
+      if (session) signedIn(queryClient, session);
+    },
   });
 }
 
@@ -70,9 +89,6 @@ export function useSignOut() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => api.auth.signOut(),
-    onSuccess: () => {
-      queryClient.setQueryData(queryKeys.session, null);
-      queryClient.removeQueries({ predicate: (q) => isUserData(q.queryKey) });
-    },
+    onSuccess: () => signedOut(queryClient),
   });
 }

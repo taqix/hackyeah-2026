@@ -39,12 +39,19 @@ function followKeyboard(event: KeyboardEvent | null) {
 }
 
 /**
- * How far the keyboard covers this view, measured in window coordinates so a
- * view inside a page sheet or a sheet's modal gets it right too. The keyboard's
- * top is `screenY`; iOS reports 0 under Prefer Cross-Fade Transitions, which
- * says nothing about the overlap.
+ * How far the keyboard covers this view, which always ends at the screen's
+ * bottom (a Screen, a Sheet's modal). iOS: the keyboard's height. Measuring
+ * would fall short in a page-sheet modal (feedback), which React Native lays
+ * out from the top of the screen rather than where the sheet sits. Android has
+ * no page sheets, but its reported height leaves out the navigation bar the
+ * keyboard also covers, so the view's bottom is measured against the
+ * keyboard's top (`screenY`) instead.
  */
 function overlap(view: View | null, keyboard: KeyboardMetrics, apply: (lift: number) => void) {
+  if (Platform.OS === 'ios') {
+    apply(Math.max(0, Math.round(keyboard.height)));
+    return;
+  }
   if (!view || keyboard.screenY <= 0) return;
   view.measureInWindow((_x, y, _width, height) => apply(Math.max(0, Math.round(y + height - keyboard.screenY))));
 }
@@ -74,7 +81,8 @@ export type KeyboardAvoiderProps = {
  * keyboard, so on the web this is a plain view.
  *
  * Every Screen has one; a Sheet has its own (its modal is a separate window).
- * Descendants read `useKeyboardLifted()` to drop their home-indicator padding.
+ * Use it only for a view that ends at the screen's bottom. Descendants read
+ * `useKeyboardLifted()` to drop their home-indicator padding.
  */
 export function KeyboardAvoider({ children, style }: KeyboardAvoiderProps) {
   const ref = useRef<View>(null);

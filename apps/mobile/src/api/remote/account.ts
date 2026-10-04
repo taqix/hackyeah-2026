@@ -36,10 +36,11 @@ export function createRemoteAccount(ctx: RemoteContext): ApiClient['account'] {
      */
     async updateName(name) {
       const saved = checkName(name);
+      const userId = await ctx.data.userId();
       const profile = await ctx.data.profile();
       if (profile?.preferences) {
         const body: UpdateProfileDto = { username: saved, preferences: profile.preferences };
-        ctx.data.setProfile(await ctx.http.put<ProfileEntity>('/profile', body));
+        ctx.data.setProfile(await ctx.http.put<ProfileEntity>('/profile', body), userId);
       }
       let result: Awaited<ReturnType<AuthPort['updateUser']>>;
       try {

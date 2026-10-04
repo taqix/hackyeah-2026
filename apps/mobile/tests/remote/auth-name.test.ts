@@ -10,8 +10,7 @@ import { createRemoteAuth, keepKnownName, toAuthSession } from '../../src/api/re
 import { createRemoteRuntime } from '../../src/api/remote/client';
 import type { RemoteContext } from '../../src/api/remote/context';
 import type { AuthErrorLike, AuthPort, AuthResult, AuthSessionData } from '../../src/api/remote/deps';
-import type { Preferences } from '../../src/api/types';
-import { isApiError, type ApiErrorCode } from '../../src/api/types';
+import { isApiError, type ApiErrorCode, type Preferences } from '../../src/api/types';
 import { NAME_MISSING, NAME_TOO_LONG } from '../../src/lib/person-name';
 import { fakeAuth, fakeDeps, session, USER_ID } from './fakes';
 import { fakeServer, PREFERENCES } from './plan-fakes';

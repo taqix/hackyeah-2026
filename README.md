@@ -11,7 +11,7 @@
       </p>
       <br>
       <p>
-        <a href="https://taqix.github.io/hackyeah-2026/dev/"><b>View Mobile Demo &rarr;</b></a><br>
+        <a href="https://taqix.github.io/hackyeah-2026/phone/"><b>View Mobile Demo &rarr;</b></a><br>
         <a href="https://taqix.github.io/hackyeah-2026/app/"><b>Launch Web App &rarr;</b></a>
       </p>
     </td>

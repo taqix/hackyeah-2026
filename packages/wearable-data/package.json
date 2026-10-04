@@ -1,0 +1,31 @@
+{
+  "name": "@hackyeah/wearable-data",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "lint": "eslint src test examples",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@garmin/fitsdk": "21.217.0",
+    "@hackyeah/contracts": "1.0.0",
+    "ajv": "8.20.0",
+    "saxes": "6.0.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "^24.0.0",
+    "typescript": "~6.0.3",
+    "vitest": "5.0.3"
+  }
+}

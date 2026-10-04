@@ -1,0 +1,65 @@
+name: GitHub Pages
+
+# One site: the landing page (apps/website) at the root and the Expo web app (apps/mobile)
+# under /app/. See docs/deployment.md. Pull requests typecheck and build it without deploying.
+on:
+  push:
+    branches: [main, develop]
+    paths: &site-paths
+      - apps/website/**
+      - apps/mobile/**
+      - packages/**
+      - package.json
+      - package-lock.json
+      - scripts/build-pages.mjs
+      - .github/workflows/pages.yml
+  pull_request:
+    paths: *site-paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # One deployment at a time (the newest push wins); each pull request builds on its own.
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.event.number) || 'pages' }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace=@hackyeah/website
+      - run: npm run typecheck --workspace=@hackyeah/mobile
+      - run: npm run build:pages
+        env:
+          # Publishable values, not secrets: Expo bundles every EXPO_PUBLIC_ value into the
+          # client and row-level security guards the data. Repository variables of the same
+          # name override these defaults.
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://xmzjxcxtsytwscktojzr.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_E6t3h9-f_UyR_01fraY8YA_408Y_537' }}
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/pages
+          include-hidden-files: true # .nojekyll
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

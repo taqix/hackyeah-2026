@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Movo · Everyone starts somewhere</title>
+<meta name="description" content="Movo is a sport app for beginners: a few calm questions, a gentle first week, and a plan you change just by asking.">
+<script>/* theme init — plain JS, runs before paint */
+(function(){var t;try{t=localStorage.getItem("movo-site-theme")}catch(e){}
+var m=matchMedia("(prefers-color-scheme: dark)");
+document.documentElement.dataset.theme=t||(m.matches?"dark":"light");
+if(!t)m.addEventListener("change",function(e){var s;try{s=localStorage.getItem("movo-site-theme")}catch(_){}if(!s)document.documentElement.dataset.theme=e.matches?"dark":"light";});})();
+</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='27' fill='%231D1914'/><linearGradient id='g' gradientUnits='userSpaceOnUse' x1='8' x2='92' y1='0' y2='0'><stop offset='0' stop-color='%2386AEE3' stop-opacity='0'/><stop offset='.55' stop-color='%2386AEE3'/></linearGradient><path d='M8 70H24L36 38L54 76L72 38L84 70H92' fill='none' stroke='url%28%23g%29' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/><circle cx='102' cy='70' r='16' fill='%23FFFBF5' opacity='.22'/><circle cx='102' cy='70' r='8.5' fill='%23FFFBF5'/></svg>">
+</head><body>
+<div id="root"><p class="s-boot">Loading…</p></div>
+<noscript>This page needs JavaScript.</noscript>
+<script type="module" src="/src/main.tsx"></script>
+</body></html>

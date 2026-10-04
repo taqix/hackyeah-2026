@@ -1,0 +1,468 @@
+{
+  "UpdateProfileDto": {
+    "username": "Demo",
+    "preferences": {
+      "starting_comfort": "starting_out",
+      "sessions_per_week": 2,
+      "session_minutes": 20,
+      "preferred_window": {
+        "start_hour": 7,
+        "end_hour": 21
+      },
+      "activity_interests": [
+        "1"
+      ],
+      "discovery_preference": "selected_only",
+      "available_locations": [
+        "outdoors"
+      ],
+      "available_equipment": [],
+      "avoidances": [],
+      "starting_obstacles": [
+        "uncertainty"
+      ],
+      "excluded_activity_types": [],
+      "timezone": "Europe/Warsaw"
+    }
+  },
+  "GeneratePlanDto": {
+    "request_id": "00000000-0000-4000-8000-000000000005",
+    "expected_version": 0,
+    "sport_id": "1",
+    "week_start": "2026-10-05",
+    "availability": {
+      "source": "manual",
+      "captured_at": "2026-10-03T12:00:00Z",
+      "slots": [
+        {
+          "start_at": "2026-10-05T07:00:00+02:00",
+          "end_at": "2026-10-05T21:00:00+02:00"
+        }
+      ]
+    }
+  },
+  "SendChatDto": {
+    "request_id": "00000000-0000-4000-8000-000000000005",
+    "plan_id": "00000000-0000-4000-8000-000000000002",
+    "expected_version": 1,
+    "message": "Could you explain this session?",
+    "availability": {
+      "source": "manual",
+      "captured_at": "2026-10-03T12:00:00Z",
+      "slots": [
+        {
+          "start_at": "2026-10-05T07:00:00+02:00",
+          "end_at": "2026-10-05T21:00:00+02:00"
+        }
+      ]
+    }
+  },
+  "CompleteActivityDto": {
+    "plan_version_id": "00000000-0000-4000-8000-000000000003",
+    "activity_id": "00000000-0000-4000-8000-000000000004",
+    "request_id": "00000000-0000-4000-8000-000000000005",
+    "metrics": {
+      "duration_minutes": 20
+    },
+    "gym_log": [],
+    "feedback": {
+      "effort": "okay",
+      "enjoyment": "yes",
+      "notes": "A comfortable start."
+    },
+    "completed_at": "2026-10-05T09:20:00+02:00"
+  },
+  "UpdateFeedbackDto": {
+    "completion_id": "00000000-0000-4000-8000-000000000008",
+    "feedback": {
+      "effort": "okay",
+      "enjoyment": "yes",
+      "notes": "A comfortable start."
+    }
+  },
+  "PutOpinionDto": {
+    "activity_key": "a-gentle-walk-and-jog",
+    "title": "A gentle walk and jog",
+    "sport_id": "1",
+    "opinion": "yes",
+    "last_date": "2026-10-05"
+  },
+  "ResetOpinionsDto": {},
+  "UndoPlanDto": {
+    "request_id": "00000000-0000-4000-8000-000000000009",
+    "plan_id": "00000000-0000-4000-8000-000000000002",
+    "expected_version": 2
+  },
+  "GoogleTokenDto": {
+    "refresh_token": "synthetic-google-refresh-token"
+  },
+  "SchemaResponse": {
+    "data": {
+      "Example": {
+        "type": "object"
+      }
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "ProfileResponse": {
+    "data": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "username": "Demo",
+      "created_at": "2026-10-03T12:00:00Z",
+      "preferences": {
+        "starting_comfort": "starting_out",
+        "sessions_per_week": 2,
+        "session_minutes": 20,
+        "preferred_window": {
+          "start_hour": 7,
+          "end_hour": 21
+        },
+        "activity_interests": [
+          "1"
+        ],
+        "discovery_preference": "selected_only",
+        "available_locations": [
+          "outdoors"
+        ],
+        "available_equipment": [],
+        "avoidances": [],
+        "starting_obstacles": [
+          "uncertainty"
+        ],
+        "excluded_activity_types": [],
+        "timezone": "Europe/Warsaw"
+      }
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "SportListResponse": {
+    "data": [
+      {
+        "id": "1",
+        "name": "Running",
+        "is_gym": false,
+        "generation_enabled": true,
+        "metrics": [
+          {
+            "key": "duration_minutes",
+            "label": "Time",
+            "unit": "min",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "CurrentPlanResponse": {
+    "data": {
+      "plan": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "active_version_id": "00000000-0000-4000-8000-000000000003",
+        "created_at": "2026-10-03T12:00:00Z"
+      },
+      "version": {
+        "id": "00000000-0000-4000-8000-000000000003",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "version": 1,
+        "origin": "generate",
+        "plan": {
+          "week_start": "2026-10-05",
+          "timezone": "Europe/Warsaw",
+          "activities": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "sport_id": "1",
+              "title": "A gentle walk and jog",
+              "description": "Walk comfortably, with short gentle jogs if you feel ready.",
+              "start_at": "2026-10-05T09:00:00+02:00",
+              "duration_minutes": 20,
+              "gym_exercises": []
+            }
+          ]
+        },
+        "summary": "Your first gentle session is ready.",
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "GeneratePlanResponse": {
+    "data": {
+      "plan": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "active_version_id": "00000000-0000-4000-8000-000000000003",
+        "created_at": "2026-10-03T12:00:00Z"
+      },
+      "version": {
+        "id": "00000000-0000-4000-8000-000000000003",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "version": 1,
+        "origin": "generate",
+        "plan": {
+          "week_start": "2026-10-05",
+          "timezone": "Europe/Warsaw",
+          "activities": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "sport_id": "1",
+              "title": "A gentle walk and jog",
+              "description": "Walk comfortably, with short gentle jogs if you feel ready.",
+              "start_at": "2026-10-05T09:00:00+02:00",
+              "duration_minutes": 20,
+              "gym_exercises": []
+            }
+          ]
+        },
+        "summary": "Your first gentle session is ready.",
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": "00000000-0000-4000-8000-000000000005"
+    }
+  },
+  "PlanHistoryResponse": {
+    "data": [
+      {
+        "id": "00000000-0000-4000-8000-000000000003",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "version": 1,
+        "origin": "generate",
+        "plan": {
+          "week_start": "2026-10-05",
+          "timezone": "Europe/Warsaw",
+          "activities": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "sport_id": "1",
+              "title": "A gentle walk and jog",
+              "description": "Walk comfortably, with short gentle jogs if you feel ready.",
+              "start_at": "2026-10-05T09:00:00+02:00",
+              "duration_minutes": 20,
+              "gym_exercises": []
+            }
+          ]
+        },
+        "summary": "Your first gentle session is ready.",
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    ],
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "ChatMessagesResponse": {
+    "data": [
+      {
+        "id": "00000000-0000-4000-8000-000000000006",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "role": "user",
+        "content": "Could you explain this session?",
+        "outcome": null,
+        "plan_version_id": null,
+        "created_at": "2026-10-03T12:00:00Z",
+        "request_id": "00000000-0000-4000-8000-000000000005"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000007",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "role": "assistant",
+        "content": "Start with a comfortable walk. The plan is unchanged.",
+        "outcome": "reply",
+        "plan_version_id": "00000000-0000-4000-8000-000000000003",
+        "created_at": "2026-10-03T12:00:00Z",
+        "request_id": "00000000-0000-4000-8000-000000000005"
+      }
+    ],
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "ChatResponse": {
+    "data": {
+      "outcome": "reply",
+      "active_plan": null,
+      "messages": [
+        {
+          "id": "00000000-0000-4000-8000-000000000006",
+          "profile_id": "00000000-0000-4000-8000-000000000001",
+          "plan_id": "00000000-0000-4000-8000-000000000002",
+          "role": "user",
+          "content": "Could you explain this session?",
+          "outcome": null,
+          "plan_version_id": null,
+          "created_at": "2026-10-03T12:00:00Z",
+          "request_id": "00000000-0000-4000-8000-000000000005"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000007",
+          "profile_id": "00000000-0000-4000-8000-000000000001",
+          "plan_id": "00000000-0000-4000-8000-000000000002",
+          "role": "assistant",
+          "content": "Start with a comfortable walk. The plan is unchanged.",
+          "outcome": "reply",
+          "plan_version_id": "00000000-0000-4000-8000-000000000003",
+          "created_at": "2026-10-03T12:00:00Z",
+          "request_id": "00000000-0000-4000-8000-000000000005"
+        }
+      ]
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": "00000000-0000-4000-8000-000000000005"
+    }
+  },
+  "CompletionResponse": {
+    "data": {
+      "plan_version_id": "00000000-0000-4000-8000-000000000003",
+      "activity_id": "00000000-0000-4000-8000-000000000004",
+      "request_id": "00000000-0000-4000-8000-000000000005",
+      "metrics": {
+        "duration_minutes": 20
+      },
+      "gym_log": [],
+      "feedback": {
+        "effort": "okay",
+        "enjoyment": "yes",
+        "notes": "A comfortable start."
+      },
+      "completed_at": "2026-10-05T09:20:00+02:00",
+      "id": "00000000-0000-4000-8000-000000000008",
+      "profile_id": "00000000-0000-4000-8000-000000000001"
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": "00000000-0000-4000-8000-000000000005"
+    }
+  },
+  "CompletionListResponse": {
+    "data": [],
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "OpinionListResponse": {
+    "data": [
+      {
+        "activity_key": "a-gentle-walk-and-jog",
+        "title": "A gentle walk and jog",
+        "sport_id": "1",
+        "opinion": "yes",
+        "last_date": "2026-10-05",
+        "updated_at": "2026-10-05T09:30:00Z"
+      }
+    ],
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "OpinionResponse": {
+    "data": {
+      "activity_key": "a-gentle-walk-and-jog",
+      "title": "A gentle walk and jog",
+      "sport_id": "1",
+      "opinion": "yes",
+      "last_date": "2026-10-05",
+      "updated_at": "2026-10-05T09:30:00Z"
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "ResetOpinionsResponse": {
+    "data": {
+      "cleared": 1
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "UndoPlanResponse": {
+    "data": {
+      "plan": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "active_version_id": "00000000-0000-4000-8000-000000000010",
+        "created_at": "2026-10-03T12:00:00Z"
+      },
+      "version": {
+        "id": "00000000-0000-4000-8000-000000000010",
+        "plan_id": "00000000-0000-4000-8000-000000000002",
+        "profile_id": "00000000-0000-4000-8000-000000000001",
+        "version": 3,
+        "origin": "undo",
+        "plan": {
+          "week_start": "2026-10-05",
+          "timezone": "Europe/Warsaw",
+          "activities": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "sport_id": "1",
+              "title": "A gentle walk and jog",
+              "description": "Walk comfortably, with short gentle jogs if you feel ready.",
+              "start_at": "2026-10-05T09:00:00+02:00",
+              "duration_minutes": 20,
+              "gym_exercises": []
+            }
+          ]
+        },
+        "summary": "The last change was undone.",
+        "created_at": "2026-10-03T12:10:00Z"
+      }
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": "00000000-0000-4000-8000-000000000009"
+    }
+  },
+  "GoogleTokenResponse": {
+    "data": {
+      "access_token": "synthetic-google-access-token",
+      "expires_in": 3599
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  },
+  "ErrorResponse": {
+    "error": {
+      "code": "AI_NOT_CONFIGURED",
+      "message": "The AI provider is not connected yet.",
+      "retryable": false
+    },
+    "meta": {
+      "contract_version": "1",
+      "request_id": null
+    }
+  }
+}

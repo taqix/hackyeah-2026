@@ -1,0 +1,95 @@
+/* Base palette — warm paper, warm ink, friendly blue accent */
+:root{
+--paper-0:#FFFBF5;--paper-50:#F8F2E8;--paper-100:#F1E9DC;--paper-200:#E6DCCC;--paper-300:#D3C8B7;
+--ink-400:#9A8F80;--ink-500:#6F6557;--ink-600:#5C5348;--ink-700:#3F3830;--ink-800:#2A251F;--ink-900:#1D1914;
+--night-0:#141210;--night-50:#1B1815;--night-100:#24201C;--night-200:#2F2A25;--night-300:#3D372F;
+--blue-50:#EEF4FB;--blue-100:#D8E6F6;--blue-200:#B3CDEE;--blue-300:#86AEE3;--blue-400:#5B8FD6;--blue-500:#3E74C4;--blue-600:#2F5CA3;--blue-700:#254A85;--blue-800:#1C3966;--blue-900:#132746;
+--peach-100:#FCE6D6;--peach-300:#F4B892;--peach-500:#E08A5A;--peach-700:#A9542B;
+--sage-300:#B5BFA3;--sage-500:#7F8C6A;--sage-700:#56614A;
+--moss-500:#5F7A4E;--moss-300:#9DB38B;
+--brick-500:#B4513C;--brick-300:#DD8C78;
+--slate-500:#6B6A86;--slate-300:#A9A8C2;
+
+}
+
+/* Semantic — light (default; explicit [data-theme="light"] wins over an inherited dark scope) */
+:root,[data-theme="light"]{
+--bg-app:var(--paper-50);
+--surface-card:var(--paper-0);
+--surface-sunken:var(--paper-100);
+--surface-raised:#FFFFFF;
+--surface-inverse:var(--ink-900);
+--surface-bubble:var(--paper-100);/* coach messages in chat */
+--border-subtle:var(--paper-200);
+--border-strong:var(--paper-300);
+--text-primary:var(--ink-900);
+--text-secondary:var(--ink-600);
+--text-tertiary:var(--ink-500);
+--text-inverse:var(--paper-50);
+--text-on-accent:var(--paper-0);
+--accent:var(--blue-500);
+--accent-hover:var(--blue-600);
+--accent-pressed:var(--blue-700);
+--accent-soft:var(--blue-50);
+--accent-soft-strong:var(--blue-100);
+--accent-text:var(--blue-600);
+--recovery:var(--sage-500);
+--recovery-soft:#ECEEE5;
+--success:var(--moss-500);
+--success-soft:#E8EEE1;
+--success-text:#4F6943;/* 4.8:1+ on every light surface */
+--danger:var(--brick-500);
+--danger-soft:#F6E4DE;
+--danger-text:#A04634;
+--tint-blue:#E6EFFA;
+--tint-peach:var(--peach-100);
+--tint-sage:#E9EEDF;
+--warm:var(--peach-500);
+--warm-text:var(--peach-700);
+--info:var(--slate-500);
+--info-soft:#E4E9EE;
+--info-text:#5B5A77;
+--focus-ring:color-mix(in oklch, var(--blue-400) 45%, transparent);
+--overlay:rgba(29,25,20,.36);
+}
+
+/* Semantic — dark */
+[data-theme="dark"]{
+--bg-app:var(--night-0);
+--surface-card:var(--night-50);
+--surface-sunken:#100E0C;
+--surface-raised:var(--night-100);
+--surface-inverse:var(--paper-50);
+--surface-bubble:var(--night-100);/* sunken is darker than the page in dark mode */
+--border-subtle:var(--night-200);
+--border-strong:var(--night-300);
+--text-primary:#F3EDE3;
+--text-secondary:#B9AF9F;
+--text-tertiary:#9C9182;/* 5:1+ on raised surfaces and tints */
+--text-inverse:var(--ink-900);
+--text-on-accent:var(--ink-900);
+--accent:var(--blue-300);
+--accent-hover:var(--blue-200);
+--accent-pressed:var(--blue-400);
+--accent-soft:#18202B;
+--accent-soft-strong:#1F2B3B;
+--accent-text:var(--blue-200);
+--recovery:var(--sage-300);
+--recovery-soft:#22251E;
+--success:var(--moss-300);
+--success-soft:#1F261B;
+--success-text:var(--moss-300);
+--danger:var(--brick-300);
+--danger-soft:#2E1C17;
+--danger-text:var(--brick-300);
+--tint-blue:#1A2331;
+--tint-peach:#2E2119;
+--tint-sage:#1F251B;
+--warm:var(--peach-300);
+--warm-text:var(--peach-300);
+--info:var(--slate-300);
+--info-soft:#1C2127;
+--info-text:var(--slate-300);
+--focus-ring:color-mix(in oklch, var(--blue-300) 50%, transparent);
+--overlay:rgba(0,0,0,.55);
+}

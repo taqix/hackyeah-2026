@@ -1,0 +1,211 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MVP journey — mobile</title>
+<link rel="stylesheet" href="system/styles.css">
+<style>
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--bg-app)}
+nav.flows{position:fixed;top:12px;left:12px;z-index:2;display:flex;gap:4px;padding:4px;border-radius:99px;background:var(--surface-raised);border:1px solid var(--border-subtle);box-shadow:var(--shadow-1);font:var(--type-body-sm)}
+nav.flows a{padding:6px 14px;border-radius:99px;text-decoration:none;color:var(--text-secondary)}
+nav.flows a[aria-current]{background:var(--surface-inverse);color:var(--text-inverse)}
+.hud{position:fixed;right:12px;bottom:12px;z-index:2;display:flex;align-items:center;gap:2px;padding:4px;border-radius:99px;background:var(--surface-raised);border:1px solid var(--border-subtle);box-shadow:var(--shadow-1);font:var(--type-body-sm);color:var(--text-secondary)}
+.hud button{border:0;background:transparent;color:inherit;font:inherit;height:30px;min-width:30px;padding:0 10px;border-radius:99px;cursor:pointer}
+.hud button:hover{background:var(--surface-sunken);color:var(--text-primary)}
+.hud .pct{min-width:56px;font-variant-numeric:tabular-nums}
+.viewport{position:fixed;inset:0;overflow:hidden;touch-action:none;cursor:default}
+.viewport.grab{cursor:grab}.viewport.grabbing{cursor:grabbing}
+.viewport.grab *,.viewport.grabbing *{pointer-events:none}
+.board{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;display:flex;flex-direction:column;gap:85px;width:max-content}
+.row{display:flex;gap:70px;align-items:flex-start}
+.frame{position:relative;display:flex;flex-direction:column;gap:14px}
+.frame>.lbl{font:500 14px/1.2 var(--font-body);color:var(--text-tertiary)}
+.frame>.lbl a{color:var(--accent-text)}
+nav.flows i{width:1px;margin:6px 4px;background:var(--border-subtle)}
+.page{display:block;border:1px solid var(--border-subtle);border-radius:24px;background:var(--bg-app);box-shadow:var(--shadow-2);pointer-events:none}
+.frame>.note{max-width:390px;margin-top:-8px;font:400 13px/1.4 var(--font-body);color:var(--text-tertiary);text-wrap:pretty}
+</style>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="system/components.js"></script>
+<script type="text/babel" src="prototype/workout.jsx"></script>
+<script type="text/babel" src="prototype/onboarding.jsx"></script>
+<script type="text/babel" src="prototype/home.jsx"></script>
+<script type="text/babel" src="prototype/chat.jsx"></script>
+<script type="text/babel" src="prototype/profile.jsx"></script>
+<script type="text/babel" src="prototype/calendar.jsx"></script>
+<script type="text/babel" src="prototype/screens.jsx"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+// ?flow=onboarding|home|workout|chat|profile|calendar narrows the board; ?theme=light|dark shows
+// one theme.
+const FLOWS={
+  all:null,
+  onboarding:["welcome","sign-in","sign-up","sign-in-error",...ONBOARDING_SCREENS.map(s=>s.id)],
+  home:HOME_SCREENS.map(s=>s.id),
+  workout:["activity",...WORKOUT_SCREENS.map(s=>s.id),"feedback"],
+  chat:CHAT_SCREENS.map(s=>s.id),
+  profile:PROFILE_SCREENS.map(s=>s.id),
+  calendar:CALENDAR_SCREENS.map(s=>s.id),
+};
+// Standalone pages in design/. The nav opens them; the "all" board also shows each as a live preview.
+const PAGES=[
+  {id:"icons",label:"App icons",src:"icons.html",w:1088,h:800},
+];
+const params=new URLSearchParams(location.search);
+const flow=FLOWS.hasOwnProperty(params.get("flow"))?params.get("flow"):"all";
+const themes=params.get("theme")?[params.get("theme")]:["light","dark"];
+const link=f=>"?flow="+f+(params.get("theme")?"&theme="+params.get("theme"):"");
+const list=FLOWS[flow]?FLOWS[flow].map(id=>SCREENS.find(s=>s.id===id)):SCREENS;
+const MIN_Z=0.1, MAX_Z=4;
+const KEY="design-view:"+flow+":"+themes.join(",");
+
+/* Figma-style canvas: two-finger scroll pans, pinch or ⌘/Ctrl+scroll zooms at the cursor,
+   Space+drag or drag on empty canvas pans. Shift+1 fits, Shift+0 is 100%, +/- zoom.
+   The view survives live reloads (sessionStorage). */
+function Canvas({children}){
+  const vp=React.useRef(null), board=React.useRef(null), pct=React.useRef(null);
+  const view=React.useRef(null);
+  const apply=()=>{
+    const {x,y,z}=view.current;
+    board.current.style.transform=`translate(${x}px,${y}px) scale(${z})`;
+    pct.current.textContent=Math.round(z*100)+"%";
+    try{sessionStorage.setItem(KEY,JSON.stringify(view.current))}catch(e){}
+  };
+  const zoomAt=(cx,cy,nz)=>{
+    const v=view.current; nz=Math.min(MAX_Z,Math.max(MIN_Z,nz));
+    v.x=cx-(cx-v.x)*nz/v.z; v.y=cy-(cy-v.y)*nz/v.z; v.z=nz; apply();
+  };
+  const zoomCenter=f=>zoomAt(innerWidth/2,innerHeight/2,view.current.z*f);
+  const fit=()=>{
+    const pad=48, top=72, W=board.current.offsetWidth, H=board.current.offsetHeight; // frames can be taller than 844
+    const z=Math.min(MAX_Z,Math.max(MIN_Z,Math.min((innerWidth-pad*2)/W,(innerHeight-top-pad)/H)));
+    view.current={z,x:(innerWidth-W*z)/2,y:top+(innerHeight-top-pad-H*z)/2}; apply();
+  };
+  const actual=()=>{view.current={z:1,x:48,y:72};apply();};
+
+  React.useLayoutEffect(()=>{
+    try{view.current=JSON.parse(sessionStorage.getItem(KEY))}catch(e){}
+    if(view.current&&isFinite(view.current.z)) apply(); else fit();
+    const el=vp.current;
+    const onWheel=e=>{
+      e.preventDefault();
+      if(e.ctrlKey||e.metaKey){
+        const dy=e.deltaMode===1?e.deltaY*16:e.deltaY;
+        zoomAt(e.clientX,e.clientY,view.current.z*Math.exp(-dy*(e.ctrlKey&&!e.metaKey?0.01:0.002)));
+      }else{
+        const k=e.deltaMode===1?16:1, v=view.current;
+        let dx=e.deltaX*k, dy=e.deltaY*k;
+        if(e.shiftKey&&!dx){dx=dy;dy=0;}
+        v.x-=dx; v.y-=dy; apply();
+      }
+    };
+    // Safari pinch
+    let gz=1;
+    const onGS=e=>{e.preventDefault();gz=view.current.z;};
+    const onGC=e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,gz*e.scale);};
+    let space=false, drag=null;
+    const setCur=()=>{el.classList.toggle("grab",space&&!drag);el.classList.toggle("grabbing",!!drag);};
+    const onKey=e=>{
+      if(e.target.closest&&e.target.closest("input,textarea")) return;
+      if(e.code==="Space"){ if(e.type==="keydown"){e.preventDefault();space=true;} else space=false; setCur(); return; }
+      if(e.type!=="keydown") return;
+      if(e.shiftKey&&e.code==="Digit1"){e.preventDefault();fit();}
+      else if((e.shiftKey||e.metaKey||e.ctrlKey)&&e.code==="Digit0"){e.preventDefault();actual();}
+      else if(e.key==="="||e.key==="+"){e.preventDefault();zoomCenter(1.25);}
+      else if(e.key==="-"){e.preventDefault();zoomCenter(0.8);}
+    };
+    const onDown=e=>{
+      const onCanvas=!e.target.closest(".frame");
+      if(!(space||e.button===1||(e.button===0&&onCanvas))) return;
+      e.preventDefault(); el.setPointerCapture(e.pointerId);
+      drag={px:e.clientX,py:e.clientY,x:view.current.x,y:view.current.y}; setCur();
+    };
+    const onMove=e=>{ if(!drag) return; const v=view.current; v.x=drag.x+e.clientX-drag.px; v.y=drag.y+e.clientY-drag.py; apply(); };
+    const onUp=()=>{drag=null;setCur();};
+    el.addEventListener("wheel",onWheel,{passive:false});
+    el.addEventListener("gesturestart",onGS); el.addEventListener("gesturechange",onGC);
+    el.addEventListener("pointerdown",onDown); el.addEventListener("pointermove",onMove);
+    el.addEventListener("pointerup",onUp); el.addEventListener("pointercancel",onUp);
+    addEventListener("keydown",onKey); addEventListener("keyup",onKey);
+    addEventListener("blur",()=>{space=false;onUp();});
+    // Stop the browser's own page zoom on pinch outside the canvas (nav, HUD).
+    const block=e=>{if(e.ctrlKey)e.preventDefault();};
+    document.addEventListener("wheel",block,{passive:false});
+    return ()=>{};
+  },[]);
+
+  return <>
+    <div ref={vp} className="viewport"><div ref={board} className="board">{children}</div></div>
+    <div className="hud" aria-label="Zoom">
+      <button onClick={()=>zoomCenter(0.8)} aria-label="Zoom out" title="Zoom out (−)">−</button>
+      <button className="pct" ref={pct} onClick={actual} title="100% (Shift+0)">100%</button>
+      <button onClick={()=>zoomCenter(1.25)} aria-label="Zoom in" title="Zoom in (+)">+</button>
+      <button onClick={fit} title="Zoom to fit (Shift+1)">Fit</button>
+    </div>
+  </>;
+}
+
+/* A standalone page as a live preview. It takes no pointer events, so the canvas keeps its gestures; the label opens the page.
+   The page keeps its own live reload. Once loaded, the frame grows once to the page's full height. */
+function Page({p,theme}){
+  const ref=React.useRef(null);
+  const onLoad=()=>{
+    const f=ref.current, doc=f.contentDocument;
+    doc.documentElement.dataset.theme=theme;
+    let last=0, n=0;
+    const t=setInterval(()=>{
+      if(f.contentDocument!==doc){clearInterval(t);return;}
+      const h=doc.documentElement.scrollHeight;
+      if((h===last&&h>p.h)||++n>24){clearInterval(t);f.style.height=h+"px";}
+      last=h;
+    },250);
+  };
+  return <iframe ref={ref} className="page" title={p.label} src={p.src+"?theme="+theme} tabIndex={-1} onLoad={onLoad} style={{width:p.w,height:p.h}}></iframe>;
+}
+
+function Board(){
+  return <>
+    <nav className="flows">{Object.keys(FLOWS).map(f=>(
+      <a key={f} href={link(f)} aria-current={f===flow?"page":undefined}>{f}</a>
+    ))}<i></i>{PAGES.map(p=><a key={p.id} href={p.src}>{p.id}</a>)}</nav>
+    <Canvas>
+      {themes.map(t=>(
+        <div key={t} className="row">{list.map(s=>(
+          <div key={s.id} className="frame">
+            <span className="lbl">{s.label} · {t}</span>
+            {s.note?<span className="note">{s.note}</span>:null}
+            <Phone theme={t} height={s.h}><s.C/></Phone>
+          </div>
+        ))}</div>
+      ))}
+      {flow==="all"?<div className="row">{PAGES.flatMap(p=>themes.map(t=>(
+        <div key={p.id+t} className="frame">
+          <span className="lbl">{p.label} · {t} · <a href={p.src}>open</a></span>
+          <Page p={p} theme={t}/>
+        </div>
+      )))}</div>:null}
+    </Canvas>
+  </>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Board/>);
+</script>
+<script>
+// Live reload: poll the design files and reload when any of them changes.
+(function(){
+  const files=["index.html","prototype/workout.jsx","prototype/onboarding.jsx","prototype/home.jsx","prototype/chat.jsx","prototype/profile.jsx","prototype/calendar.jsx","prototype/screens.jsx","system/components.js","system/styles.css",
+    ...["fonts","colors","typography","spacing","effects","base"].map(f=>"system/tokens/"+f+".css")];
+  const seen={};
+  async function check(){
+    for(const f of files){
+      try{
+        const r=await fetch(f,{method:"HEAD",cache:"no-store"});
+        const v=r.headers.get("Last-Modified")+"|"+r.headers.get("Content-Length");
+        if(seen[f]&&seen[f]!==v){location.reload();return;}
+        seen[f]=v;
+      }catch(e){}
+    }
+  }
+  check();setInterval(check,1000);
+})();
+</script>
+</body></html>

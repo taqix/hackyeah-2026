@@ -1,0 +1,49 @@
+import { Redirect } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
+
+import { CalendarExportSync } from '@/features/calendar-export';
+import { useStepCounterTracking } from '@/hooks/use-step-counter';
+import { FloatingTabBar } from '@/navigation/floating-tab-bar';
+import { GateError, GateLoading } from '@/navigation/gate-states';
+import { useAccountState } from '@/navigation/use-account-state';
+import { useShellVisible } from '@/navigation/web/shell-visibility';
+import { useTheme } from '@/theme';
+
+/** Tabs need a session and saved answers. */
+export default function TabsLayout() {
+  const account = useAccountState();
+  switch (account.status) {
+    case 'loading':
+      return <GateLoading />;
+    case 'error':
+      return <GateError onRetry={account.retry} />;
+    case 'signed-out':
+      return <Redirect href="/welcome" />;
+    case 'needs-onboarding':
+      return <Redirect href="/onboarding/starting" />;
+    case 'ready':
+      return <TabsNavigator />;
+  }
+}
+
+function TabsNavigator() {
+  // Steps are read only once the person reaches the app, not during sign-in or onboarding.
+  useStepCounterTracking();
+  const { colors } = useTheme();
+  // The desktop web's sidebar takes the floating tab bar's place.
+  const sidebar = useShellVisible();
+
+  return (
+    <>
+      {/* Copies planned sessions to the Movo calendar once the person turns that on. */}
+      <CalendarExportSync />
+      <Tabs
+        tabBar={(props) => (sidebar ? null : <FloatingTabBar {...props} />)}
+        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bgApp } }}>
+        <Tabs.Screen name="index" options={{ title: 'Today' }} />
+        <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
+        <Tabs.Screen name="you" options={{ title: 'You' }} />
+      </Tabs>
+    </>
+  );
+}

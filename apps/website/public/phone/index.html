@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F8F2E8" />
+    <meta name="description" content="Preview the Movo React Native app at iPhone dimensions." />
+    <title>Movo · Phone preview</title>
+    <link rel="stylesheet" href="./preview.css" />
+    <script defer src="./preview.js"></script>
+  </head>
+  <body>
+    <main class="stage">
+      <nav class="preview-nav" aria-label="Preview navigation">
+        <a href="../">← Movo</a>
+        <a href="../app/" target="_blank" rel="noopener">Open full web app ↗</a>
+      </nav>
+      <div class="phone-slot" id="phone-slot">
+        <div class="phone-shell" id="phone-shell">
+          <span class="phone-button action" aria-hidden="true"></span>
+          <span class="phone-button volume-up" aria-hidden="true"></span>
+          <span class="phone-button volume-down" aria-hidden="true"></span>
+          <span class="phone-button power" aria-hidden="true"></span>
+          <div class="phone-screen">
+            <iframe src="../app/" title="Movo React Native app" loading="eager"></iframe>
+            <div class="phone-status" aria-hidden="true">
+              <span class="phone-time">9:41</span>
+              <span class="phone-island"></span>
+              <span class="phone-icons">▂▄▆ <span class="phone-battery"></span></span>
+            </div>
+            <span class="phone-home" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+      <p class="scroll-hint">Use your mouse wheel or trackpad to scroll instead of swiping.</p>
+    </main>
+
+    <dialog id="preview-notice" aria-labelledby="preview-title" aria-describedby="preview-description">
+      <h1 id="preview-title">Browser preview</h1>
+      <p id="preview-description">This is a React Native app running on the web. Some features may not work here or may behave differently than on a phone.</p>
+      <button id="dismiss-notice" type="button">Got it</button>
+    </dialog>
+  </body>
+</html>

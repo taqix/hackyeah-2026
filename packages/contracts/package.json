@@ -1,0 +1,37 @@
+{
+  "name": "@hackyeah/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./product": {
+      "types": "./dist/product.d.ts",
+      "default": "./dist/product.js"
+    },
+    "./wearables": {
+      "types": "./dist/wearables.d.ts",
+      "default": "./dist/wearables.js"
+    },
+    "./plan": {
+      "types": "./dist/plan.d.ts",
+      "default": "./dist/plan.js"
+    },
+    "./workout-file": {
+      "types": "./dist/workout-file.d.ts",
+      "default": "./dist/workout-file.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "zod": "4.6.5",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

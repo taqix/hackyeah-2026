@@ -1,0 +1,32 @@
+project_id = "hackyeah-2026"
+
+[functions.product-api]
+verify_jwt = true
+entrypoint = "./functions/product-api/index.ts"
+
+# Auth for the local CLI stack (`supabase start`). The hosted project keeps its
+# own settings; allowlist the same redirect URLs there.
+[auth]
+enabled = true
+# Expo web in development.
+site_url = "http://localhost:8081"
+# Where Google, email confirmation and password reset links return to the app:
+# the app scheme, Expo Go and Expo web.
+additional_redirect_urls = [
+  "hackyeah2026://auth/callback",
+  "hackyeah2026://auth/reset",
+  "exp://127.0.0.1:8081/--/auth/callback",
+  "exp://127.0.0.1:8081/--/auth/reset",
+  "http://localhost:8081/auth/callback",
+  "http://localhost:8081/auth/reset",
+]
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+# Like the hosted project (autoconfirm): sign-up returns a session at once.
+enable_confirmations = false
+
+# Google stays off locally, as on the hosted project. To try it, add
+# [auth.external.google] with enabled = true, a client ID and a secret from env().

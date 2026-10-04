@@ -8,7 +8,13 @@ import {
   useSetSportExcluded,
   useSports,
 } from '@/api/hooks';
-import type { ActivityOpinion, ChooseAgain, FeedbackOverview, SportDefinition } from '@/api/types';
+import {
+  type ActivityOpinion,
+  type ChooseAgain,
+  type FeedbackOverview,
+  isApiError,
+  type SportDefinition,
+} from '@/api/types';
 import { Button, ListRow, Sheet, Text } from '@/components/ui';
 import { BackButton, Body, Col, Content, Row, Screen, TopBar } from '@/components/layout';
 import { useNow } from '@/lib/clock';
@@ -16,6 +22,11 @@ import { sportIcon, sportName } from '@/lib/sport-visuals';
 
 import { opinionMeta } from './labels';
 import { ErrorState, Group, RowsSkeleton } from './pieces';
+
+/** The server's reason when it has one (e.g. answers can't change yet), else the calm default. */
+function errorText(error: unknown, fallback: string): string {
+  return isApiError(error) && error.code !== 'offline' && error.code !== 'timeout' ? error.message : fallback;
+}
 
 const SECTIONS: { opinion: ChooseAgain; title: string }[] = [
   { opinion: 'yes', title: "You'd choose again" },
@@ -55,7 +66,7 @@ export function YourFeedbackScreen() {
         <Col gap={8}>
           {reset.isError ? (
             <Text variant="bodySm" tone="danger" accessibilityRole="alert">
-              We couldn&apos;t reset your feedback. Try again.
+              {errorText(reset.error, "We couldn't reset your feedback. Try again.")}
             </Text>
           ) : null}
           <Button
@@ -80,13 +91,13 @@ function Lists({ overview, onReset }: { overview: FeedbackOverview; onReset: () 
   const sports = useSports();
   const setOpinion = useSetOpinion();
   const setExcluded = useSetSportExcluded();
-  const failed = setOpinion.isError || setExcluded.isError;
+  const failure = setOpinion.error ?? setExcluded.error;
 
   return (
     <>
-      {failed ? (
+      {failure ? (
         <Text variant="bodySm" tone="danger" accessibilityRole="alert">
-          We couldn&apos;t save that. Try again.
+          {errorText(failure, "We couldn't save that. Try again.")}
         </Text>
       ) : null}
 

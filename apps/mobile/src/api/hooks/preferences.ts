@@ -25,6 +25,7 @@ export function usePreferences(options?: { enabled?: boolean }) {
 export function useSavePreferences() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['preferences', 'save'],
     mutationFn: (preferences: Preferences) => api.preferences.save(preferences),
     onSuccess: (saved) => {
       const before = queryClient.getQueryData<Preferences | null>(queryKeys.preferences);

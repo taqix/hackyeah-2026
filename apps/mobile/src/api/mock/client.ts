@@ -4,6 +4,15 @@
  * when the demo says so, and returns copies, never live database objects.
  */
 import { now } from '@/lib/clock';
+import {
+  debugLog,
+  debugLogsEnabled,
+  debugWarn,
+  describeError,
+  errorLabel,
+  startTimer,
+  summarizeData,
+} from '@/lib/debug-log';
 
 import type { ApiClient } from '../client';
 import { ApiError } from '../types';
@@ -23,6 +32,34 @@ function whenReady(): Promise<void> {
   return ready;
 }
 
+/**
+ * Debug builds: every mock call as `[movo:mock] plan.getState 12ms`, with the
+ * result's shape or the error code; never arguments (emails, passwords, chat
+ * text). Unchanged when debug logs are off.
+ */
+function withCallLogging(client: ApiClient): ApiClient {
+  if (!debugLogsEnabled) return client;
+  const sections = client as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
+  const logged: Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>> = {};
+  for (const [section, methods] of Object.entries(sections)) {
+    logged[section] = {};
+    for (const [name, method] of Object.entries(methods)) {
+      logged[section][name] = (...args) => {
+        const took = startTimer();
+        const result = method(...args);
+        void Promise.resolve(result).then(
+          (value) => debugLog('mock', `${section}.${name} ${took()}`, () => ({ data: summarizeData(value) })),
+          (error: unknown) =>
+            debugWarn('mock', `✕ ${section}.${name} ${took()} ${errorLabel(error)}`, () => describeError(error)),
+        );
+        return result;
+      };
+    }
+  }
+  // Same sections and method names as `client`, each wrapped with the same signature.
+  return logged as unknown as ApiClient;
+}
+
 export function createMockApiClient(): ApiClient {
   const backend = createBackend({ db: getDb, now });
 
@@ -38,7 +75,7 @@ export function createMockApiClient(): ApiClient {
     }
   }
 
-  return {
+  return withCallLogging({
     auth: {
       getSession: () => call(() => backend.auth.getSession()),
       lookupEmail: (email) => call(() => backend.auth.lookupEmail(email)),
@@ -99,5 +136,5 @@ export function createMockApiClient(): ApiClient {
     account: {
       get: () => call(() => backend.account.get()),
     },
-  };
+  });
 }

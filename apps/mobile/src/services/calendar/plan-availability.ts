@@ -10,6 +10,7 @@
  */
 import type { LocalDate } from '../../api/types';
 import { addDays, atLocalTime, fromLocalDate, toIsoWithOffset } from '../../lib/dates';
+import { debugLog, debugWarn, describeError, errorLabel, startTimer } from '../../lib/debug-log';
 import { createCalendarAvailabilityService } from './availability';
 import { deviceCalendar } from './device-calendar';
 import { CalendarError, isAppCalendar } from './types';
@@ -132,10 +133,17 @@ export async function captureAvailabilityFrom(
   calendar: AvailabilityCalendar,
   options: CaptureAvailabilityOptions,
 ): Promise<Availability> {
+  const took = startTimer();
+  // Debug builds: the source, why, how many slots and how long the read took; never event titles or times.
+  const logged = (availability: Availability, why: string) => {
+    const { source, slots } = availability;
+    debugLog('calendar', `availability week=${options.weekStart} ${source} ${slots.length} slots ${took()} (${why})`);
+    return availability;
+  };
   const { startDate, endDate } = availabilityRange(options);
-  if (startDate >= endDate) return manualAvailability(options);
+  if (startDate >= endDate) return logged(manualAvailability(options), 'the week is over');
   const permission = await calendar.getPermission();
-  if (permission.status !== 'granted') return manualAvailability(options);
+  if (permission.status !== 'granted') return logged(manualAvailability(options), `calendar ${permission.status}`);
   const capturedAt = options.capturedAt ?? new Date();
   try {
     const calendars = await calendar.listCalendars();
@@ -146,16 +154,22 @@ export async function captureAvailabilityFrom(
       ? calendars.filter((item) => !excluded.has(item.id)).map((item) => item.id)
       : undefined;
     const free = await createCalendarAvailabilityService(calendar).getFreeSlots({ startDate, endDate, calendarIds });
-    return {
-      source: 'device_calendar',
-      captured_at: toIsoWithOffset(capturedAt),
-      slots: toDailySlots(free, options),
-    };
+    return logged(
+      {
+        source: 'device_calendar',
+        captured_at: toIsoWithOffset(capturedAt),
+        slots: toDailySlots(free, options),
+      },
+      `${calendarIds ? calendarIds.length : calendars.length} of ${calendars.length} calendars read`,
+    );
   } catch (error) {
     // Access revoked since the check: plan from the window, never as if the calendar were empty.
     if (error instanceof CalendarError && (error.code === 'permission-denied' || error.code === 'unavailable')) {
-      return manualAvailability({ ...options, capturedAt });
+      return logged(manualAvailability({ ...options, capturedAt }), `read failed: ${error.code}`);
     }
+    debugWarn('calendar', `✕ availability week=${options.weekStart} ${took()} ${errorLabel(error)}`, () =>
+      describeError(error),
+    );
     throw error;
   }
 }

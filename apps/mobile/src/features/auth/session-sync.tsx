@@ -9,16 +9,17 @@ import { queryKeys } from '@/api/query-keys';
 import { authLinkKind, authRedirectParams, exchangeAuthCode, toAuthSession } from '@/api/remote/auth';
 import { getRemoteRuntime, supabaseAuth } from '@/api/remote/default';
 import type { AuthSession } from '@/api/types';
+import { debugLog, debugWarn, describeError, errorLabel, maskEmail, shortId } from '@/lib/debug-log';
 
 import { setRecoveryPending } from './recovery';
 
 const platform = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 
-/** Runs Auth housekeeping whose failure has nowhere to be shown. */
-function quietly(run: () => Promise<unknown>) {
+/** Runs Auth housekeeping whose failure has nowhere to be shown (debug builds log it). */
+function quietly(run: () => Promise<unknown>, label = 'auth housekeeping') {
   void Promise.resolve()
     .then(run)
-    .catch(() => undefined);
+    .catch((error: unknown) => debugWarn('auth', `✕ ${label} ${errorLabel(error)}`, () => describeError(error)));
 }
 
 function startAuthSync(queryClient: QueryClient): () => void {
@@ -26,6 +27,15 @@ function startAuthSync(queryClient: QueryClient): () => void {
 
   // supabase-js holds its lock while it notifies: nothing here may wait on Auth.
   const { data } = supabaseAuth.onAuthStateChange((event, session) => {
+    debugLog('auth', `event ${event}`, () =>
+      session
+        ? {
+            user: shortId(session.user.id),
+            email: maskEmail(session.user.email),
+            provider: session.user.app_metadata.provider ?? 'email',
+          }
+        : { signed_in: false },
+    );
     const previous = queryClient.getQueryData<AuthSession | null>(queryKeys.session);
     if (!session) {
       flushed.clear();
@@ -37,8 +47,10 @@ function startAuthSync(queryClient: QueryClient): () => void {
 
     const next = toAuthSession(session);
     // Another account took over: drop what the previous one left in the cache.
-    if (previous && previous.user.id !== next.user.id) signedIn(queryClient, next);
-    else queryClient.setQueryData(queryKeys.session, next);
+    if (previous && previous.user.id !== next.user.id) {
+      debugLog('auth', 'another account signed in: resetting cached user data');
+      signedIn(queryClient, next);
+    } else queryClient.setQueryData(queryKeys.session, next);
     if (event === 'PASSWORD_RECOVERY') setRecoveryPending(true);
 
     // Logs left as drafts by an earlier run are saved once per signed-in start.
@@ -52,7 +64,7 @@ function startAuthSync(queryClient: QueryClient): () => void {
             await runtime.flushDrafts();
             void queryClient.invalidateQueries({ queryKey: queryKeys.planAll });
             void queryClient.invalidateQueries({ queryKey: queryKeys.logsAll });
-          }),
+          }, 'draft flush'),
         0,
       );
     }
@@ -61,8 +73,13 @@ function startAuthSync(queryClient: QueryClient): () => void {
 
   if (platform !== 'web') {
     // React Native has no page visibility: refresh the token only in the foreground.
-    const refresh = (state: AppStateStatus) =>
-      quietly(() => (state === 'active' ? supabaseAuth.startAutoRefresh() : supabaseAuth.stopAutoRefresh()));
+    const refresh = (state: AppStateStatus) => {
+      debugLog('auth', `token auto-refresh ${state === 'active' ? 'on' : 'off'} (app ${state})`);
+      quietly(
+        () => (state === 'active' ? supabaseAuth.startAutoRefresh() : supabaseAuth.stopAutoRefresh()),
+        'token auto-refresh',
+      );
+    };
     refresh(AppState.currentState);
     const appState = AppState.addEventListener('change', refresh);
     cleanups.push(() => appState.remove());
@@ -70,9 +87,12 @@ function startAuthSync(queryClient: QueryClient): () => void {
     // OAuth, email confirmation and recovery links carry a one-time code. The
     // route they open trades it too; the exchange runs once per code.
     const handleLink = (url: string | null) => {
-      if (!url || !authLinkKind(url)) return;
+      const kind = url ? authLinkKind(url) : null;
+      if (!url || !kind) return;
+      // The kind only: the link's one-time code is never logged.
+      debugLog('auth', `deep link auth/${kind}`);
       const { code } = authRedirectParams(url);
-      if (code) quietly(() => exchangeAuthCode(supabaseAuth, code, platform));
+      if (code) quietly(() => exchangeAuthCode(supabaseAuth, code, platform), `deep link auth/${kind} code exchange`);
     };
     quietly(() => Linking.getInitialURL().then(handleLink));
     const links = Linking.addEventListener('url', ({ url }) => handleLink(url));

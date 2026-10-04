@@ -30,6 +30,7 @@ export type SendChatMessageInput = Omit<SendChatInput, 'base_version'> & {
 export function useSendChatMessage() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['chat', 'send'],
     mutationFn: (input: SendChatMessageInput) =>
       api.chat.send({
         text: input.text,
@@ -52,6 +53,7 @@ export function useSendChatMessage() {
 export function useUndoChatMessage() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['chat', 'undo'],
     mutationFn: (messageId: string) => api.chat.undo(messageId),
     onSuccess: () => chatChanged(queryClient),
     onError: (error) => {

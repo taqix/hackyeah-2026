@@ -6,6 +6,7 @@ import { isMockMode } from '@/api/config';
 import { queryKeys } from '@/api/query-keys';
 import { type AuthRedirectParams, completeAuthRedirect, isSignInCancelled } from '@/api/remote/auth';
 import { supabaseAuth } from '@/api/remote/default';
+import { debugLog, debugWarn, describeError, errorLabel, shortId, startTimer } from '@/lib/debug-log';
 
 const platform = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 
@@ -46,13 +47,22 @@ export function useAuthRedirect(params: AuthRedirectParams, { enabled = true } =
   useEffect(() => {
     if (!run) return;
     let live = true;
+    const took = startTimer();
+    // Whether the link carries a code or an error, never the code itself.
+    debugLog('auth', `→ auth redirect (${initial.code ? 'with code' : initial.error ? 'with error' : 'no code'})`, () =>
+      initial.error ? { error: initial.error } : {},
+    );
     completeAuthRedirect(supabaseAuth, initial, platform).then(
       (session) => {
+        const { id, provider } = session.user;
+        debugLog('auth', `✓ auth redirect ${took()} user=${shortId(id)} provider=${provider}`);
         if (!live) return;
         queryClient.setQueryData(queryKeys.session, session);
         setState({ status: 'done' });
       },
       (error: unknown) => {
+        if (isSignInCancelled(error)) debugLog('auth', `auth redirect cancelled ${took()}`);
+        else debugWarn('auth', `✕ auth redirect ${took()} ${errorLabel(error)}`, () => describeError(error));
         if (!live) return;
         if (isSignInCancelled(error)) setState({ status: 'cancelled' });
         else

@@ -1,3 +1,13 @@
+import {
+  debugLog,
+  debugLogsEnabled,
+  debugWarn,
+  describeError,
+  errorLabel,
+  maskEmail,
+  shortId,
+  startTimer,
+} from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { ApiError, type AuthProviders, type AuthSession } from '../types';
 import type { RemoteContext } from './context';
@@ -243,6 +253,44 @@ async function readProviders(deps: RemoteDeps): Promise<AuthProviders | null> {
   }
 }
 
+/* ---------------------------------------------------------- Debug logs */
+
+/** Debug builds: one line per Auth attempt and its outcome; codes only, never a password, token or full email. */
+async function traced<T>(action: string, email: string | null, run: () => Promise<T>, outcome?: (result: T) => string) {
+  const took = startTimer();
+  debugLog('auth', `→ ${action}${email ? ` ${maskEmail(email)}` : ''}`);
+  try {
+    const result = await run();
+    debugLog('auth', `✓ ${action} ${took()}${outcome ? ` ${outcome(result)}` : ''}`);
+    return result;
+  } catch (error) {
+    if (isSignInCancelled(error)) debugLog('auth', `${action} cancelled ${took()}`);
+    else debugWarn('auth', `✕ ${action} ${took()} ${errorLabel(error)}`, () => describeError(error));
+    throw error;
+  }
+}
+
+const sessionTag = (session: AuthSession | null) =>
+  session ? `user=${shortId(session.user.id)} provider=${session.user.provider}` : 'no session';
+
+/** The Auth section with its attempts logged; unchanged when debug logs are off. */
+function withAuthLogging(client: ApiClient['auth']): ApiClient['auth'] {
+  if (!debugLogsEnabled) return client;
+  return {
+    ...client,
+    signInWithEmail: (email, password) =>
+      traced('sign-in (email)', email, () => client.signInWithEmail(email, password), sessionTag),
+    signUpWithEmail: (email, password) =>
+      traced('sign-up (email)', email, () => client.signUpWithEmail(email, password), sessionTag),
+    signInWithGoogle: () => traced('sign-in (google)', null, () => client.signInWithGoogle(), sessionTag),
+    sendPasswordReset: (email) => traced('password reset email', email, () => client.sendPasswordReset(email)),
+    updatePassword: (password) => traced('new password', null, () => client.updatePassword(password)),
+    getProviders: () =>
+      traced('providers', null, () => client.getProviders(), (found) => `google=${found.google ? 'on' : 'off'}`),
+    signOut: () => traced('sign-out', null, () => client.signOut()),
+  };
+}
+
 /* --------------------------------------------------------------- Client */
 
 function validEmail(email: string): string {
@@ -267,7 +315,7 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
   const { auth } = deps;
   let providers: AuthProviders | null = null;
 
-  return {
+  const client: ApiClient['auth'] = {
     getSession: () => readSession(auth),
 
     // Supabase can't tell whether an email has an account without revealing it
@@ -351,10 +399,12 @@ export function createRemoteAuth(ctx: RemoteContext): ApiClient['auth'] {
       }
       // Offline the server can't be told; still sign out on this device.
       if (failed) {
+        debugLog('auth', 'sign-out: the server could not be told; signing out on this device only');
         const local = await call(() => auth.signOut({ scope: 'local' }));
         if (local.error) throw mapAuthError(local.error);
       }
       ctx.data.reset();
     },
   };
+  return withAuthLogging(client);
 }

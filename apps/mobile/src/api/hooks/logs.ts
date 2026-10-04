@@ -22,6 +22,7 @@ function logChanged(queryClient: QueryClient, log: ActivityLog, previousId?: str
 export function useCreateLog() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['logs', 'create'],
     mutationFn: (input: CreateLogInput) => api.logs.create(input),
     onSuccess: (log) => logChanged(queryClient, log),
   });
@@ -40,6 +41,7 @@ export function useLog(id: string | null | undefined) {
 export function useUpdateLog() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['logs', 'update'],
     mutationFn: ({ id, patch }: { id: string; patch: UpdateLogInput }) => api.logs.update(id, patch),
     onSuccess: (log) => logChanged(queryClient, log),
   });
@@ -49,6 +51,7 @@ export function useUpdateLog() {
 export function useSaveFeedback() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['logs', 'save-feedback'],
     mutationFn: ({ logId, feedback }: { logId: string; feedback: SaveFeedbackInput }) =>
       api.logs.saveFeedback(logId, feedback),
     onSuccess: (log, { logId }) => logChanged(queryClient, log, logId),
@@ -62,6 +65,7 @@ export function useSaveFeedback() {
 export function useCommitLog() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['logs', 'commit'],
     mutationFn: (id: string) => api.logs.commit(id),
     onSuccess: (log, id) => logChanged(queryClient, log, id),
   });

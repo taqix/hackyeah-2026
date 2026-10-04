@@ -1,4 +1,5 @@
 import { fromLocalDate, toLocalDate } from '../../lib/dates';
+import { debugLog, debugWarn, describeError, errorLabel, shortId, startTimer } from '../../lib/debug-log';
 import type { ApiClient } from '../client';
 import { ApiError, isApiError, type ChatMessage, type SendChatInput, type SessionRef } from '../types';
 import { createAboutStore } from './chat/about';
@@ -124,6 +125,12 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
       if (!current) throw new ApiError('conflict', NOT_READY);
 
       const requestId = input.request_id ?? ctx.deps.newId();
+      const took = startTimer();
+      const rid = shortId(requestId);
+      // Never the text: its length, the request and whether a session is attached.
+      debugLog('chat', `→ send rid=${rid} chars=${text.length}${bodies.has(requestId) ? ' (resend)' : ''}`, () =>
+        input.about_session_id ? { about: shortId(input.about_session_id) } : {},
+      );
       let body = bodies.get(requestId);
       if (!body || body.message !== text) {
         body = await buildBody(input, text, requestId, current);
@@ -139,6 +146,8 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
       try {
         result = await ctx.http.post<ChatResultDto>('/chat', body, { timeoutMs: AI_TIMEOUT_MS, retryTransport: true });
       } catch (error) {
+        const kept = isTransport(error) ? ' (body kept for Try again)' : '';
+        debugWarn('chat', `✕ send rid=${rid} ${took()} ${errorLabel(error)}${kept}`, () => describeError(error));
         // A transport failure may still have been applied: keep the body for Try again.
         if (!isTransport(error)) bodies.delete(requestId);
         if (isApiError(error, 'stale_version') || isApiError(error, 'conflict')) {
@@ -149,6 +158,9 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
       bodies.delete(requestId);
 
       const changed = result.outcome === 'plan_updated';
+      const activeVersion = (result.active_plan ?? current).version.version;
+      const outcome = `✓ ${result.outcome} rid=${rid} ${took()} plan_changed=${changed} active=v${activeVersion}`;
+      debugLog('chat', outcome, () => ({ messages: result.messages.length }));
       if (changed) {
         ctx.data.setCurrentPlan(result.active_plan);
         ctx.data.invalidate('history', 'chat');
@@ -164,6 +176,8 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
     },
 
     async undo(messageId) {
+      const took = startTimer();
+      debugLog('chat', `→ undo message=${shortId(messageId)}`);
       const current = await ctx.data.currentPlan();
       if (!current) throw new ApiError('conflict', CANT_UNDO);
       let body = undoBodies.get(messageId);
@@ -182,6 +196,9 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
       try {
         result = await ctx.http.post<ActivePlanDto>('/plans/undo', body, { timeoutMs: AI_TIMEOUT_MS, retryTransport: true });
       } catch (error) {
+        debugWarn('chat', `✕ undo message=${shortId(messageId)} ${took()} ${errorLabel(error)}`, () =>
+          describeError(error),
+        );
         if (isTransport(error)) throw error;
         undoBodies.delete(messageId);
         ctx.data.invalidate('currentPlan', 'history', 'chat');
@@ -191,6 +208,7 @@ export function createRemoteChat(ctx: RemoteContext): ApiClient['chat'] {
         throw error;
       }
       undoBodies.delete(messageId);
+      debugLog('chat', `✓ undo message=${shortId(messageId)} ${took()} active=v${result.version.version}`);
       ctx.data.setCurrentPlan(result);
       ctx.data.invalidate('history', 'chat');
       return { messages: [], plan_changed: true, active_version: result.version.version };

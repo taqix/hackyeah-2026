@@ -97,6 +97,7 @@ or service-role key there. Restart `expo start` after changing the file.
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes, in Supabase mode | the publishable (`sb_publishable_…`) or legacy anon key |
 | `EXPO_PUBLIC_PRODUCT_API_URL` | no | defaults to `${EXPO_PUBLIC_SUPABASE_URL}/functions/v1/product-api` |
 | `EXPO_PUBLIC_API_MODE` | no | `supabase` (default) or `mock` |
+| `EXPO_PUBLIC_DEBUG_LOGS` | no | `off` silences the debug logs of development builds |
 
 Without the URL or key the app shows a setup screen that lists the missing
 values. It never falls back to the mock. `EXPO_PUBLIC_API_MODE=mock` runs the
@@ -104,6 +105,35 @@ offline demo backend (demo account, Demo controls) and needs no other value; see
 [Mobile app on a mocked API](features/mobile-mock-app.md). Mobile checks, run in
 `apps/mobile`: `npm run typecheck`, `npx eslint src`, `npm test`,
 `npm run test:remote`, `npm run test:calendar`, and `npm run test:activity-import`.
+
+#### Debug logs
+
+Development builds (`__DEV__`) print one line per event to the Metro terminal
+and the React Native DevTools console (press `j` in `expo start`). Each line
+starts with `[movo:<scope>]`:
+
+- `http`: every product API request, response or failure, with the status,
+  duration, short request ID, the 401 refresh-and-resend, transport retries
+  and timeouts.
+- `auth`: Auth state events, sign-in, sign-up, Google, password reset and
+  sign-out attempts and outcomes, and auth deep links (kind only).
+- `query` and `mutation`: React Query loads, changed refetches, failures and
+  retries; mutations by their `mutationKey`. `query` also shows the remote
+  data cache being invalidated or reset.
+- `nav`: route changes, with IDs shortened and parameter names only.
+- `plan`, `chat`, `logs`, `profile`, `calendar`: plan builds and re-plans,
+  chat sends and Undo, drafts and feedback, opinions and switched-off sports,
+  calendar free time (source, slot count, read time) and the Movo export.
+- `app`: the API mode and missing variables at start. `mock`: each mock call.
+
+Failures use `console.warn`; the root layout keeps these lines out of LogBox.
+Set `EXPO_PUBLIC_DEBUG_LOGS=off` in `apps/mobile/.env` to silence them, then
+restart `expo start`. Release builds and Node tests log nothing. The logs never
+contain tokens, keys, `Authorization` headers, passwords, full emails (only
+`a***@example.com`), chat text, feedback notes or calendar event titles.
+Request bodies appear as their keys and safe values only. The logger is
+`apps/mobile/src/lib/debug-log.ts`; route new logs through it rather than
+calling `console` directly.
 
 ## Application and data boundaries
 

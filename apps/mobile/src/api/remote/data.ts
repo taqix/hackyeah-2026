@@ -7,6 +7,7 @@
  * write, call `invalidate(...)` with what changed; React Query refetches on
  * top of it.
  */
+import { debugLog } from '../../lib/debug-log';
 import { slugForSportName } from '../../lib/sport-library';
 import { ApiError } from '../types';
 import type { RemoteDeps } from './deps';
@@ -155,6 +156,7 @@ export function createRemoteData(http: ProductApi, deps: Pick<RemoteDeps, 'auth'
     if (!id) throw new ApiError('unauthorized', "You've been signed out. Sign in again to continue.");
     if (owner !== id) {
       // Another account signed in: nothing cached may leak across.
+      if (owner !== null) debugLog('query', 'data cache: cleared, another account signed in');
       clearAll();
       owner = id;
     }
@@ -300,6 +302,7 @@ export function createRemoteData(http: ProductApi, deps: Pick<RemoteDeps, 'auth'
     setProfile: (value) => slots.profile.set(value),
     setCurrentPlan: (value) => slots.currentPlan.set(value),
     invalidate(...keys) {
+      debugLog('query', `data cache: invalidate ${keys.length ? keys.join(', ') : 'everything'}`);
       if (keys.length === 0) {
         clearAll();
         return;
@@ -310,6 +313,7 @@ export function createRemoteData(http: ProductApi, deps: Pick<RemoteDeps, 'auth'
       }
     },
     reset() {
+      debugLog('query', 'data cache: reset');
       clearAll();
       owner = null;
     },

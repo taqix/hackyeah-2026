@@ -70,11 +70,13 @@ const outcomeUnknown = (error: unknown) =>
 const sameFeedback = (a: FeedbackDto | null, b: FeedbackDto) =>
   !!a && a.effort === b.effort && a.enjoyment === b.enjoyment && a.notes === b.notes;
 
-/** The activity a draft completes: in the draft's version, else wherever it lives now. */
+/**
+ * The activity a draft completes, where it lives now: the newest version that
+ * has it, not the one it was logged from. A replan or chat change made since
+ * may have moved it, and the server keeps a completed session exactly as the
+ * active version has it, so the completion must name that copy.
+ */
 async function activityForDraft(ctx: RemoteContext, draft: Draft): Promise<FoundActivity> {
-  const version = await ctx.data.versionById(draft.plan_version_id);
-  const activity = version?.plan.activities.find((item) => item.id === draft.activity_id);
-  if (version && activity) return { activity, version };
   const found = await ctx.data.findActivity(draft.activity_id);
   if (!found) throw new ApiError('not_found', NOT_IN_PLAN);
   return found;
@@ -145,7 +147,8 @@ async function putFeedback(
 /**
  * Saves a draft as a completion. The body is stored on the draft before it
  * is sent, so a retry (now or at the next start) resends the same bytes under
- * the same request_id. ALREADY_COMPLETED (or the request_id already used)
+ * the same request_id, unless a newer version has the session by then: the
+ * body is rebuilt against that one. ALREADY_COMPLETED (or the request_id already used)
  * means the session is saved: the existing completion is taken. Feedback that
  * the saved body does not carry (an earlier attempt without it) follows with
  * PUT /completions/feedback.
@@ -167,10 +170,20 @@ function saveDraft(
         : saved;
     }
 
+    let current = draft;
     let body = draft.submission;
-    if (!body) {
-      body = await completionBody(ctx, draft, await activityForDraft(ctx, draft), feedback);
-      await ctx.drafts.put({ ...draft, submission: body });
+    // Offline the plan cannot be read; a body built before is then sent as it was.
+    const found = await activityForDraft(ctx, draft).catch((error: unknown) => {
+      if (body) return null;
+      throw error;
+    });
+    if (found && body?.plan_version_id !== found.version.id) {
+      // New, or built against a version a change has replaced since. The request_id stays: if the
+      // old body was saved after all, the server answers REQUEST_CONFLICT and that completion is used.
+      const rebuilt = await completionBody(ctx, draft, found, feedback);
+      body = feedback || !body ? rebuilt : { ...rebuilt, feedback: body.feedback };
+      current = { ...draft, plan_version_id: found.version.id, submission: body };
+      await ctx.drafts.put(current);
     }
 
     let completion: ActivityCompletionEntity;
@@ -182,13 +195,13 @@ function saveDraft(
         ctx.data.invalidate('completions');
         const existing = (await ctx.data.completionByActivityId()).get(draft.activity_id);
         if (!existing) {
-          await ctx.drafts.put({ ...draft, request_id: ctx.deps.newId(), submission: null });
+          await ctx.drafts.put({ ...current, request_id: ctx.deps.newId(), submission: null });
           throw error;
         }
         completion = existing;
       } else {
         // A definite answer (validation, not found) saved nothing: rebuild the body next time.
-        if (!outcomeUnknown(error)) await ctx.drafts.put({ ...draft, submission: null });
+        if (!outcomeUnknown(error)) await ctx.drafts.put({ ...current, submission: null });
         throw error;
       }
     }

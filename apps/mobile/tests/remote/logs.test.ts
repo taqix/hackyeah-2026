@@ -274,6 +274,32 @@ test('changing a draft after a sent attempt gives the next attempt a new request
   assert.equal(Date.parse(second.completed_at), Date.parse('2026-10-05T05:20:00Z'));
 });
 
+test('a draft saved after a change moved its session completes against the version that has it now', async () => {
+  const versions = [V1];
+  const { client, data, drafts, server } = setup({ versions });
+  const draftLog = await client.logs.create(walkInput);
+  server.state.completionReplies.push(fail(500, 'INTERNAL_ERROR'));
+  await assert.rejects(
+    client.logs.saveFeedback(draftLog.id, { felt: 'hard', note: null, choose_again: null }),
+    (error) => isApiError(error, 'unknown'),
+  );
+
+  // Before the retry, a chat change or re-plan moves the walk to the evening.
+  const movedWalk = { ...WALK, start_at: '2026-10-05T18:00:00+02:00' };
+  const V2 = version(2, '2026-10-05', [movedWalk, GYM, activity(3)], 'revise');
+  versions.push(V2);
+  data.invalidate();
+
+  const saved = await client.logs.commit(draftLog.id);
+  const [first, second] = server.state.posts.map(posted);
+  assert.equal(first.plan_version_id, V1.id);
+  assert.equal(second.plan_version_id, V2.id, 'the copy the next change keeps, not the one it was logged from');
+  assert.equal(second.request_id, first.request_id, 'a body saved after all is still found by its request_id');
+  assert.deepEqual(second.feedback, first.feedback, 'the feedback sent before goes with it');
+  assert.equal(saved.feedback?.felt, 'hard');
+  assert.equal(await drafts.get(draftLog.id), null);
+});
+
 test('ALREADY_COMPLETED counts as saved: the existing completion is shown and the draft goes', async () => {
   const { client, drafts, server } = setup();
   const draftLog = await client.logs.create(walkInput);

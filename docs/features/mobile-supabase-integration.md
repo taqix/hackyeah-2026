@@ -154,6 +154,8 @@ The owner allowlists these in Supabase Auth.
   - `commit(draft)` (new `ApiClient` method, called when feedback is closed)
     sends `POST /completions` with `feedback: null`.
   - Pending drafts are flushed at the next signed-in start.
+  - A draft is saved against the newest version that has its session, not the
+    one it was logged from. A change made before the save may have moved it.
   - `saveFeedback(completionId)` uses `PUT /completions/feedback`.
   - A saved completion's actuals are read-only; the edit entry points are hidden.
 - **Chat.**
